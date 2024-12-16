@@ -101,9 +101,21 @@ def extract_face():
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
 
-@app.route('/recognize_person', methods = ['GET'])
+# @app.route('/recognize_person', methods = ['GET'])
+# def recognize_person():
+#     return PictureController.recognize_person(request.get_json())
+
+@app.route('/recognize_person', methods=['GET'])
 def recognize_person():
-    return PictureController.recognize_person(request.get_json())
+    # Get query parameters from the GET request
+    image_path = request.args.get('image_path')
+    person_name = request.args.get('name', None)
+
+    if not image_path:
+        return make_response(jsonify({'error': 'Missing required parameters'}), 400)
+
+    # Call the method from the PictureController class
+    return PictureController.recognize_person(image_path, person_name)
 
 # --------------------------IMAGE---------------------------------
 

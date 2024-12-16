@@ -76,11 +76,11 @@ class PictureController():
                                 encoding_str = ",".join([str(num) for num in current_encoding])
                                 f.write(f"unknown;{encoding_str};{target_file_name}\n")
                             save_file = str(uuid.uuid4().hex)
-                    else:
-                        # If no stored encodings, just save the current one
-                        with open(encodings_file, 'a') as f:
-                            encoding_str = ",".join([str(num) for num in current_encoding])
-                            f.write(f"unknown;{encoding_str};{target_file_name}\n")
+            else:
+                # If no stored encodings, just save the current one
+                with open(encodings_file, 'a') as f:
+                    encoding_str = ",".join([str(num) for num in current_encoding])
+                    f.write(f"unknown;{encoding_str};{target_file_name}\n")
             save_file = str(uuid.uuid4().hex)
 
         return make_response(jsonify({'status': 'Faces saved successfully'}), 200)
@@ -88,9 +88,7 @@ class PictureController():
 
     
     @staticmethod
-    def recognize_person(data):
-      image_path = data.get('image_path')
-      person_name = data.get('name')
+    def recognize_person(image_path, person_name=""):
     # Load the image from the path and encode it
       input_image = face_recognition.load_image_file(image_path)
       input_encodings = face_recognition.face_encodings(input_image)
@@ -135,14 +133,14 @@ class PictureController():
                             'name': name,
                             'status': 'Match found'
                         })
-                    else:
-                        recognition_results.append({
-                            'file': stored_file,
-                            'name':'No name',
-                            'status': 'No match'
-                        })
+                    # else:
+                    #     recognition_results.append({
+                    #         'file': stored_file,
+                    #         'name':'No name',
+                    #         'status': 'No match'
+                    #     })
                    
-                    if new_lines:
+                    elif new_lines:
                        with open('./stored-faces/person.txt', 'w') as file:
                          file.writelines(new_lines)
       if recognition_results:
