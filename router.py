@@ -5,7 +5,6 @@ from io import BytesIO
 import piexif
 import json
 from config import db,app
-from sqlalchemy import text
 import os
 
 from Controller.PictureController import PictureController
