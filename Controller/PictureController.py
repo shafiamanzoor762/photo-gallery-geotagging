@@ -77,10 +77,12 @@ class PictureController():
                                 f.write(f"unknown;{encoding_str};{target_file_name}\n")
                             save_file = str(uuid.uuid4().hex)
             else:
-                # If no stored encodings, just save the current one
-                with open(encodings_file, 'a') as f:
-                    encoding_str = ",".join([str(num) for num in current_encoding])
-                    f.write(f"unknown;{encoding_str};{target_file_name}\n")
+                # Handle the case where no encoding is found
+                current_encoding = None  # Set it to None to prevent uninitialized reference
+                print(f"No encoding found for face in image: {image_path}")
+                # Optionally, you can handle the case where no encoding is found by skipping or logging
+                continue
+
             save_file = str(uuid.uuid4().hex)
 
         return make_response(jsonify({'status': 'Faces saved successfully'}), 200)
@@ -149,54 +151,107 @@ class PictureController():
     #     return make_response(jsonify({'message': 'No matches found'}), 200)
 
 
+    # @staticmethod
+    # def recognize_person(image_path, person_name=""):
+    #     # Load the image from the path and encode it
+    #     input_image = face_recognition.load_image_file(image_path)
+    #     input_encodings = face_recognition.face_encodings(input_image)
+
+    #     if len(input_encodings) == 0:
+    #         return make_response(jsonify({'error': 'No faces found in the image'}), 400)
+
+    #     # Store the results of recognition
+    #     recognition_results = []
+    #     new_lines = []
+    #     # Read stored encodings from person.txt
+    #     with open('./stored-faces/person.txt', 'r') as file:
+    #         lines = file.readlines()
+    #         for line in lines:
+    #             parts = line.split(';')
+    #             if len(parts) == 3:
+    #                 stored_name, encoding_str, cropped_image_path = parts[0], parts[1], parts[2].strip()
+    #                 stored_encodings = [float(value) for value in encoding_str.split(',')]
+
+    #                 # Compare input encodings to stored encodings
+    #                 for input_encoding in input_encodings:
+    #                     matches = face_recognition.compare_faces([stored_encodings], input_encoding)
+    #                     if True in matches:
+    #                         name = stored_name
+    #                         if person_name:
+    #                             new_lines.append(f'{person_name};{encoding_str};{cropped_image_path}\n')
+    #                             name = person_name
+    #                         else:
+    #                             new_lines.append(line)
+                            
+    #                         recognition_results.append({
+    #                             'file': cropped_image_path,
+    #                             'name': name,
+    #                             'status': 'Match found'
+    #                         })
+    #                         break  # Exit loop after first match
+    #                     else:
+    #                         new_lines.append(line)
+
+    #     # Update person.txt if new names are provided
+    #     if person_name and new_lines:
+    #         with open('./stored-faces/person.txt', 'w') as file:
+    #             file.writelines(new_lines)
+
+    #     if recognition_results:
+    #         return make_response(jsonify({'results': recognition_results}), 200)
+    #     else:
+    #         return make_response(jsonify({'message': 'No matches found'}), 200)
+
+
+# =====================
+
     @staticmethod
     def recognize_person(image_path, person_name=""):
-        # Load the image from the path and encode it
-        input_image = face_recognition.load_image_file(image_path)
-        input_encodings = face_recognition.face_encodings(input_image)
+    # Load the image from the path and encode it
+     input_image = face_recognition.load_image_file(image_path)
+     input_encodings = face_recognition.face_encodings(input_image)
 
-        if len(input_encodings) == 0:
-            return make_response(jsonify({'error': 'No faces found in the image'}), 400)
+     if len(input_encodings) == 0:
+        return {'error': 'No faces found in the image', 'status_code': 400}
 
-        # Store the results of recognition
-        recognition_results = []
-        new_lines = []
+    # Store the results of recognition
+     recognition_results = []
+     new_lines = []
+    # Read stored encodings from person.txt
+     with open('./stored-faces/person.txt', 'r') as file:
+        lines = file.readlines()
+        for line in lines:
+            parts = line.split(';')
+            if len(parts) == 3:
+                stored_name, encoding_str, cropped_image_path = parts[0], parts[1], parts[2].strip()
+                stored_encodings = [float(value) for value in encoding_str.split(',')]
 
-        # Read stored encodings from person.txt
-        with open('./stored-faces/person.txt', 'r') as file:
-            lines = file.readlines()
-            for line in lines:
-                parts = line.split(';')
-                if len(parts) == 3:
-                    stored_name, encoding_str, cropped_image_path = parts[0], parts[1], parts[2].strip()
-                    stored_encodings = [float(value) for value in encoding_str.split(',')]
-
-                    # Compare input encodings to stored encodings
-                    for input_encoding in input_encodings:
-                        matches = face_recognition.compare_faces([stored_encodings], input_encoding)
-                        if True in matches:
-                            name = stored_name
-                            if person_name:
-                                new_lines.append(f'{person_name};{encoding_str};{cropped_image_path}\n')
-                                name = person_name
-                            else:
-                                new_lines.append(line)
-                            
-                            recognition_results.append({
-                                'file': cropped_image_path,
-                                'name': name,
-                                'status': 'Match found'
-                            })
-                            break  # Exit loop after first match
+                # Compare input encodings to stored encodings
+                for input_encoding in input_encodings:
+                    matches = face_recognition.compare_faces([stored_encodings], input_encoding)
+                    if True in matches:
+                        name = stored_name
+                        if person_name:
+                            new_lines.append(f'{person_name};{encoding_str};{cropped_image_path}\n')
+                            name = person_name
                         else:
                             new_lines.append(line)
 
-        # Update person.txt if new names are provided
-        if person_name and new_lines:
-            with open('./stored-faces/person.txt', 'w') as file:
-                file.writelines(new_lines)
+                        recognition_results.append({
+                            'file': cropped_image_path,
+                            'name': name,
+                            'status': 'Match found'
+                        })
+                        break  # Exit loop after first match
+                    else:
+                        new_lines.append(line)
 
-        if recognition_results:
-            return make_response(jsonify({'results': recognition_results}), 200)
-        else:
-            return make_response(jsonify({'message': 'No matches found'}), 200)
+    # Update person.txt if new names are provided
+     if person_name and new_lines:
+        with open('./stored-faces/person.txt', 'w') as file:
+            file.writelines(new_lines)
+
+     if recognition_results:
+        return {'results': recognition_results, 'status_code': 200}
+     else:
+        return {'message': 'No matches found', 'status_code': 200}

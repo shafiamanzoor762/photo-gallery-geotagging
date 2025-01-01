@@ -6,6 +6,7 @@ import piexif
 import json
 from config import db,app
 import os
+import base64
 
 from Controller.PictureController import PictureController
 from Controller.EventController import EventController
@@ -199,10 +200,107 @@ def sortevents():
     
     return EventController.sortevents(json_data)
 
+
+# ==================TEMPORARY====================
+
+
+@app.route('/save_record', methods=['POST'])
+def save_record():
+    data = request.get_json()
+
+    if not data or 'directory_path' not in data:
+        return jsonify({'error': 'Directory path is required'}), 400
+    
+    directory_path = data['directory_path']
+
+    if not os.path.isdir(directory_path):
+        return jsonify({'error': 'Provided path is not a valid directory'}), 400
+
+    for filename in os.listdir(directory_path):
+        file_path = os.path.join(directory_path, filename)
+
+        if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+            print(f"Processing {filename}...")
+
+            result = PictureController.extract_face(file_path)
+            print(result)
+
+    return jsonify({'status': 'Processing complete'}), 200
+
+# ==================GROUPBY PERSON UNKNOWN CLUSTERS====================
+@app.route('/recognize_person_bulk', methods=['POST'])
+def recognize_person_bulk():
+    try:
+        if request.content_length:
+          app.logger.info(f"Request size: {request.content_length} bytes")
+        files = request.files.getlist("images")
+        print(f"Received files: {[file.filename for file in files]}")
+        if not files:
+            return jsonify({"error": "No files uploaded"}), 400
+
+        results = []
+        for file in files:
+            try:
+                file_data = file.read()
+                file_base64 = base64.b64encode(file_data).decode("utf-8")
+                print(f"Base64 encoding for {file.filename}: {file_base64[:30]}...")
+                filename = file.filename
+                temp_path = os.path.join("temp", filename)
+
+                with open(temp_path, "wb") as temp_file:
+                    temp_file.write(file_data)
+
+                try:
+                    recognition_response = PictureController.recognize_person(temp_path)
+                    print(f"Recognition response for {filename}: {recognition_response}")
+
+                    if recognition_response.get('status_code') == 400:
+                        print(f"Error in recognition for {filename}: {recognition_response['error']}")
+                        continue
+
+                    recognition_results = recognition_response.get('results', [])
+                    for result in recognition_results:
+                        result["original_image"] = file_base64 if file_base64 else None
+                        result["image_name"] = filename
+
+                    results.extend(recognition_results)
+                finally:
+                    os.remove(temp_path)
+            except Exception as e:
+                print(f"Error processing file {file.filename}: {e}")
+
+
+        grouped_results = {}
+        for result in results:
+          file_name = result.get("file", "").split("/")[-1]
+          name = result.get("name", "unknown")
+
+          key = f"{file_name}_{name}"
+
+          if key not in grouped_results:
+            grouped_results[key] = []
+
+          grouped_results[key].append(result)
+
+
+        return jsonify(grouped_results)
+
+    except Exception as e:
+        error_message = f"Error processing request: {str(e)}"
+        print(error_message)
+        return jsonify({"error": error_message}), 500
+
+
+
+
 # only accept localhost
 # if __name__ == '__main__':
 #     app.run(debug=True)
 
+
 # accept both local and ip Add
 if __name__ == '__main__':
+    if not os.path.exists("temp"):
+        os.makedirs("temp")
     app.run(host='0.0.0.0', port=5000, debug=True)
+

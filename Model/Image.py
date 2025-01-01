@@ -1,8 +1,4 @@
-# from flask_sqlalchemy import SQLAlchemy
 from config import db
-from Model.Person import Person
-from Model.ImageEvent import ImageEvent
-from Model.ImagePerson import ImagePerson
 
 class Image(db.Model):
     __tablename__ = 'image'
