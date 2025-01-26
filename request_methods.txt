@@ -1,0 +1,51 @@
+---------TAG IMAGE--------
+[POST] http://127.0.0.1:5000/tagimage
+BODY - form-data
+file
+tags {"name": "ali", "event": "Birthday Party", "location": "New York"}
+
+---------EXTRACT IMAGE TAGS--------
+[POST] http://127.0.0.1:5000/extractImageTags
+BODY - form-data
+file
+
+---------EXTRACT FACE--------
+[POST] http://127.0.0.1:5000/extract_face
+BODY - form-data
+file
+
+---------RECOGNIZE PERSON (NAME) OPTIONAL--------
+[GET] http://127.0.0.1:5000/recognize_person?image_path=F:/semester_7/python-test/stored-faces/f628933e6a4440b3b570bd85f69a9f93.jpg&name=
+QUERY - params
+
+---------ADD IMAGE--------
+[POST] http://127.0.0.1:5000/add_image
+BODY - raw (JSON)
+{
+    "path": "F:/work1/python-test/BabyGirl.jpeg",
+    "is_sync": true,
+    "capture_date": "2024-11-01",
+    "event_date": "2024-11-02"
+}
+
+---------EDIT IMAGE--------
+[PUT] http://127.0.0.1:5000/images/2
+BODY - raw (JSON)
+{
+    "path": "F:/semester_7/python-test/test_data/BabyGirl.jpeg",
+    "isSync": false,
+    "captureDate": "2024-11-02",
+    "eventDate": "2024-11-02"
+}
+
+---------DELETE IMAGE--------
+[DELETE] http://127.0.0.1:5000/images/3
+
+---------GET IMAGE--------
+[GET] http://127.0.0.1:5000/images/2
+
+---------GROUP BY IMAGE DATE--------
+[GET] http://127.0.0.1:5000/group_by_date
+
+---------GROUP BY IMAGE LOCATION--------
+[GET] http://127.0.0.1:5000/group_by_location
