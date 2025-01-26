@@ -146,7 +146,7 @@ def group_by_date():
 @app.route('/add_image', methods=['POST'])
 def add_image():
     data = request.get_json()
-    if 'path' not in data or 'is_sync' not in data:
+    if 'path' not in data:
         return jsonify({'error': 'Missing required fields'}), 400
     return ImageController.add_image(data)
 
@@ -168,20 +168,20 @@ def delete_image(image_id):
 # --------------------------EVENT---------------------------------
 @app.route('/fetch_events', methods = ['GET'])
 def fetch_events():
-    print('am here')
+    # print('am here')
     return EventController.fetch_all_events()
 
 #add a new event 
 @app.route('/addnewevent', methods=['POST'])
 def addnewevent():
-    print("am in addnew event method")
+    #print("am in addnew event method")
     if request.is_json:
            
            json_data = request.get_json()
            
            if 'name' not in json_data:
              return {"error": "Missing 'name' in JSON data"}, 200
-           print("Received JSON data:", json_data)
+           #print("Received JSON data:", json_data)
     
     return EventController.addnewevent(json_data)
 
@@ -200,18 +200,11 @@ def addevents():
     return EventController.addevents(json_data)
 
 #sorting of events for Dropdown
-@app.route('/sortevents', methods=['POST'])
+@app.route('/sortevents', methods=['GET'])
 def sortevents():
     
-    if request.is_json:
-           
-           json_data = request.get_json()
-           
-           if 'name' not in json_data :
-             return {"error": "Missing 'name' in JSON data"}, 200
-           print("Received JSON data:", json_data)
     
-    return EventController.sortevents(json_data)
+    return EventController.sortevents()
 
 # ================Location=================
 
