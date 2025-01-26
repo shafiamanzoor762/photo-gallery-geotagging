@@ -91,10 +91,10 @@ class EventController():
             return {"error": str(e)}, 500
         
     @staticmethod
-    def sortevents(json_data):
+    def sortevents():
         try:
             # Extract the data from the JSON
-            name = json_data.get('name')
+            
             event_image_dict = {}
             # print(name)
             events = Event.query.all()
@@ -109,7 +109,24 @@ class EventController():
 
                 # Print the list of image_ids
               print(f"Image IDs for event '{event.name}': {image_ids}")
-              event_image_dict[event.name] = image_ids
+              image_data = []
+              for image_id in image_ids:
+        # Query Image table to get detailed info about each image
+                 image = Image.query.get(image_id)  # Adjust query as needed for your model
+                 if image:
+            # Collect any data you need for each image, e.g., name, file path, etc.
+                     image_data.append({
+                "image_id": image.id,
+                "path": image.path,
+                "is_sync": image.is_sync,  
+                "capture_date":image.capture_date,
+                "event_date":image.event_date,
+                "last_modified":image.last_modified,
+                "location_id":image.location_id
+
+
+            })
+              event_image_dict[event.name] = image_data
 
             return {"message":event_image_dict}, 201
 

@@ -274,8 +274,8 @@ class ImageController:
         try:
             image = Image(
             path=data['path'],
-            is_sync=data['is_sync'],
-            capture_date=data.get('capture_date', None),
+            is_sync=data.get('is_sync',0),
+            capture_date=data.get('capture_date', datetime.utcnow()),
             event_date=data.get('event_date', None),
             last_modified=datetime.utcnow())
             db.session.add(image)
