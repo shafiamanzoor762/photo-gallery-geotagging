@@ -40,7 +40,7 @@ CREATE TABLE ImageHistory (
 );
 
 -- 5 Associative table for Image-Person relationship (many-to-many)
-CREATE TABLE Image_PersonHistory (
+CREATE TABLE ImagePersonHistory (
     sr_no INT PRIMARY KEY IDENTITY(1,1),
     image_id INT,
     person_id INT,
@@ -48,7 +48,7 @@ CREATE TABLE Image_PersonHistory (
 );
 
 -- 6 Associative table for Image-Event relationship (many-to-many)
-CREATE TABLE Image_EventHistory (
+CREATE TABLE ImageEventHistory (
     sr_no INT PRIMARY KEY IDENTITY(1,1),
     image_id INT,
     event_id INT,

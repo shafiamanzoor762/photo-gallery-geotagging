@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file,make_response
+from flask import Flask, request, jsonify, send_file,make_response, send_from_directory
 from PIL import Image
 import io
 from io import BytesIO
@@ -240,6 +240,15 @@ def addLocation():
 def group_by_location():
     return LocationController.group_by_location()
 
+
+# Route to serve images
+@app.route('/images/<filename>', methods=['GET'])
+def get_image(filename):
+    try:
+        # Serve the image from the Assets folder
+        return send_from_directory(ASSETS_FOLDER, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
 
 # only accept localhost
 if __name__ == '__main__':
