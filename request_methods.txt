@@ -25,7 +25,7 @@ BODY - raw (JSON)
     "path": "F:/work1/python-test/BabyGirl.jpeg",
   
 }
-
+----------------remove this from here --------------------------
 ---------EDIT IMAGE--------
 [PUT] http://127.0.0.1:5000/images/2
 BODY - raw (JSON)
@@ -35,7 +35,7 @@ BODY - raw (JSON)
     "captureDate": "2024-11-02",
     "eventDate": "2024-11-02"
 }
-
+-------------------to here -----------------------
 ---------DELETE IMAGE--------
 [DELETE] http://127.0.0.1:5000/images/3
 
@@ -62,3 +62,4 @@ BODY - raw (JSON)
     "name": "New Year Party",
   
 }
+

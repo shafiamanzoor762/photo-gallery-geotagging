@@ -286,33 +286,33 @@ class ImageController:
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
         
-    @staticmethod
-    def edit_image(image_id, data):
-        image = Image.query.get(image_id)
-        if not image:
-            return jsonify({'error': 'Image not found'}), 404
+    # @staticmethod
+    # def edit_image(image_id, data):
+    #     image = Image.query.get(image_id)
+    #     if not image:
+    #         return jsonify({'error': 'Image not found'}), 404
         
-        image.path = data.get('path', image.path)
-        image.is_sync = data.get('isSync', image.is_sync)
-        image.capture_date = data.get('captureDate', image.capture_date)
-        image.event_date = data.get('eventDate', image.event_date)
-        image.last_modified = datetime.utcnow()
+    #     image.path = data.get('path', image.path)
+    #     image.is_sync = data.get('isSync', image.is_sync)
+    #     image.capture_date = data.get('captureDate', image.capture_date)
+    #     image.event_date = data.get('eventDate', image.event_date)
+    #     image.last_modified = datetime.utcnow()
         
-        try:
-            db.session.commit()
-            return jsonify(image.to_dict()
-        #         {
-        #     'id': image.id,
-        #     'path': image.path,
-        #     'isSync': image.isSync,
-        #     'captureDate': image.captureDate,
-        #     'eventDate': image.eventDate,
-        #     'lastModified': image.lastModified
-        # }
-        ), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'error': str(e)}), 500
+    #     try:
+    #         db.session.commit()
+    #         return jsonify(image.to_dict()
+    #     #         {
+    #     #     'id': image.id,
+    #     #     'path': image.path,
+    #     #     'isSync': image.isSync,
+    #     #     'captureDate': image.captureDate,
+    #     #     'eventDate': image.eventDate,
+    #     #     'lastModified': image.lastModified
+    #     # }
+    #     ), 200
+    #     except Exception as e:
+    #         db.session.rollback()
+    #         return jsonify({'error': str(e)}), 500
         
     @staticmethod
     def get_image_details(image_id):

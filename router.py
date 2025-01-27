@@ -12,7 +12,7 @@ from Controller.PictureController import PictureController
 from Controller.EventController import EventController
 from Controller.ImageController import ImageController
 from Controller.LocationController import LocationController
-
+# done
 @app.route('/tagimage', methods = ['POST'])
 def tagImage():
     try:
@@ -50,7 +50,7 @@ def tagImage():
     
     except Exception as exp:
         return jsonify({'error':str(exp)}), 500
-
+# done
 @app.route('/extractImageTags', methods = ['POST'])
 def extractImageTags():
     try:
@@ -84,6 +84,7 @@ ASSETS_FOLDER = 'Assets'  # Specify your uploads folder
 if not os.path.exists(ASSETS_FOLDER):
     os.makedirs(ASSETS_FOLDER)
 # =================== PICTURE CONTROLLER ==============
+# done
 @app.route('/extract_face', methods=['POST'])
 def extract_face():
      try:
@@ -106,7 +107,7 @@ def extract_face():
 # @app.route('/recognize_person', methods = ['GET'])
 # def recognize_person():
 #     return PictureController.recognize_person(request.get_json())
-
+# done
 @app.route('/recognize_person', methods=['GET'])
 def recognize_person():
     # Get query parameters from the GET request
@@ -135,42 +136,42 @@ def edit_Image():
 @app.route('/searching_on_image', methods=['GET'])
 def searching():
     return ImageController.searching_on_image()
-
+# done
 @app.route('/group_by_date',methods = ['GET'])
 def group_by_date():
     return ImageController.group_by_date()
 
 
 # -----------------------------------------------------------
-
+# done
 @app.route('/add_image', methods=['POST'])
 def add_image():
     data = request.get_json()
     if 'path' not in data:
         return jsonify({'error': 'Missing required fields'}), 400
     return ImageController.add_image(data)
-
+# remove this 
 @app.route('/images/<int:image_id>', methods=['PUT'])
 def edit_image(image_id):
     data = request.get_json()
     return ImageController.edit_image(image_id, data)
-
+# done
 # Get details of a specific Image (Read)
 @app.route('/images/<int:image_id>', methods=['GET'])
 def get_image_details(image_id):
     return ImageController.get_image_details(image_id)
-
+# done
 # Delete an Image (Delete)
 @app.route('/images/<int:image_id>', methods=['DELETE'])
 def delete_image(image_id):
     return ImageController.delete_image(image_id)
-
+# done
 # --------------------------EVENT---------------------------------
 @app.route('/fetch_events', methods = ['GET'])
 def fetch_events():
     # print('am here')
     return EventController.fetch_all_events()
-
+# done
 #add a new event 
 @app.route('/addnewevent', methods=['POST'])
 def addnewevent():
@@ -184,7 +185,7 @@ def addnewevent():
            #print("Received JSON data:", json_data)
     
     return EventController.addnewevent(json_data)
-
+# remove
 #add events to an image 
 @app.route('/addevents', methods=['POST'])
 def addevents():
@@ -198,7 +199,7 @@ def addevents():
            print("Received JSON data:", json_data)
     
     return EventController.addevents(json_data)
-
+# done
 #sorting of events for Dropdown
 @app.route('/sortevents', methods=['GET'])
 def sortevents():
@@ -238,7 +239,7 @@ def addLocation():
         return jsonify({"error": "Latitude and Longitude are required"}), 400
     else:
         return LocationController.addLocation(latitude,longitude)
-
+# done
 @app.route('/group_by_location',methods = ['GET'])
 def group_by_location():
     return LocationController.group_by_location()
