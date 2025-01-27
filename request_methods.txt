@@ -49,3 +49,45 @@ BODY - raw (JSON)
 
 ---------GROUP BY IMAGE LOCATION--------
 [GET] http://127.0.0.1:5000/group_by_location
+
+--------addevent-----
+http://127.0.0.1:5000/addnewevent ,body,raw
+{
+  "name": "Tech Conference 2025",
+  "date": "2025-06-15",
+  "location": "San Francisco, CA",
+  "description": "An exciting event for tech enthusiasts!"
+}
+------fetchevent------
+http://127.0.0.1:5000/fetch_events
+query,params
+
+------group_by_person------
+http://127.0.0.1:5000/group_by_person
+query,params ,get
+
+
+
+----------search-on-image----------
+http://127.0.0.1:5000/searching_on_image
+get,body,row,json
+{"name": ["Alina", "Abeeha"],
+"gender": "F",
+ "events": ["Conference"],
+ "capture_date": ["2023-12-01", "2023-09-01"],
+  "location": {
+    "latitude": 51.50735100,
+    "longitude": -0.12775800
+  }
+ }
+ --------get_location_from_lat_lon--------
+ http://localhost:5000/get_loc_from_lat_lon?latitude=34.0522&longitude=-118.2437
+ get functions
+ -----------addLocation---------------
+ http://127.0.0.1:5000/addLocation
+ body,row,lat,long
+
+ -----group_by_location------
+http://127.0.0.1:5000/group_by_location
+query,params ,get
+

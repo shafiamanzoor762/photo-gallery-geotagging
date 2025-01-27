@@ -19,7 +19,7 @@ class PictureController():
     @staticmethod
     def extract_face(image_path):
         # Load Haar cascade algorithm
-        alg = "haarcascade_frontalface_default.xml"
+        alg = "D:\python\photo-gallery-geotagging\haarcascade_frontalface_default.xml"
         haar_cascade = cv2.CascadeClassifier(alg)
 
         # Load the image in color (for saving) and grayscale (for face detection)
