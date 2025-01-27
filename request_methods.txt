@@ -63,3 +63,22 @@ BODY - raw (JSON)
   
 }
 
+
+---------------AddnewLocation--------------
+[POST]   http://127.0.0.1:5000/addLocation
+BODY - RAW(JSON)
+{
+    
+   "latitude":"31.5204",
+   "longitude":"74.3587"
+}
+
+-------------get location by lat lon---------------
+[GET]  http://127.0.0.1:5000/get_loc_from_lat_lon
+BODY - RAW(JSON)
+{
+    {
+   "latitude":"31.5204",
+   "longitude":"74.3587"
+}
+}
