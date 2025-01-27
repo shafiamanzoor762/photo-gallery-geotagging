@@ -150,11 +150,7 @@ def add_image():
     if 'path' not in data:
         return jsonify({'error': 'Missing required fields'}), 400
     return ImageController.add_image(data)
-# remove this 
-@app.route('/images/<int:image_id>', methods=['PUT'])
-def edit_image(image_id):
-    data = request.get_json()
-    return ImageController.edit_image(image_id, data)
+
 # done
 # Get details of a specific Image (Read)
 @app.route('/images/<int:image_id>', methods=['GET'])
