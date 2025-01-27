@@ -41,7 +41,54 @@ class EventController():
             return {"error": str(e)}, 500
         
 
-        
+    @staticmethod
+    def addevents(json_data):
+        events_data=[]
+        try:
+            # Extract the data from the JSON
+            id = json_data.get('id')
+            print(id)
+            existing_id= Image.query.filter_by(id=id).first()
+            print(existing_id)
+            if existing_id:
+                name = json_data.get('names')
+                names=name.split(',')
+                for n in names:
+                   existing_event = Event.query.filter_by(name=n).first()  # Search for the event with the name equal to 'n'
+    
+                   if existing_event:
+                    # If an event with that name exists, retrieve its id
+                     event_id = existing_event.id
+                     print(f"Event ID for {n}: {event_id}")
+                     add_events = ImageEvent(
+                         image_id=existing_id.id,
+                         event_id=event_id,
+               
+                          )
+                      # Add and commit to the database
+                     db.session.add(add_events)
+           
+                     db.session.commit()
+                   else:
+                    # If no event is found, you can handle the case here
+                     print(f"No event found with the name: {n}")
+                   
+                
+                events_data.append({
+                            'id': existing_id.id,
+                            'name': event_id,
+                            
+                        })
+            else:
+                return {"message":"No ID Found"}, 201
+            
+           
+            
+            return {"message":"Done"}, 201
+        except Exception as e:
+            db.session.rollback()
+            return {"error": str(e)}, 500
+    
     @staticmethod
     def groupbyevents():
         try:
@@ -85,3 +132,6 @@ class EventController():
         except Exception as e:
             
             return {"error": str(e)}, 500
+        
+
+
