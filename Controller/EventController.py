@@ -43,7 +43,7 @@ class EventController():
 
         
     @staticmethod
-    def sortevents():
+    def groupbyevents():
         try:
             # Extract the data from the JSON
             

@@ -50,7 +50,7 @@ BODY - raw (JSON)
 
 
 --------GROUP BY EVENTS-----------------
-[GET] http://127.0.0.1:5000/sortevents
+[GET] http://127.0.0.1:5000/groupbyevents
 
 --------GET ALL EVENTS----------------- 
 [GET]  http://127.0.0.1:5000/fetch_events
