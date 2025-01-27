@@ -23,7 +23,6 @@ QUERY - params
 BODY - raw (JSON)
 {
     "path": "F:/work1/python-test/BabyGirl.jpeg",
-  
 }
 
 ---------EDIT IMAGE--------
@@ -60,5 +59,4 @@ BODY - raw (JSON)
 BODY - raw (JSON)
 {
     "name": "New Year Party",
-  
 }
