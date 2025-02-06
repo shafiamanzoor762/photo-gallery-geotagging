@@ -21,47 +21,60 @@ class LocationController:
             
             location = LocationController.geolocator.reverse((latitude, longitude), language="en")
             if location:
-                  address = location.address  # Extract the address string from the Location object
-                  locations = [part.strip() for part in address.split(',')]  # Split the address and strip each part of extra spaces
-                  required_loc = locations[-4:]  # Get the last 4 parts of the address
+                  address = location.address  
+                  locations = [part.strip() for part in address.split(',')] 
+                  required_loc = locations[-4:]  
                 
                   return required_loc
-            #       return jsonify({"location": required_loc})
-            # else:
-            #     return jsonify({"error": "Location not found"}), 404
+           
         except Exception as e:
-            # Return the error message as JSON
+            
             return jsonify({"error": str(e)}), 500
         
     @staticmethod
     def addLocation(latitude, longitude):
         try:
+            
             location = LocationController.geolocator.reverse((latitude, longitude), language="en")
             if location:
-                address = location.address  # Extract the address string from the Location object
+                address = location.address 
+                locations = [part.strip() for part in address.split(',')]  
+                required_loc = ', '.join(locations[-4:])  
+
                 
-                # Create a new Location entry and store it in the database
+                existing_location = db.session.query(Location).filter_by(latitude=latitude, longitude=longitude).first()
+
+                if existing_location:
+                    
+                    return jsonify({
+                        "status": "Location already exists",
+                        "location_name": existing_location.name
+                    }), 200
+
+                
                 new_location = Location(
-                    name=address,  # Save the full address as the location name
+                    name=required_loc,  
                     latitude=latitude,
                     longitude=longitude
                 )
+
                 
-                # Add the new location object to the session and commit it to the database
                 db.session.add(new_location)
                 db.session.commit()
-                
-                return jsonify({"status": "Location saved successfully", "location_name": address})
+
+                return jsonify({
+                    "status": "Location saved successfully",
+                    "location_name": required_loc
+                }), 201
             else:
                 return jsonify({"error": "Location not found"}), 404
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
-        
+            return jsonify({"error": str(e)}), 500        
 
     @staticmethod
     def group_by_location():
         try:
-            # Query to join Image and Location without JSON functions
+           
             results = (
                 db.session.query(
                     Location.id,
@@ -80,7 +93,7 @@ class LocationController:
                 .all()
             )
 
-            # Grouping data in Python
+            
             grouped_data = {}
             for row in results:
                 location_id = row[0]
@@ -88,7 +101,7 @@ class LocationController:
                 latitude = row[2]
                 longitude = row[3]
 
-                # Initialize the location entry if it doesn't exist
+                
                 if location_name not in grouped_data:
                     grouped_data[location_name] = {
                         'latitude': float(latitude) if latitude else None,
@@ -96,7 +109,6 @@ class LocationController:
                         'images': []
                     }
 
-                # Append image data to the 'images' list for this location
                 grouped_data[location_name]['images'].append({
                     'id': row[4],
                     'path': row[5],
@@ -107,9 +119,7 @@ class LocationController:
                     'location_id': row[10]
                 })
 
-            # Return the response as JSON
             return jsonify(grouped_data), 200
 
         except Exception as e:
-            # Catch any exceptions and return an error response
             return jsonify({"error": str(e)}), 500
