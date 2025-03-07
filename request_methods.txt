@@ -26,9 +26,12 @@ BODY - form-data
 file
 metadata {"is_sync":"", "capture_date":"", "event_date":""}
 
+<<<<<<< HEAD
 Note: if there is no data at initial then 
 metadata {}
 
+=======
+>>>>>>> 83f75b159395e89437aa383aefb5a25eb631dfb1
 ---------DELETE IMAGE--------
 [DELETE] http://127.0.0.1:5000/images/3
 
@@ -43,7 +46,7 @@ metadata {}
 
 
 --------GROUP BY EVENTS-----------------
-[GET] http://127.0.0.1:5000/sortevents
+[GET] http://127.0.0.1:5000/groupbyevents
 
 --------GET ALL EVENTS----------------- 
 [GET]  http://127.0.0.1:5000/fetch_events
@@ -52,6 +55,7 @@ metadata {}
 [POST] http://127.0.0.1:5000/addnewevent
 BODY - raw (JSON)
 {
+<<<<<<< HEAD
     "name": "New Year Party"
 }
 
@@ -71,6 +75,40 @@ BODY - raw (JSON)
     "longitude":"-73.985428"
 }
 
+=======
+    "name": "New Year Party",
+  
+}
+------ addevents -----
+[post]
+
+# {
+#     "id":"5",
+#     "names":"Birthday Party"
+# }
+  
+
+---------------AddnewLocation--------------
+[POST]   http://127.0.0.1:5000/addLocation
+BODY - RAW(JSON)
+{
+    
+   "latitude":"31.5204",
+   "longitude":"74.3587"
+}
+
+-------------get location by lat lon---------------
+[GET]  http://127.0.0.1:5000/get_loc_from_lat_lon
+BODY - RAW(JSON)
+{
+    
+   "latitude":"31.5204",
+   "longitude":"74.3587"
+
+}
+
+
+>>>>>>> 83f75b159395e89437aa383aefb5a25eb631dfb1
 -------------    EDIT IMAGE ----------
 [PUT]   http://127.0.0.1:5000/edit_image
 {

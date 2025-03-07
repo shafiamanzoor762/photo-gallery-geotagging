@@ -80,10 +80,11 @@ def extractImageTags():
     except Exception as exp:
         return jsonify({'error':str(exp)}), 500
 
-ASSETS_FOLDER = 'Assets'  # Specify your uploads folder
+ASSETS_FOLDER = 'Assets'  
 if not os.path.exists(ASSETS_FOLDER):
     os.makedirs(ASSETS_FOLDER)
 # =================== PICTURE CONTROLLER ==============
+
 @app.route('/extract_face', methods=['POST'])
 def extract_face():
      try:
@@ -103,9 +104,6 @@ def extract_face():
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
 
-# @app.route('/recognize_person', methods = ['GET'])
-# def recognize_person():
-#     return PictureController.recognize_person(request.get_json())
 
 @app.route('/recognize_person', methods=['GET'])
 def recognize_person():
@@ -179,40 +177,51 @@ def add_image():
         return jsonify({'error':str(exp)}), 500
 
 
-@app.route('/images/<int:image_id>', methods=['PUT'])
-def edit_image(image_id):
-    data = request.get_json()
-    return ImageController.edit_image(image_id, data)
 
-# Get details of a specific Image (Read)
 @app.route('/images/<int:image_id>', methods=['GET'])
 def get_image_details(image_id):
     return ImageController.get_image_details(image_id)
 
-# Delete an Image (Delete)
 @app.route('/images/<int:image_id>', methods=['DELETE'])
 def delete_image(image_id):
     return ImageController.delete_image(image_id)
 
+@app.route('/sync_images', methods=['GET'])
+def sync_images():
+    return ImageController.sync_images()
+
 # --------------------------EVENT---------------------------------
 @app.route('/fetch_events', methods = ['GET'])
 def fetch_events():
-    # print('am here')
     return EventController.fetch_all_events()
 
+
+
+# [POST] http://127.0.0.1:5000/addnewevent
+# BODY - raw (JSON)
+# {
+#     "name": "New Year Party",
+  
+# }
 #add a new event 
 @app.route('/addnewevent', methods=['POST'])
 def addnewevent():
-    #print("am in addnew event method")
     if request.is_json:
            
            json_data = request.get_json()
            
            if 'name' not in json_data:
              return {"error": "Missing 'name' in JSON data"}, 200
-           #print("Received JSON data:", json_data)
     
     return EventController.addnewevent(json_data)
+
+
+
+# {
+#     "id":"5",
+#     "names":"Birthday Party, abc"
+# }
+  
 
 #add events to an image 
 @app.route('/addevents', methods=['POST'])
@@ -233,15 +242,13 @@ def addevents():
 def sortevents():
     
     
-    return EventController.sortevents()
+    return EventController.groupbyevents()
 
 # ================Location=================
 
 @app.route('/get_loc_from_lat_lon' , methods=['GET'])
 def getlocation_from_lat_lon():
-    # # Extract latitude and longitude from query parameters
-    # latitude = request.args.get('latitude', type=float)
-    # longitude = request.args.get('longitude', type=float)
+    
 
     data = request.get_json()
     latitude =data.get('latitude')
@@ -255,9 +262,7 @@ def getlocation_from_lat_lon():
 # add location
 @app.route('/addLocation' , methods=['POST'])
 def addLocation():
-    # # Extract latitude and longitude from query parameters
-    # latitude = request.args.get('latitude', type=float)
-    # longitude = request.args.get('longitude', type=float)
+    
 
     data = request.get_json()
     latitude =data.get('latitude')
@@ -272,6 +277,8 @@ def addLocation():
 def group_by_location():
     return LocationController.group_by_location()
 
+
+# [GET] http://127.0.0.1:5000/images/2
 
 # Route to serve images
 @app.route('/images/<filename>', methods=['GET'])
