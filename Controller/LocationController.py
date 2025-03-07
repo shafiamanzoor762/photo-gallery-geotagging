@@ -33,25 +33,65 @@ class LocationController:
             # Return the error message as JSON
             return jsonify({"error": str(e)}), 500
         
+    # @staticmethod
+    # def addLocation(latitude, longitude):
+    #     try:
+    #         location = LocationController.geolocator.reverse((latitude, longitude), language="en")
+    #         if location:
+    #             address = location.address  # Extract the address string from the Location object
+                
+    #             # Create a new Location entry and store it in the database
+    #             new_location = Location(
+    #                 name=address,  # Save the full address as the location name
+    #                 latitude=latitude,
+    #                 longitude=longitude
+    #             )
+                
+    #             # Add the new location object to the session and commit it to the database
+    #             db.session.add(new_location)
+    #             db.session.commit()
+                
+    #             return jsonify({"status": "Location saved successfully", "location_name": address})
+    #         else:
+    #             return jsonify({"error": "Location not found"}), 404
+    #     except Exception as e:
+    #         return jsonify({"error": str(e)}), 500
+
     @staticmethod
     def addLocation(latitude, longitude):
         try:
+            # Reverse geocode to get the address
             location = LocationController.geolocator.reverse((latitude, longitude), language="en")
             if location:
-                address = location.address  # Extract the address string from the Location object
-                
-                # Create a new Location entry and store it in the database
+                address = location.address  # Extract the full address string from the Location object
+                locations = [part.strip() for part in address.split(',')]  # Split the address into parts and strip spaces
+                required_loc = ', '.join(locations[-4:])  # Keep only the last 4 components as a single string
+
+                # Check if a location with the same latitude and longitude already exists
+                existing_location = db.session.query(Location).filter_by(latitude=latitude, longitude=longitude).first()
+
+                if existing_location:
+                    # If the location already exists, return a message
+                    return jsonify({
+                        "status": "Location already exists",
+                        "location_name": existing_location.name
+                    }), 200
+
+                # Create a new Location entry with the required location parts
                 new_location = Location(
-                    name=address,  # Save the full address as the location name
+                    name=required_loc,  # Save the processed location string as the location name
                     latitude=latitude,
                     longitude=longitude
                 )
-                
+
                 # Add the new location object to the session and commit it to the database
                 db.session.add(new_location)
                 db.session.commit()
-                
-                return jsonify({"status": "Location saved successfully", "location_name": address})
+
+                return jsonify({
+                    "status": "Location saved successfully",
+                    "location_name": required_loc
+                }), 201
             else:
                 return jsonify({"error": "Location not found"}), 404
         except Exception as e:

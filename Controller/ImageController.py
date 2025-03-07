@@ -236,37 +236,6 @@ class ImageController:
 
 
     #  ===================================
-    
-    # @staticmethod
-    # def group_by_date():
-    #     try:
-    #         # Query all images from the database
-    #         images = Image.query.all()
-
-    #         # Check if any images were returned
-    #         if not images:
-    #             return jsonify({"message": "No images found"}), 200
-
-    #         # Group images by capture_date
-    #         grouped_images = defaultdict(list)
-    #         for image in images:
-    #             grouped_images[image.captureDate].append({
-    #                 'id': image.id,
-    #                 'path': image.path,
-    #                 'is_sync': image.is_sync,
-    #                 'capture_date': image.capture_date,
-    #                 'event_date': image.event_date,
-    #                 'last_modified': image.last_modified,
-    #                 'location_id': image.location_id
-    #             })
-
-    #         # Prepare the response in the desired format
-    #         response = {str(i + 1): records for i, records in enumerate(grouped_images.values())}
-    #         return jsonify(response), 200
-        
-    #     except Exception as e:
-    #         # Catch any exceptions and return an error response
-    #         return jsonify({"error": str(e)}), 500
 
 
     @staticmethod
@@ -300,16 +269,7 @@ class ImageController:
         
         try:
             db.session.commit()
-            return jsonify(image.to_dict()
-        #         {
-        #     'id': image.id,
-        #     'path': image.path,
-        #     'isSync': image.isSync,
-        #     'captureDate': image.captureDate,
-        #     'eventDate': image.eventDate,
-        #     'lastModified': image.lastModified
-        # }
-        ), 200
+            return jsonify(image.to_dict()), 200
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
@@ -321,16 +281,7 @@ class ImageController:
             if not image:
                 return jsonify({'error': 'Image not found'}), 404
             
-            return jsonify(image.to_dict()
-                # {
-                # 'id': image.id,
-                # 'path': image.path,
-                # 'isSync': image.isSync,
-                # 'captureDate': image.captureDate,
-                # 'eventDate': image.eventDate,
-                # 'lastModified': image.lastModified
-                # }
-                )
+            return jsonify(image.to_dict())
     
     @staticmethod
     def delete_image(image_id):

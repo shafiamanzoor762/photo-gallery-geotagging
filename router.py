@@ -98,7 +98,7 @@ def extract_face():
         print(image_path)
         image = Image.open(io.BytesIO(file.read()))
         image.save(image_path)
-        # return PictureController.extract_face(image_path)
+        
         return PictureController.extract_face(image_path)
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
@@ -109,16 +109,27 @@ def extract_face():
 
 @app.route('/recognize_person', methods=['GET'])
 def recognize_person():
-    # Get query parameters from the GET request
-    image_path = request.args.get('image_path')
-    person_name = request.args.get('name', None)
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error':'file not attatched'}), 404
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error':'filename is empty'}), 404
+        
+        image_path = os.path.join('.',ASSETS_FOLDER, file.filename)
+        print(image_path)
+        image = Image.open(io.BytesIO(file.read()))
+        image.save(image_path)
 
-    if not image_path:
-        return make_response(jsonify({'error': 'Missing required parameters'}), 400)
+        name = request.form.get('name')
+        if not name:
+            return jsonify({'error': 'Name not found'}), 400
 
-    # Call the method from the PictureController class
-    return PictureController.recognize_person(image_path, person_name)
-
+        # Call the method from the PictureController class
+        return PictureController.recognize_person(image_path, name)
+    except Exception as exp:
+        return jsonify({'error':str(exp)}), 500
 
 @app.route('/group_by_person', methods=['GET'])
 def group_by_person():
@@ -145,10 +156,27 @@ def group_by_date():
 
 @app.route('/add_image', methods=['POST'])
 def add_image():
-    data = request.get_json()
-    if 'path' not in data:
-        return jsonify({'error': 'Missing required fields'}), 400
-    return ImageController.add_image(data)
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error':'file not attatched'}), 404
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error':'filename is empty'}), 404
+        
+        image_path = os.path.join('.',ASSETS_FOLDER, file.filename)
+        print(image_path)
+        image = Image.open(io.BytesIO(file.read()))
+        image.save(image_path)
+
+        metadata = request.form.get('metadata')
+        if metadata:
+            data=json.loads(metadata)
+        
+        return ImageController.add_image(image_path,data)
+    except Exception as exp:
+        return jsonify({'error':str(exp)}), 500
+
 
 @app.route('/images/<int:image_id>', methods=['PUT'])
 def edit_image(image_id):
@@ -200,7 +228,7 @@ def addevents():
     return EventController.addevents(json_data)
 
 #sorting of events for Dropdown
-@app.route('/sortevents', methods=['GET'])
+@app.route('/group_by_events', methods=['GET'])
 def sortevents():
     
     
