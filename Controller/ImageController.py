@@ -239,10 +239,10 @@ class ImageController:
 
 
     @staticmethod
-    def add_image(data):
+    def add_image(image_path, data):
         try:
             image = Image(
-            path=data['path'],
+            path=image_path,
             is_sync=data.get('is_sync',0),
             capture_date=data.get('capture_date', datetime.utcnow()),
             event_date=data.get('event_date', None),

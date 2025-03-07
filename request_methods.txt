@@ -15,15 +15,19 @@ BODY - form-data
 file
 
 ---------RECOGNIZE PERSON (NAME) OPTIONAL--------
-[GET] http://127.0.0.1:5000/recognize_person?image_path=F:/semester_7/python-test/stored-faces/f628933e6a4440b3b570bd85f69a9f93.jpg&name=
-QUERY - params
+[GET] http://127.0.0.1:5000/recognize_person
+BODY - form-data
+file
+name
 
 ---------ADD IMAGE--------
 [POST] http://127.0.0.1:5000/add_image
-BODY - raw (JSON)
-{
-    "path": "F:/work1/python-test/BabyGirl.jpeg",
-}
+BODY - form-data
+file
+metadata {"is_sync":"", "capture_date":"", "event_date":""}
+
+Note: if there is no data at initial then 
+metadata {}
 
 ---------DELETE IMAGE--------
 [DELETE] http://127.0.0.1:5000/images/3
