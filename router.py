@@ -237,8 +237,8 @@ def addevents():
     
     return EventController.addevents(json_data)
 
-#sorting of events for Dropdown
-@app.route('/group_by_events', methods=['GET'])
+#sorting of events for making folders
+@app.route('/groupbyevents', methods=['GET'])
 def sortevents():
     
     
