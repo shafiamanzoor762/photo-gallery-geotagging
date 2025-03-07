@@ -144,8 +144,39 @@ def add_image():
     if 'path' not in data:
         return jsonify({'error': 'Missing required fields'}), 400
     return ImageController.add_image(data)
+#=====================dummy method after sync -------------------------
 
+@app.route('/upload_image', methods=['POST'])
+def upload_file():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'File not attached'}), 400
 
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'Filename is empty'}), 400
+
+        # Read file content once
+        file_bytes = file.read()
+        
+        # Convert image if necessary
+        image = Image.open(io.BytesIO(file_bytes))
+        if image.mode == 'RGBA':
+            image = image.convert('RGB')
+
+        # Ensure 'assets' folder exists
+        ASSETS_FOLDER = 'Assets'
+        os.makedirs(ASSETS_FOLDER, exist_ok=True)
+
+        file_path = os.path.join(ASSETS_FOLDER, file.filename)
+        with open(file_path, "wb") as f:
+            f.write(file_bytes)
+        
+        ImageController.add_image({"path": file_path})
+        return jsonify({"message": "File uploaded successfully", "filename": file.filename})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 @app.route('/images/<int:image_id>', methods=['GET'])
 def get_image_details(image_id):
     return ImageController.get_image_details(image_id)
