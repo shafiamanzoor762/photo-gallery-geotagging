@@ -219,15 +219,14 @@ class ImageController:
                     image_paths.append(image.path)
 
         return jsonify({"paths": image_paths}), 200
-
-   
-
+    
+    #  ===================================
 
     @staticmethod
-    def add_image(data):
+    def add_image(image_path, data):
         try:
             image = Image(
-            path=data['path'],
+            path=image_path,
             is_sync=data.get('is_sync',0),
             capture_date=data.get('capture_date', datetime.utcnow()),
             event_date=data.get('event_date', None),
@@ -239,8 +238,6 @@ class ImageController:
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
-        
-   
         
     @staticmethod
     def get_image_details(image_id):

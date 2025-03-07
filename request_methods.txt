@@ -15,17 +15,23 @@ BODY - form-data
 file
 
 ---------RECOGNIZE PERSON (NAME) OPTIONAL--------
-[GET] http://127.0.0.1:5000/recognize_person?image_path=F:/semester_7/python-test/stored-faces/f628933e6a4440b3b570bd85f69a9f93.jpg&name=
-QUERY - params
+[GET] http://127.0.0.1:5000/recognize_person
+BODY - form-data
+file
+name
 
 ---------ADD IMAGE--------
 [POST] http://127.0.0.1:5000/add_image
-BODY - raw (JSON)
-{
-    "path": "F:/work1/python-test/BabyGirl.jpeg",
-  
-}
+BODY - form-data
+file
+metadata {"is_sync":"", "capture_date":"", "event_date":""}
 
+<<<<<<< HEAD
+Note: if there is no data at initial then 
+metadata {}
+
+=======
+>>>>>>> 83f75b159395e89437aa383aefb5a25eb631dfb1
 ---------DELETE IMAGE--------
 [DELETE] http://127.0.0.1:5000/images/3
 
@@ -49,6 +55,27 @@ BODY - raw (JSON)
 [POST] http://127.0.0.1:5000/addnewevent
 BODY - raw (JSON)
 {
+<<<<<<< HEAD
+    "name": "New Year Party"
+}
+
+-----------  get location from lat and lon -------------
+[GET]  http://127.0.0.1:5000/get_loc_from_lat_lon 
+BODY - raw (JSON)
+{
+    "latitude":"40.748817",
+    "longitude":"-73.985428"
+} 
+
+------------- ADD LOCATION --------------
+[POST]  http://127.0.0.1:5000/addLocation
+
+{
+    "latitude":"40.748817",
+    "longitude":"-73.985428"
+}
+
+=======
     "name": "New Year Party",
   
 }
@@ -81,6 +108,7 @@ BODY - RAW(JSON)
 }
 
 
+>>>>>>> 83f75b159395e89437aa383aefb5a25eb631dfb1
 -------------    EDIT IMAGE ----------
 [PUT]   http://127.0.0.1:5000/edit_image
 {

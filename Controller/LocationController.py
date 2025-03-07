@@ -31,6 +31,30 @@ class LocationController:
             
             return jsonify({"error": str(e)}), 500
         
+    # @staticmethod
+    # def addLocation(latitude, longitude):
+    #     try:
+    #         location = LocationController.geolocator.reverse((latitude, longitude), language="en")
+    #         if location:
+    #             address = location.address  # Extract the address string from the Location object
+                
+    #             # Create a new Location entry and store it in the database
+    #             new_location = Location(
+    #                 name=address,  # Save the full address as the location name
+    #                 latitude=latitude,
+    #                 longitude=longitude
+    #             )
+                
+    #             # Add the new location object to the session and commit it to the database
+    #             db.session.add(new_location)
+    #             db.session.commit()
+                
+    #             return jsonify({"status": "Location saved successfully", "location_name": address})
+    #         else:
+    #             return jsonify({"error": "Location not found"}), 404
+    #     except Exception as e:
+    #         return jsonify({"error": str(e)}), 500
+
     @staticmethod
     def addLocation(latitude, longitude):
         try:
@@ -50,15 +74,13 @@ class LocationController:
                         "status": "Location already exists",
                         "location_name": existing_location.name
                     }), 200
-
                 
                 new_location = Location(
-                    name=required_loc,  
+                    name=required_loc,
                     latitude=latitude,
                     longitude=longitude
                 )
 
-                
                 db.session.add(new_location)
                 db.session.commit()
 
