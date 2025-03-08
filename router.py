@@ -241,8 +241,8 @@ def addevents():
     
     return EventController.addevents(json_data)
 
-#sorting of events for Dropdown
-@app.route('/group_by_events', methods=['GET'])
+#sorting of events for making folders
+@app.route('/groupbyevents', methods=['GET'])
 def sortevents():
     
     
@@ -293,6 +293,38 @@ def get_image(filename):
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
 
+#=====================dummy method after sync -------------------------
+
+@app.route('/upload_image', methods=['POST'])
+def upload_file():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'File not attached'}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'Filename is empty'}), 400
+
+        # Read file content once
+        file_bytes = file.read()
+        
+        # Convert image if necessary
+        image = Image.open(io.BytesIO(file_bytes))
+        if image.mode == 'RGBA':
+            image = image.convert('RGB')
+
+        # Ensure 'assets' folder exists
+        ASSETS_FOLDER = 'Assets'
+        os.makedirs(ASSETS_FOLDER, exist_ok=True)
+
+        file_path = os.path.join(ASSETS_FOLDER, file.filename)
+        with open(file_path, "wb") as f:
+            f.write(file_bytes)
+        
+        ImageController.add_image({"path": file_path})
+        return jsonify({"message": "File uploaded successfully", "filename": file.filename})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 # only accept localhost
 if __name__ == '__main__':
     app.run(debug=True)
