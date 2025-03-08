@@ -129,6 +129,16 @@ class ImageController:
 # }
 
 
+# {
+#     "name": ["Ali", "amna"],
+#     "gender": "F",
+#     "events": ["Birthday Party"],
+#     "capture_date": ["2023-12-01"],
+#     "location": {
+#     "latitude":"51.50735100",
+#     "longitude":"-0.12775800"
+# } 
+# }
     @staticmethod
     def searching_on_image():
         data = request.get_json()

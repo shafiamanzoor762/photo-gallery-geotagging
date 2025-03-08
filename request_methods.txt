@@ -62,3 +62,57 @@ BODY - raw (JSON)
     "name": "New Year Party",
   
 }
+
+-----------  get location from lat and lon -------------
+[GET]  http://127.0.0.1:5000/get_loc_from_lat_lon 
+BODY - raw (JSON)
+{
+    "latitude":"40.748817",
+    "longitude":"-73.985428"
+} 
+
+------------- ADD LOCATION --------------
+[POST]  http://127.0.0.1:5000/addLocation
+
+{
+    "latitude":"40.748817",
+    "longitude":"-73.985428"
+}
+
+-------------    EDIT IMAGE ----------
+[PUT]   http://127.0.0.1:5000/edit_image
+{
+  "2": {
+    "persons_id": [
+      {"id": 1, "name": "Ali","gender": "M"},
+      {"id": 2, "name": "Amna","gender": "F"}
+    ],
+    "event_name": "iNDEPENDENCE DAY",
+    "event_date": "2025-01-17",
+    "location": ["New yORK", "33.1234", "73.5678"]
+  }
+}
+
+
+--------------  searching_on_image ON image ------------
+
+[Get] http://127.0.0.1:5000/searching_on_image
+Body - raw 
+
+
+{
+    "name": ["Ali","Amna"],
+    "gender": "F",
+    "events": [""],
+    "capture_date": [""],
+    "location": {
+        "latitude": "",
+        "longitude": ""
+    }
+}
+
+--------------- Group by person ----------
+
+[GET]  http://127.0.0.1:5000/group_by_person
+
+--------------

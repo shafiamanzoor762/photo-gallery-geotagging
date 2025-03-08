@@ -150,10 +150,10 @@ def add_image():
         return jsonify({'error': 'Missing required fields'}), 400
     return ImageController.add_image(data)
 
-@app.route('/images/<int:image_id>', methods=['PUT'])
-def edit_image(image_id):
-    data = request.get_json()
-    return ImageController.edit_image(image_id, data)
+# @app.route('/images/<int:image_id>', methods=['PUT'])
+# def edit_image(image_id):
+#     data = request.get_json()
+#     return ImageController.edit_image(image_id, data)
 
 # Get details of a specific Image (Read)
 @app.route('/images/<int:image_id>', methods=['GET'])
@@ -171,6 +171,9 @@ def fetch_events():
     # print('am here')
     return EventController.fetch_all_events()
 
+# {
+#      "name":"Eid"
+# }
 #add a new event 
 @app.route('/addnewevent', methods=['POST'])
 def addnewevent():
@@ -184,6 +187,12 @@ def addnewevent():
            #print("Received JSON data:", json_data)
     
     return EventController.addnewevent(json_data)
+
+
+# {
+#     "id":  "1",
+#     "names": "EID,PICNIC"
+# }
 
 #add events to an image 
 @app.route('/addevents', methods=['POST'])
@@ -243,7 +252,7 @@ def addLocation():
 def group_by_location():
     return LocationController.group_by_location()
 
-
+# http://127.0.0.1:5000/images/2
 # Route to serve images
 @app.route('/images/<filename>', methods=['GET'])
 def get_image(filename):

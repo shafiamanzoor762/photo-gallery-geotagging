@@ -19,7 +19,7 @@ class PictureController():
     @staticmethod
     def extract_face(image_path):
         # Load Haar cascade algorithm
-        alg = "haarcascade_frontalface_default.xml"
+        alg = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\haarcascade_frontalface_default.xml"
         haar_cascade = cv2.CascadeClassifier(alg)
 
         # Load the image in color (for saving) and grayscale (for face detection)
@@ -32,9 +32,9 @@ class PictureController():
         )
 
         # Directory to store the face encodings and image filenames
-        encodings_file = './stored-faces/person.txt'
-        if not os.path.exists('./stored-faces'):
-            os.makedirs('./stored-faces')
+        encodings_file = 'E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces\\person.txt'
+        if not os.path.exists('E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces'):
+            os.makedirs('E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces')
 
         # Load previously stored encodings from the text file (if it exists)
         stored_encodings = []
@@ -55,7 +55,7 @@ class PictureController():
             cropped_face = gray_img[y:y + h, x:x + w]
 
             # Save the cropped face image in the directory
-            target_file_name = f'./stored-faces/{save_file}.jpg'
+            target_file_name = f'E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces\\{save_file}.jpg'
             cv2.imwrite(target_file_name, cropped_face)
 
             # Convert the cropped face to RGB (face_recognition uses RGB images)
@@ -112,7 +112,7 @@ class PictureController():
      recognition_results = []
      new_lines = []
     # Read stored encodings from person.txt
-     with open('./stored-faces/person.txt', 'r') as file:
+     with open('E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces\\person.txt', 'r') as file:
         lines = file.readlines()
         for line in lines:
             parts = line.split(';')
