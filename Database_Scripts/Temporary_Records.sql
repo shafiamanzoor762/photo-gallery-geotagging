@@ -50,9 +50,7 @@ INSERT INTO Link (person1_id, person2_id) VALUES
 
 
 
-=====================================
-
-
+-----------------------------------------------------------new-------------------------------------------------
 -- Insert records into LocationHistory table
 INSERT INTO LocationHistory (id, name, latitude, longitude, version_no) VALUES
 (1, 'Park', 40.712776, -74.005974, 1),

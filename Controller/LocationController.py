@@ -67,6 +67,11 @@ class LocationController:
                     "status": "Location saved successfully",
                     "location_name": required_loc
                 }), 201
+
+                return jsonify({
+                    "status": "Location saved successfully",
+                    "location_name": required_loc
+                }), 201
             else:
                 return jsonify({"error": "Location not found"}), 404
         except Exception as e:
@@ -76,7 +81,7 @@ class LocationController:
     @staticmethod
     def group_by_location():
         try:
-            # Query to join Image and Location without JSON functions
+           
             results = (
                 db.session.query(
                     Location.id,
@@ -95,7 +100,7 @@ class LocationController:
                 .all()
             )
 
-            # Grouping data in Python
+            
             grouped_data = {}
             for row in results:
                 location_id = row[0]
@@ -103,7 +108,7 @@ class LocationController:
                 latitude = row[2]
                 longitude = row[3]
 
-                # Initialize the location entry if it doesn't exist
+                
                 if location_name not in grouped_data:
                     grouped_data[location_name] = {
                         'latitude': float(latitude) if latitude else None,
@@ -111,7 +116,6 @@ class LocationController:
                         'images': []
                     }
 
-                # Append image data to the 'images' list for this location
                 grouped_data[location_name]['images'].append({
                     'id': row[4],
                     'path': row[5],
@@ -122,9 +126,7 @@ class LocationController:
                     'location_id': row[10]
                 })
 
-            # Return the response as JSON
             return jsonify(grouped_data), 200
 
         except Exception as e:
-            # Catch any exceptions and return an error response
             return jsonify({"error": str(e)}), 500

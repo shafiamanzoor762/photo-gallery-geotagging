@@ -10,7 +10,6 @@ from sqlalchemy import func
 from config import db
 
 from Model.ImagePerson import ImagePerson
-# Person , Image  # Correct import path for your model
 
 
 class PictureController():
@@ -156,7 +155,7 @@ class PictureController():
     @staticmethod
     def group_by_person():
         try:
-            # Query all data from the ImagePerson table
+            
             records = db.session.query(ImagePerson).all()
 
             # Group data by person_id
@@ -166,13 +165,12 @@ class PictureController():
                     grouped_data[record.person_id] = []
                 grouped_data[record.person_id].append(record.image_id)
 
-            # Convert the grouped data to the desired format
-            # Convert the grouped data to the desired format
+            
             result = []
             for person_id, images in grouped_data.items():
                jsonify(result.append({"Person_id": person_id, "Images": images}))
 
-            # Ensure that the order is as expected
+            
             return (result)
         except Exception as e:
             print(f"Error: {e}")
