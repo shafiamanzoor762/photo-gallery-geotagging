@@ -132,7 +132,7 @@ def group_by_person():
 def edit_Image():
     return ImageController.edit_image_data()
 
-@app.route('/searching_on_image', methods=['GET'])
+@app.route('/searching_on_image', methods=['POST'])
 def searching():
     return ImageController.searching_on_image()
 
