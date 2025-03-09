@@ -25,15 +25,20 @@ BODY - raw (JSON)
     "path": "F:/work1/python-test/BabyGirl.jpeg",
   
 }
-----------------remove this from here --------------------------
+
 ---------EDIT IMAGE--------
-[PUT] http://127.0.0.1:5000/images/2
+[POST] http://127.0.0.1:5000/edit_image
 BODY - raw (JSON)
 {
-    "path": "F:/semester_7/python-test/test_data/BabyGirl.jpeg",
-    "isSync": false,
-    "captureDate": "2024-11-02",
-    "eventDate": "2024-11-02"
+    "1": {
+        "event_names": ["Concert", "Art Exhibition", "Tech Conference"],
+        "event_date": "2024-03-08",
+        "location": ["Central Park", "40.785091", "-73.968285"],
+        "persons_id": [
+            { "id": 1, "name": "Alice", "gender": "F" },
+            { "id": 2, "name": "Bob", "gender": "M" }
+        ]
+    }
 }
 -------------------to here -----------------------
 ---------DELETE IMAGE--------
@@ -59,12 +64,11 @@ BODY - raw (JSON)
 [POST] http://127.0.0.1:5000/addnewevent
 BODY - raw (JSON)
 {
-<<<<<<< HEAD
     "name": "New Year Party"
 }
 
 -----------  get location from lat and lon -------------
-[GET]  http://127.0.0.1:5000/get_loc_from_lat_lon 
+[POST]  http://127.0.0.1:5000/get_loc_from_lat_lon 
 BODY - raw (JSON)
 {
     "latitude":"40.748817",
@@ -77,10 +81,6 @@ BODY - raw (JSON)
 {
     "latitude":"40.748817",
     "longitude":"-73.985428"
-}
-
-=======
     "name": "New Year Party",
-  
 }
 
