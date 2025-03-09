@@ -137,7 +137,7 @@ def group_by_person():
 
 # --------------------------IMAGE---------------------------------
 
-@app.route('/edit_image', methods=['PUT'])
+@app.route('/edit_image', methods=['POST'])
 def edit_Image():
     return ImageController.edit_image_data()
 
@@ -250,7 +250,7 @@ def sortevents():
 
 # ================Location=================
 
-@app.route('/get_loc_from_lat_lon' , methods=['GET'])
+@app.route('/get_loc_from_lat_lon' , methods=['POST'])
 def getlocation_from_lat_lon():
     
 
@@ -261,7 +261,7 @@ def getlocation_from_lat_lon():
     if latitude is None or longitude is None:
         return jsonify({"error": "Latitude and Longitude are required"}), 400
     else:
-        return LocationController.get_location_from_lat_lon(latitude,longitude)
+        return jsonify(LocationController.get_location_from_lat_lon(latitude,longitude))
 
 # add location
 @app.route('/addLocation' , methods=['POST'])
