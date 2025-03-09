@@ -10,6 +10,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:123@WINDOWS-R5NK4VK\S
 
 #aimen db connection string 
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:123@DESKTOP-R50Q2I1\\SQLEXPRESS/PhotoGallery?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
+
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:123@DESKTOP-R50Q2I1\\SQLEXPRESS/PhotoGallery?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:12345@DESKTOP-4S96KP6\SQLEXPRESS/PhotoGallery1?driver=ODBC+Driver+17+for+SQL+Server'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)

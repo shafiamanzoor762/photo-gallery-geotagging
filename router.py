@@ -141,7 +141,7 @@ def group_by_person():
 def edit_Image():
     return ImageController.edit_image_data()
 
-@app.route('/searching_on_image', methods=['GET'])
+@app.route('/searching_on_image', methods=['POST'])
 def searching():
     return ImageController.searching_on_image()
 
@@ -317,8 +317,9 @@ def upload_file():
         ASSETS_FOLDER = 'Assets'
         os.makedirs(ASSETS_FOLDER, exist_ok=True)
 
-        file_path = os.path.join(ASSETS_FOLDER, file.filename)
-        with open(file_path, "wb") as f:
+        file_paths = os.path.join(ASSETS_FOLDER, file.filename)
+        file_path="images/"+file.filename
+        with open(file_paths, "wb") as f:
             f.write(file_bytes)
         
         ImageController.add_image({"path": file_path})

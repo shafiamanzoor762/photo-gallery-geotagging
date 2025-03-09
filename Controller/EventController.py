@@ -9,8 +9,8 @@ class EventController():
     def fetch_all_events():
         events = Event.query.all()
         return [{
-        'event_id':e.id,
-        'name': e.name} for e in events]
+        'Id':e.id,
+        'Name': e.name} for e in events]
     
     @staticmethod
     def addnewevent(json_data):
