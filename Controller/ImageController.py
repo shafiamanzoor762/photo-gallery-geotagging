@@ -128,7 +128,7 @@ class ImageController:
 
 # {
 #     "name": ["Ali", "amna"],
-#     "gender": "F",
+#     "gender": ["F"],
 #     "events": ["Birthday Party"],
 #     "capture_date": ["2023-12-01"],
 #     "location": {
@@ -137,35 +137,38 @@ class ImageController:
 # } 
 # }
     @staticmethod
-    def searching_on_image():
+    def searching_on_image(): 
         data = request.get_json()
 
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-       
+        # Extract parameters
         person_names = data.get('name', [])  
-        gender = data.get('gender')
+        gender = data.get('gender', [])  # Now a list
         events = data.get('events', [])
         capture_dates = data.get('capture_date', [])
         locations = data.get('location', {})
 
-       
         person_ids = []
         image_ids = []
 
-       
+        # Search for persons
         if person_names:
             for name in person_names:
-                persons = Person.query.filter(
-                    Person.name == name,
-                    Person.gender == gender if gender else True  
-                ).all()  
+                query = Person.query.filter(Person.name == name)
+
+                # If gender is provided and is a list, filter by it
+                if gender:
+                    query = query.filter(Person.gender.in_(gender))  # ✅ FIXED
+
+                persons = query.all()
+
                 for person in persons:
                     if person:  
                         person_ids.append(person.id)  
 
-        
+        # Search for images linked to persons
         if person_ids:
             images = (
                 db.session.query(Image.id) 
@@ -175,15 +178,14 @@ class ImageController:
                 .all()
             )
 
-            
             for image in images:
                 image_ids.append(image.id)
 
-        
+        # Search for images linked to events
         event_ids = []
         if events:
             for event_name in events:
-                event = Event.query.filter(Event.name == event_name).first()  
+                event = Event.query.filter(Event.name == event_name).first()
                 if event:
                     event_ids.append(event.id)
 
@@ -199,14 +201,14 @@ class ImageController:
                 for image in images_of_events:
                     image_ids.append(image.id)
 
-       
+        # Search for images by capture date
         if capture_dates:
             for date in capture_dates:
                 image_dates = Image.query.filter(Image.capture_date == date).all()
                 for image in image_dates:
                     image_ids.append(image.id)
 
-       
+        # Search for images by location
         if locations:
             latitude = locations.get('latitude')
             longitude = locations.get('longitude')
@@ -220,7 +222,7 @@ class ImageController:
                         for image in images_at_location:
                             image_ids.append(image.id)
 
-        
+        # Retrieve final image paths
         image_paths = []
         if image_ids:
             images = Image.query.filter(Image.id.in_(image_ids)).all()
@@ -228,7 +230,100 @@ class ImageController:
                 if image:  
                     image_paths.append(image.path)
 
-        return jsonify({"paths": image_paths}), 200
+        return jsonify({"paths": image_paths}), 200  
+
+    # def searching_on_image():
+    #     data = request.get_json()
+
+    #     if not data:
+    #         return jsonify({"error": "No data provided"}), 400
+
+       
+    #     person_names = data.get('name', [])  
+    #     gender = data.get('gender')
+    #     events = data.get('events', [])
+    #     capture_dates = data.get('capture_date', [])
+    #     locations = data.get('location', {})
+
+       
+    #     person_ids = []
+    #     image_ids = []
+
+       
+    #     if person_names:
+    #         for name in person_names:
+    #             persons = Person.query.filter(
+    #                 Person.name == name,
+    #                 Person.gender == gender if gender else True  
+    #             ).all()  
+    #             for person in persons:
+    #                 if person:  
+    #                     person_ids.append(person.id)  
+
+        
+    #     if person_ids:
+    #         images = (
+    #             db.session.query(Image.id) 
+    #             .join(ImagePerson, ImagePerson.image_id == Image.id)  
+    #             .join(Person, Person.id == ImagePerson.person_id)  
+    #             .filter(ImagePerson.person_id.in_(person_ids))  
+    #             .all()
+    #         )
+
+            
+    #         for image in images:
+    #             image_ids.append(image.id)
+
+        
+    #     event_ids = []
+    #     if events:
+    #         for event_name in events:
+    #             event = Event.query.filter(Event.name == event_name).first()  
+    #             if event:
+    #                 event_ids.append(event.id)
+
+    #         if event_ids:
+    #             images_of_events = (
+    #                 db.session.query(Image.id)
+    #                 .join(ImageEvent, ImageEvent.image_id == Image.id)
+    #                 .join(Event, Event.id == ImageEvent.event_id)
+    #                 .filter(ImageEvent.event_id.in_(event_ids))
+    #                 .all()
+    #             )
+
+    #             for image in images_of_events:
+    #                 image_ids.append(image.id)
+
+       
+    #     if capture_dates:
+    #         for date in capture_dates:
+    #             image_dates = Image.query.filter(Image.capture_date == date).all()
+    #             for image in image_dates:
+    #                 image_ids.append(image.id)
+
+       
+    #     if locations:
+    #         latitude = locations.get('latitude')
+    #         longitude = locations.get('longitude')
+    #         if latitude and longitude:
+    #             loc_name = LocationController.get_location_from_lat_lon(latitude, longitude)
+
+    #             if loc_name:
+    #                 location = Location.query.filter(Location.name == loc_name).first()
+    #                 if location:
+    #                     images_at_location = Image.query.filter(Image.location_id == location.id).all()
+    #                     for image in images_at_location:
+    #                         image_ids.append(image.id)
+
+        
+    #     image_paths = []
+    #     if image_ids:
+    #         images = Image.query.filter(Image.id.in_(image_ids)).all()
+    #         for image in images:
+    #             if image:  
+    #                 image_paths.append(image.path)
+
+    #     return jsonify({"paths": image_paths}), 200
     
     #  ===================================
 
