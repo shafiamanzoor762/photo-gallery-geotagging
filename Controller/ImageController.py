@@ -248,6 +248,84 @@ class ImageController:
             
             return jsonify(image.to_dict())
     
+    # @staticmethod
+    # def get_image_complete_details(image_id):
+    #     image = Image.query.filter_by(id=image_id).first()
+    #     if not image:
+    #         return jsonify({"error": "Image not found"}), 404
+
+    #     location_data = None
+    #     if image.location:
+    #         location_data = {
+    #         "id": image.location.id,
+    #         "name": image.location.name,
+    #         "latitude": float(image.location.latitude),
+    #         "longitude": float(image.location.longitude)
+    #     }
+
+    #     persons = [
+    #         {"id": person.person.id, "name": person.person.name, "path": person.person.path, "gender": person.person.gender}
+    #         for person in ImagePerson.query.filter_by(image_id=image.id).all()
+    #     ]
+    
+    #     events = [
+    #         {"id": event.event.id, "name": event.event.name}
+    #         for event in ImageEvent.query.filter_by(image_id=image.id).all()
+    #     ]
+
+    #     image_data = {
+    #         "id": image.id,
+    #         "path": image.path,
+    #         "is_sync": image.is_sync,
+    #         "capture_date": image.capture_date.strftime('%Y-%m-%d') if image.capture_date else None,
+    #         "event_date": image.event_date.strftime('%Y-%m-%d') if image.event_date else None,
+    #         "last_modified": image.last_modified.strftime('%Y-%m-%d') if image.last_modified else None,
+    #         "location": location_data,
+    #         "persons": persons,
+    #         "events": events
+    #     }
+    
+    #     return jsonify(image_data)
+
+    @staticmethod
+    def get_image_complete_details(image_id):
+        image = Image.query.get(image_id)
+        if not image:
+            return jsonify({"error": "Image not found"}), 404
+
+        location_data = None
+        if image.location:
+            location_data = {
+            "id": image.location.id,
+            "name": image.location.name,
+            "latitude": float(image.location.latitude),
+            "longitude": float(image.location.longitude)
+            }
+
+        persons = [
+        {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender}
+        for person in image.persons
+        ]
+    
+        events = [
+        {"id": event.id, "name": event.name}
+        for event in image.events
+        ]
+
+        image_data = {
+        "id": image.id,
+        "path": image.path,
+        "is_sync": image.is_sync,
+        "capture_date": image.capture_date.strftime('%Y-%m-%d') if image.capture_date else None,
+        "event_date": image.event_date.strftime('%Y-%m-%d') if image.event_date else None,
+        "last_modified": image.last_modified.strftime('%Y-%m-%d %H:%M:%S') if image.last_modified else None,
+        "location": location_data,
+        "persons": persons,
+        "events": events
+        }
+    
+        return jsonify(image_data)
+
     @staticmethod
     def delete_image(image_id):
             image = Image.query.get(image_id)
