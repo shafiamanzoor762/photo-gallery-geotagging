@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file,make_response
+from flask import Flask, request, jsonify, send_file,make_response, send_from_directory
 from PIL import Image
 import io
 from io import BytesIO
@@ -84,6 +84,7 @@ ASSETS_FOLDER = 'Assets'  # Specify your uploads folder
 if not os.path.exists(ASSETS_FOLDER):
     os.makedirs(ASSETS_FOLDER)
 # =================== PICTURE CONTROLLER ==============
+
 @app.route('/extract_face', methods=['POST'])
 def extract_face():
      try:
@@ -146,14 +147,10 @@ def group_by_date():
 @app.route('/add_image', methods=['POST'])
 def add_image():
     data = request.get_json()
-    if 'path' not in data or 'is_sync' not in data:
+    if 'path' not in data:
         return jsonify({'error': 'Missing required fields'}), 400
     return ImageController.add_image(data)
 
-@app.route('/images/<int:image_id>', methods=['PUT'])
-def edit_image(image_id):
-    data = request.get_json()
-    return ImageController.edit_image(image_id, data)
 
 # Get details of a specific Image (Read)
 @app.route('/images/<int:image_id>', methods=['GET'])
@@ -168,20 +165,20 @@ def delete_image(image_id):
 # --------------------------EVENT---------------------------------
 @app.route('/fetch_events', methods = ['GET'])
 def fetch_events():
-    print('am here')
+    # print('am here')
     return EventController.fetch_all_events()
 
 #add a new event 
 @app.route('/addnewevent', methods=['POST'])
 def addnewevent():
-    print("am in addnew event method")
+    #print("am in addnew event method")
     if request.is_json:
            
            json_data = request.get_json()
            
            if 'name' not in json_data:
              return {"error": "Missing 'name' in JSON data"}, 200
-           print("Received JSON data:", json_data)
+           #print("Received JSON data:", json_data)
     
     return EventController.addnewevent(json_data)
 
@@ -200,18 +197,11 @@ def addevents():
     return EventController.addevents(json_data)
 
 #sorting of events for Dropdown
-@app.route('/sortevents', methods=['POST'])
+@app.route('/groupbyevents', methods=['GET'])
 def sortevents():
     
-    if request.is_json:
-           
-           json_data = request.get_json()
-           
-           if 'name' not in json_data :
-             return {"error": "Missing 'name' in JSON data"}, 200
-           print("Received JSON data:", json_data)
     
-    return EventController.sortevents(json_data)
+    return EventController.groupbyevents()
 
 # ================Location=================
 
@@ -250,6 +240,15 @@ def addLocation():
 def group_by_location():
     return LocationController.group_by_location()
 
+
+# Route to serve images
+@app.route('/images/<filename>', methods=['GET'])
+def get_image(filename):
+    try:
+        # Serve the image from the Assets folder
+        return send_from_directory(ASSETS_FOLDER, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
 
 # only accept localhost
 if __name__ == '__main__':

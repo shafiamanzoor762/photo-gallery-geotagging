@@ -23,11 +23,9 @@ QUERY - params
 BODY - raw (JSON)
 {
     "path": "F:/work1/python-test/BabyGirl.jpeg",
-    "is_sync": true,
-    "capture_date": "2024-11-01",
-    "event_date": "2024-11-02"
+  
 }
-
+----------------remove this from here --------------------------
 ---------EDIT IMAGE--------
 [PUT] http://127.0.0.1:5000/images/2
 BODY - raw (JSON)
@@ -37,7 +35,7 @@ BODY - raw (JSON)
     "captureDate": "2024-11-02",
     "eventDate": "2024-11-02"
 }
-
+-------------------to here -----------------------
 ---------DELETE IMAGE--------
 [DELETE] http://127.0.0.1:5000/images/3
 
@@ -49,6 +47,23 @@ BODY - raw (JSON)
 
 ---------GROUP BY IMAGE LOCATION--------
 [GET] http://127.0.0.1:5000/group_by_location
+
+
+--------GROUP BY EVENTS-----------------
+[GET] http://127.0.0.1:5000/groupbyevents
+
+--------GET ALL EVENTS----------------- 
+[GET]  http://127.0.0.1:5000/fetch_events
+
+---------Add new event in database(dropdown of events)-------------
+[POST] http://127.0.0.1:5000/addnewevent
+BODY - raw (JSON)
+{
+    "name": "New Year Party",
+  
+}
+
+
 
 --------addevent-----
 http://127.0.0.1:5000/addnewevent ,body,raw
