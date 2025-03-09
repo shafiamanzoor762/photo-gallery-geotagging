@@ -17,19 +17,25 @@ file
 ---------RECOGNIZE PERSON (NAME) OPTIONAL--------
 [GET] http://127.0.0.1:5000/recognize_person?image_path=F:/semester_7/python-test/stored-faces/f628933e6a4440b3b570bd85f69a9f93.jpg&name=
 QUERY - params
-store face sy file lni ha image wali
+
 ---------ADD IMAGE--------
 [POST] http://127.0.0.1:5000/add_image
-BODY - raw (JSON) or picture ke slashes b tk krni ha
+BODY - raw (JSON)
 {
     "path": "F:/work1/python-test/BabyGirl.jpeg",
-    //OPTIONAL
-       "is_sync": 1,
-    "capture_date": "2025-01-27T12:00:00",
-    "event_date": "2025-01-28T12:00:00"
   
 }
-
+----------------remove this from here --------------------------
+---------EDIT IMAGE--------
+[PUT] http://127.0.0.1:5000/images/2
+BODY - raw (JSON)
+{
+    "path": "F:/semester_7/python-test/test_data/BabyGirl.jpeg",
+    "isSync": false,
+    "captureDate": "2024-11-02",
+    "eventDate": "2024-11-02"
+}
+-------------------to here -----------------------
 ---------DELETE IMAGE--------
 [DELETE] http://127.0.0.1:5000/images/3
 
@@ -53,60 +59,10 @@ BODY - raw (JSON) or picture ke slashes b tk krni ha
 [POST] http://127.0.0.1:5000/addnewevent
 BODY - raw (JSON)
 {
-    "name": "New Year Party",
-  
+<<<<<<< HEAD
+    "name": "New Year Party"
 }
 
-
-
---------addevent-----
-http://127.0.0.1:5000/addnewevent ,body,raw
-{
-  "name": "Tech Conference 2025",
-  "date": "2025-06-15",
-  "location": "San Francisco, CA",
-  "description": "An exciting event for tech enthusiasts!"
-}
-------fetchevent------
-http://127.0.0.1:5000/fetch_events
-query,params
-
-------group_by_person------
-http://127.0.0.1:5000/group_by_person
-query,params ,get
-
-
-
-----------search-on-image----------
-http://127.0.0.1:5000/searching_on_image
-get,body,row,json
-{"name": ["Alina", "Abeeha"],
-"gender": "F",
- "events": ["Conference"],
- "capture_date": ["2023-12-01", "2023-09-01"],
-  "location": {
-    "latitude": 51.50735100,
-    "longitude": -0.12775800
-  }
- }
- --------get_location_from_lat_lon--------
- http://localhost:5000/get_loc_from_lat_lon?latitude=34.0522&longitude=-118.2437
- get functions
- -----------addLocation---------------
- http://127.0.0.1:5000/addLocation
- body,row,lat,long
- {
-   
-  "latitude": 33.6844,
-  "longitude": 73.0479
-}
-
- -----group_by_location------
-http://127.0.0.1:5000/group_by_location
-query,params ,get
-
-
------ iqra-----
 -----------  get location from lat and lon -------------
 [GET]  http://127.0.0.1:5000/get_loc_from_lat_lon 
 BODY - raw (JSON)
@@ -123,43 +79,8 @@ BODY - raw (JSON)
     "longitude":"-73.985428"
 }
 
--------------    EDIT IMAGE ----------
-[PUT]   http://127.0.0.1:5000/edit_image
-{
-  "2": {
-    "persons_id": [
-      {"id": 1, "name": "Ali","gender": "M"},
-      {"id": 2, "name": "Amna","gender": "F"}
-    ],
-    "event_name": "iNDEPENDENCE DAY",
-    "event_date": "2025-01-17",
-    "location": ["New yORK", "33.1234", "73.5678"]
-  }
+=======
+    "name": "New Year Party",
+  
 }
-
-
---------------  searching_on_image ON image ------------
-
-[Get] http://127.0.0.1:5000/searching_on_image
-Body - raw 
-
-
-
-    {
- "name": ["Haya","Dua"],
-    "gender": "F",
-    "events": ["project Task"],
-    "capture_date": ["2023-12-01"],
-    "location": {
-        "latitude": "",
-        "longitude": ""
-    }
-}
-
-
---------------- Group by person ----------
-
-[GET]  http://127.0.0.1:5000/group_by_person
-
---------------
 

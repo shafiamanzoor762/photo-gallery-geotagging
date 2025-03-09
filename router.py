@@ -99,25 +99,22 @@ def extract_face():
         print(image_path)
         image = Image.open(io.BytesIO(file.read()))
         image.save(image_path)
-        # return PictureController.extract_face(image_path)
+        
         return PictureController.extract_face(image_path)
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
 
-# @app.route('/recognize_person', methods = ['GET'])
-# def recognize_person():
-#     return PictureController.recognize_person(request.get_json())
 
 @app.route('/recognize_person', methods=['GET'])
 def recognize_person():
-    
+    # Get query parameters from the GET request
     image_path = request.args.get('image_path')
     person_name = request.args.get('name', None)
 
     if not image_path:
         return make_response(jsonify({'error': 'Missing required parameters'}), 400)
 
-    
+    # Call the method from the PictureController class
     return PictureController.recognize_person(image_path, person_name)
 
 
@@ -132,7 +129,7 @@ def group_by_person():
 @app.route('/edit_image', methods=['PUT'])
 def edit_Image():
     return ImageController.edit_image_data()
-#done
+
 @app.route('/searching_on_image', methods=['GET'])
 def searching():
     return ImageController.searching_on_image()
@@ -151,81 +148,40 @@ def add_image():
         return jsonify({'error': 'Missing required fields'}), 400
     return ImageController.add_image(data)
 
-#done
 
+# Get details of a specific Image (Read)
 @app.route('/images/<int:image_id>', methods=['GET'])
 def get_image_details(image_id):
     return ImageController.get_image_details(image_id)
 #done
 
+# Delete an Image (Delete)
 @app.route('/images/<int:image_id>', methods=['DELETE'])
 def delete_image(image_id):
     return ImageController.delete_image(image_id)
 
-##
-@app.route('/removeMetadata', methods=['POST'])
-def removeMetadata():
-    try:
-        # Check if 'file' is in the request files
-        if 'file' not in request.files:
-            return jsonify({'error': 'file not attached'}), 404
-        
-        # Get the uploaded file
-        file = request.files['file']
-        
-        # Check if the filename is empty
-        if file.filename == '':
-            return jsonify({'error': 'filename is empty'}), 404
-        
-        # Check if the file is a valid image
-        if file and file.filename.lower().endswith(('png', 'jpg', 'jpeg', 'gif', 'bmp')):
-            # Save the file to the Assets folder
-            file_path = os.path.join(ASSETS_FOLDER, file.filename)
-            file.save(file_path)
-
-            # Open the image using PIL (Pillow)
-            image = Image.open(file_path)
-            
-            # Check if the image is in RGBA format, convert to RGB if necessary
-            if image.mode == 'RGBA':
-                image = image.convert('RGB')
-            
-            # Create a new BytesIO object to hold the image data without EXIF metadata
-            img_io = BytesIO()
-            
-            # Save the image to the BytesIO object (JPEG format, without metadata)
-            image.save(img_io, format="JPEG", quality=95)  # JPEG without EXIF
-            img_io.seek(0)
-            
-            # Return the processed image as a response (image without metadata)
-            return send_file(img_io, mimetype='image/jpeg', download_name=f'image_without_metadata.jpg')
-        else:
-            return jsonify({'error': 'Invalid image format. Please upload a valid image (png, jpg, jpeg, gif, bmp).'}), 400
-    
-    except Exception as exp:
-        return jsonify({'error': str(exp)}), 500
 # --------------------------EVENT---------------------------------
 #done
 @app.route('/fetch_events', methods = ['GET'])
 def fetch_events():
-    
+    # print('am here')
     return EventController.fetch_all_events()
-#done
- 
+
+#add a new event 
 @app.route('/addnewevent', methods=['POST'])
 def addnewevent():
-    
+    #print("am in addnew event method")
     if request.is_json:
            
            json_data = request.get_json()
            
-           if 'name' not in json_data:
+           if 'Name' not in json_data:
              return {"error": "Missing 'name' in JSON data"}, 200
-           
+           #print("Received JSON data:", json_data)
     
     return EventController.addnewevent(json_data)
 
- 
+#add events to an image 
 @app.route('/addevents', methods=['POST'])
 def addevents():
     
@@ -240,6 +196,7 @@ def addevents():
     return EventController.addevents(json_data)
 #done
 
+#sorting of events for Dropdown
 @app.route('/groupbyevents', methods=['GET'])
 def sortevents():
     
@@ -264,7 +221,9 @@ def getlocation_from_lat_lon():
 
 @app.route('/addLocation' , methods=['POST'])
 def addLocation():
-   
+    # # Extract latitude and longitude from query parameters
+    # latitude = request.args.get('latitude', type=float)
+    # longitude = request.args.get('longitude', type=float)
 
     data = request.get_json()
     latitude =data.get('latitude')
@@ -280,6 +239,8 @@ def group_by_location():
     return LocationController.group_by_location()
 
 
+# [GET] http://127.0.0.1:5000/images/2
+
 
 @app.route('/images/<filename>', methods=['GET'])
 def get_image(filename):
@@ -289,23 +250,7 @@ def get_image(filename):
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
 
-@app.route('/image/<int:image_id>', methods=['GET'])
-def get_image_by_id(image_id):
-    try:
-        # Construct the image filename based on the image_id
-        image_filename = f"{image_id}.jpg"  # Assuming the image is stored with the ID as the filename
-
-        # Construct the path to the image
-        image_path = os.path.join(ASSETS_FOLDER, image_filename)
-
-        # Check if the image exists in the directory
-        if os.path.exists(image_path):
-            return send_from_directory(ASSETS_FOLDER, image_filename)
-        else:
-            return jsonify({"error": "Image not found"}), 404
-    except Exception as exp:
-        return jsonify({"error": str(exp)}), 500
-
+# only accept localhost
 if __name__ == '__main__':
     app.run(debug=True)
 

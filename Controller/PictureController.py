@@ -10,7 +10,8 @@ from sqlalchemy import func
 from config import db
 
 from Model.ImagePerson import ImagePerson
-# Person , Image  # Correct import path for your model
+from Model.Person import Person
+from Model.Image import Image
 
 
 class PictureController():
@@ -18,8 +19,8 @@ class PictureController():
 
     @staticmethod
     def extract_face(image_path):
-        
-        alg = "D:\python\photo-gallery-geotagging\haarcascade_frontalface_default.xml"
+        # Load Haar cascade algorithm
+        alg = "haarcascade_frontalface_default.xml"
         haar_cascade = cv2.CascadeClassifier(alg)
 
        
@@ -31,7 +32,7 @@ class PictureController():
             gray_img, scaleFactor=1.05, minNeighbors=13, minSize=(100, 100)
         )
 
-        
+        # Directory to store the face encodings and image filenames
         encodings_file = './stored-faces/person.txt'
         if not os.path.exists('./stored-faces'):
             os.makedirs('./stored-faces')
@@ -54,7 +55,7 @@ class PictureController():
             
             cropped_face = gray_img[y:y + h, x:x + w]
 
-           
+            # Save the cropped face image in the directory
             target_file_name = f'./stored-faces/{save_file}.jpg'
             cv2.imwrite(target_file_name, cropped_face)
 
@@ -111,7 +112,7 @@ class PictureController():
     
      recognition_results = []
      new_lines = []
-    
+    # Read stored encodings from person.txt
      with open('./stored-faces/person.txt', 'r') as file:
         lines = file.readlines()
         for line in lines:
@@ -156,27 +157,28 @@ class PictureController():
     @staticmethod
     def group_by_person():
         try:
-            
+            # Query all data from the ImagePerson table
             records = db.session.query(ImagePerson).all()
 
-           
+            # Group data by person_id
             grouped_data = {}
+
             for record in records:
                 if record.person_id not in grouped_data:
                     grouped_data[record.person_id] = []
                 grouped_data[record.person_id].append(record.image_id)
 
-            
+            # Convert the grouped data to the desired format
+            # Convert the grouped data to the desired format
             result = []
             for person_id, images in grouped_data.items():
                jsonify(result.append({"Person_id": person_id, "Images": images}))
 
-           
+            # Ensure that the order is as expected
             return (result)
         except Exception as e:
             print(f"Error: {e}")
-            return None
-
+            return jsonify({"error": str(e)}), 500
 
 
 

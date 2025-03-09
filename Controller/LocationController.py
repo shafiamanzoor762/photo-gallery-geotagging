@@ -16,65 +16,49 @@ class LocationController:
     geolocator = Nominatim(user_agent="FindLocationAddress")
     @staticmethod
     def get_location_from_lat_lon(latitude, longitude):
-
         try:
-            
+            # Reverse geocode to get the location
             location = LocationController.geolocator.reverse((latitude, longitude), language="en")
             if location:
-                  address = location.address  
-                  locations = [part.strip() for part in address.split(',')]  
-                  required_loc = locations[-4:] 
-                
+                  address = location.address  # Extract the address string from the Location object
+                  locations = [part.strip() for part in address.split(',')]  # Split the address and strip each part of extra spaces
+                  required_loc = locations[-4:]  # Get the last 4 parts of the address
                   return required_loc
-            #       return jsonify({"location": required_loc})
-            # else:
-            #     return jsonify({"error": "Location not found"}), 404
+            else:
+                return None  # Return None if the location is not found
         except Exception as e:
-            
+            # Return the error message as JSON
             return jsonify({"error": str(e)}), 500
         
     @staticmethod
     def addLocation(latitude, longitude):
         try:
-            
             location = LocationController.geolocator.reverse((latitude, longitude), language="en")
             if location:
-                address = location.address  
-
-               
-                existing_location = db.session.query(Location).filter_by(latitude=latitude, longitude=longitude).first()
-
-                if existing_location:
-                    
-                    return jsonify({
-                        "status": "Location already exists",
-                        "location_name": existing_location.name
-                    }), 200
-
+                address = location.address  # Extract the address string from the Location object
                 
+                # Create a new Location entry and store it in the database
                 new_location = Location(
-                    name=address,  
+                    name=address,  # Save the full address as the location name
                     latitude=latitude,
                     longitude=longitude
                 )
-
                 
+                # Add the new location object to the session and commit it to the database
                 db.session.add(new_location)
                 db.session.commit()
-
-                return jsonify({
-                    "status": "Location saved successfully",
-                    "location_name": address
-                }), 201
+                
+                return jsonify({"status": "Location saved successfully", "location_name": address})
             else:
                 return jsonify({"error": "Location not found"}), 404
         except Exception as e:
             return jsonify({"error": str(e)}), 500
         
+
     @staticmethod
     def group_by_location():
         try:
-            
+            # Query to join Image and Location without JSON functions
             results = (
                 db.session.query(
                     Location.id,
@@ -109,7 +93,7 @@ class LocationController:
                         'images': []
                     }
 
-                
+                # Append image data to the 'images' list for this location
                 grouped_data[location_name]['images'].append({
                     'id': row[4],
                     'path': row[5],
@@ -120,9 +104,9 @@ class LocationController:
                     'location_id': row[10]
                 })
 
-           
+            # Return the response as JSON
             return jsonify(grouped_data), 200
 
         except Exception as e:
-           
+            # Catch any exceptions and return an error response
             return jsonify({"error": str(e)}), 500
