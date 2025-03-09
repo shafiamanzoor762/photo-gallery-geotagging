@@ -168,7 +168,6 @@ def add_image():
         image.save(image_path)
 
         metadata = request.form.get('metadata')
-        # ==
         data=""
         if metadata:
             data=json.loads(metadata)
