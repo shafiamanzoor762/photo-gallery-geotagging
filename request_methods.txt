@@ -17,32 +17,26 @@ file
 ---------RECOGNIZE PERSON (NAME) OPTIONAL--------
 [GET] http://127.0.0.1:5000/recognize_person?image_path=F:/semester_7/python-test/stored-faces/f628933e6a4440b3b570bd85f69a9f93.jpg&name=
 QUERY - params
-
+store face sy file lni ha image wali
 ---------ADD IMAGE--------
 [POST] http://127.0.0.1:5000/add_image
-BODY - raw (JSON)
+BODY - raw (JSON) or picture ke slashes b tk krni ha
 {
     "path": "F:/work1/python-test/BabyGirl.jpeg",
+    //OPTIONAL
+       "is_sync": 1,
+    "capture_date": "2025-01-27T12:00:00",
+    "event_date": "2025-01-28T12:00:00"
   
 }
-----------------remove this from here --------------------------
----------EDIT IMAGE--------
-[PUT] http://127.0.0.1:5000/images/2
-BODY - raw (JSON)
-{
-    "path": "F:/semester_7/python-test/test_data/BabyGirl.jpeg",
-    "isSync": false,
-    "captureDate": "2024-11-02",
-    "eventDate": "2024-11-02"
-}
--------------------to here -----------------------
+
 ---------DELETE IMAGE--------
 [DELETE] http://127.0.0.1:5000/images/3
 
 ---------GET IMAGE--------
 [GET] http://127.0.0.1:5000/images/2
 
----------GROUP BY IMAGE DATE--------
+---------GROUP BY DATE--------
 [GET] http://127.0.0.1:5000/group_by_date
 
 ---------GROUP BY IMAGE LOCATION--------
@@ -101,8 +95,71 @@ get,body,row,json
  -----------addLocation---------------
  http://127.0.0.1:5000/addLocation
  body,row,lat,long
+ {
+   
+  "latitude": 33.6844,
+  "longitude": 73.0479
+}
 
  -----group_by_location------
 http://127.0.0.1:5000/group_by_location
 query,params ,get
+
+
+----- iqra-----
+-----------  get location from lat and lon -------------
+[GET]  http://127.0.0.1:5000/get_loc_from_lat_lon 
+BODY - raw (JSON)
+{
+    "latitude":"40.748817",
+    "longitude":"-73.985428"
+} 
+
+------------- ADD LOCATION --------------
+[POST]  http://127.0.0.1:5000/addLocation
+
+{
+    "latitude":"40.748817",
+    "longitude":"-73.985428"
+}
+
+-------------    EDIT IMAGE ----------
+[PUT]   http://127.0.0.1:5000/edit_image
+{
+  "2": {
+    "persons_id": [
+      {"id": 1, "name": "Ali","gender": "M"},
+      {"id": 2, "name": "Amna","gender": "F"}
+    ],
+    "event_name": "iNDEPENDENCE DAY",
+    "event_date": "2025-01-17",
+    "location": ["New yORK", "33.1234", "73.5678"]
+  }
+}
+
+
+--------------  searching_on_image ON image ------------
+
+[Get] http://127.0.0.1:5000/searching_on_image
+Body - raw 
+
+
+
+    {
+ "name": ["Haya","Dua"],
+    "gender": "F",
+    "events": ["project Task"],
+    "capture_date": ["2023-12-01"],
+    "location": {
+        "latitude": "",
+        "longitude": ""
+    }
+}
+
+
+--------------- Group by person ----------
+
+[GET]  http://127.0.0.1:5000/group_by_person
+
+--------------
 
