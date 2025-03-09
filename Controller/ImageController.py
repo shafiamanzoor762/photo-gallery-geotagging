@@ -1,4 +1,5 @@
 from flask import jsonify, request
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import func
 from collections import defaultdict
 
@@ -29,10 +30,93 @@ class ImageController:
 #   }
 # }
 
+    # @staticmethod
+    # def edit_image_data():
+    #     data = request.get_json()  
+
+    #     if not data:
+    #         return jsonify({"error": "No data provided"}), 400
+
+    #     if len(data) != 1:
+    #         return jsonify({"error": "Invalid data format. Expecting a single numeric image_id as the key."}), 400
+
+    #     try:
+    #         image_id = int(next(iter(data.keys())))  
+    #     except ValueError:
+    #         return jsonify({"error": "image_id must be a numeric value"}), 400
+
+    #     image_data = data.get(str(image_id))  
+    #     if not image_data:
+    #         return jsonify({"error": "image_id data is required"}), 400
+
+       
+    #     persons = image_data.get('persons_id')  
+    #     event_name = image_data.get('event_name')
+    #     event_date = image_data.get('event_date')
+    #     locations = image_data.get('location')
+
+        
+    #     image = Image.query.filter(Image.id == image_id).first()
+    #     print(image)
+    #     if not image:
+    #         return jsonify({"error": "Image not found"}), 404
+
+        
+    #     if event_date:
+    #         image.event_date = event_date
+    #     if event_name:
+            
+    #         for event in image.events:
+    #             event.name = event_name
+
+       
+    #     if locations:
+    #         loc_id = image.location_id
+    #         if not loc_id:
+    #             return jsonify({"error": "No location associated with this image"}), 404
+
+    #         location =  Location.query.filter(Location.id == loc_id).first()
+    #         if location:
+    #             location.name = locations[0] if len(locations) > 0 else location.name
+    #             location.latitude = locations[2] if len(locations) > 2 else location.latitude
+    #             location.longitude = locations[3] if len(locations) > 3 else location.longitude
+    #         else:
+    #             return jsonify({"error": "Location record not found"}), 404
+
+        
+    #     if persons:
+    #         for person_data in persons:
+    #             person_id = person_data.get('id')
+    #             person_name = person_data.get('name')
+    #             gender = person_data.get('gender')
+    #             if person_id:
+    #                 person = Person.query.filter(Person.id == person_id).first()
+    #                 if person:
+    #                     if person_name and gender:
+    #                         person.name = person_name
+    #                         person.gender  =gender
+    #                     else:
+    #                         return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
+    #                 else:
+    #                     return jsonify({"error": f"Person with id {person_id} not found"}), 404
+    #             else:
+    #                 return jsonify({"error": "Person id is required"}), 400
+
+    #     try:
+    #         db.session.commit()
+    #         return jsonify({"message": "Image, location, and persons updated successfully"}), 200
+    #     except Exception as e:
+    #         db.session.rollback()
+    #         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+
+    # =================================
+
+
     @staticmethod
     def edit_image_data():
-        data = request.get_json()  
-
+        data = request.get_json()
+    
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
@@ -44,37 +128,48 @@ class ImageController:
         except ValueError:
             return jsonify({"error": "image_id must be a numeric value"}), 400
 
-        image_data = data.get(str(image_id))  
+        image_data = data.get(str(image_id))
         if not image_data:
             return jsonify({"error": "image_id data is required"}), 400
 
-       
-        persons = image_data.get('persons_id')  
-        event_name = image_data.get('event_name')
-        event_date = image_data.get('event_date')
-        locations = image_data.get('location')
+        persons = image_data.get('persons_id', [])  
+        event_names = image_data.get('event_names', [])  # Updated to handle multiple events
+        event_date = image_data.get('event_date')  # Stays in Image table
+        locations = image_data.get('location', [])
 
-        
-        image = Image.query.filter(Image.id == image_id).first()
-        print(image)
+        # Fetch the image record
+        image = Image.query.filter_by(id=image_id).first()
         if not image:
             return jsonify({"error": "Image not found"}), 404
 
-        
+        # Update event_date (stored in the Image table)
         if event_date:
             image.event_date = event_date
-        if event_name:
-            
-            for event in image.events:
-                event.name = event_name
 
-       
+        # Handling multiple events (Many-to-Many)
+        if event_names:
+            # Clear existing events and reassign new ones
+            existing_events = {event.name: event for event in image.events}
+
+            new_events = []
+            for event_name in event_names:
+                if event_name in existing_events:
+                    new_events.append(existing_events[event_name])  # Keep existing event
+                else:
+                    new_event = Event.query.filter_by(name=event_name).first()
+                    if not new_event:
+                        new_event = Event(name=event_name)  # Create new event if not found
+                        db.session.add(new_event)
+                    new_events.append(new_event)
+
+            image.events = new_events  # Assign new event list
+
+        # Update location details if provided
         if locations:
-            loc_id = image.location_id
-            if not loc_id:
+            if not image.location_id:
                 return jsonify({"error": "No location associated with this image"}), 404
 
-            location =  Location.query.filter(Location.id == loc_id).first()
+            location = Location.query.filter_by(id=image.location_id).first()
             if location:
                 location.name = locations[0] if len(locations) > 0 else location.name
                 location.latitude = locations[2] if len(locations) > 2 else location.latitude
@@ -82,29 +177,30 @@ class ImageController:
             else:
                 return jsonify({"error": "Location record not found"}), 404
 
-        
+        # Update persons linked to the image
         if persons:
             for person_data in persons:
                 person_id = person_data.get('id')
                 person_name = person_data.get('name')
                 gender = person_data.get('gender')
-                if person_id:
-                    person = Person.query.filter(Person.id == person_id).first()
-                    if person:
-                        if person_name and gender:
-                            person.name = person_name
-                            person.gender  =gender
-                        else:
-                            return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
-                    else:
-                        return jsonify({"error": f"Person with id {person_id} not found"}), 404
-                else:
-                    return jsonify({"error": "Person id is required"}), 400
 
+                if not person_id:
+                    return jsonify({"error": "Person ID is required"}), 400
+
+                person = Person.query.filter_by(id=person_id).first()
+                if not person:
+                    return jsonify({"error": f"Person with ID {person_id} not found"}), 404
+
+                if person_name:
+                    person.name = person_name
+                if gender:
+                    person.gender = gender
+
+        # Commit changes to the database
         try:
             db.session.commit()
-            return jsonify({"message": "Image, location, and persons updated successfully"}), 200
-        except Exception as e:
+            return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
+        except SQLAlchemyError as e:
             db.session.rollback()
             return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
@@ -247,45 +343,6 @@ class ImageController:
                 return jsonify({'error': 'Image not found'}), 404
             
             return jsonify(image.to_dict())
-    
-    # @staticmethod
-    # def get_image_complete_details(image_id):
-    #     image = Image.query.filter_by(id=image_id).first()
-    #     if not image:
-    #         return jsonify({"error": "Image not found"}), 404
-
-    #     location_data = None
-    #     if image.location:
-    #         location_data = {
-    #         "id": image.location.id,
-    #         "name": image.location.name,
-    #         "latitude": float(image.location.latitude),
-    #         "longitude": float(image.location.longitude)
-    #     }
-
-    #     persons = [
-    #         {"id": person.person.id, "name": person.person.name, "path": person.person.path, "gender": person.person.gender}
-    #         for person in ImagePerson.query.filter_by(image_id=image.id).all()
-    #     ]
-    
-    #     events = [
-    #         {"id": event.event.id, "name": event.event.name}
-    #         for event in ImageEvent.query.filter_by(image_id=image.id).all()
-    #     ]
-
-    #     image_data = {
-    #         "id": image.id,
-    #         "path": image.path,
-    #         "is_sync": image.is_sync,
-    #         "capture_date": image.capture_date.strftime('%Y-%m-%d') if image.capture_date else None,
-    #         "event_date": image.event_date.strftime('%Y-%m-%d') if image.event_date else None,
-    #         "last_modified": image.last_modified.strftime('%Y-%m-%d') if image.last_modified else None,
-    #         "location": location_data,
-    #         "persons": persons,
-    #         "events": events
-    #     }
-    
-    #     return jsonify(image_data)
 
     @staticmethod
     def get_image_complete_details(image_id):

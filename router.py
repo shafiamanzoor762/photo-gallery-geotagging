@@ -204,7 +204,7 @@ def fetch_events():
 # [POST] http://127.0.0.1:5000/addnewevent
 # BODY - raw (JSON)
 # {
-#     "name": "New Year Party",
+#     "Name": "New Year Party",
   
 # }
 #add a new event 
@@ -214,7 +214,7 @@ def addnewevent():
            
            json_data = request.get_json()
            
-           if 'name' not in json_data:
+           if 'Name' not in json_data:
              return {"error": "Missing 'name' in JSON data"}, 200
     
     return EventController.addnewevent(json_data)
