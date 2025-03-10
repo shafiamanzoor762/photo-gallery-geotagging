@@ -153,7 +153,10 @@ def add_image():
 @app.route('/images/<int:image_id>', methods=['GET'])
 def get_image_details(image_id):
     return ImageController.get_image_details(image_id)
-#done
+
+@app.route('/image_complete_details/<int:image_id>', methods=['GET'])
+def get_image_complete_details(image_id):
+    return ImageController.get_image_complete_details(image_id)
 
 # Delete an Image (Delete)
 @app.route('/images/<int:image_id>', methods=['DELETE'])
