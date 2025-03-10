@@ -285,7 +285,7 @@ def upload_file():
         with open(file_paths, "wb") as f:
             f.write(file_bytes)
         
-        ImageController.add_image({"path": file_path},data)
+        ImageController.add_image({"path": file_path})
         return jsonify({"message": "File uploaded successfully", "filename": file.filename})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
