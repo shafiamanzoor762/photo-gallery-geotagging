@@ -11,7 +11,7 @@ from Model.Event import Event
 from Model.ImageEvent import ImageEvent
 from Model.ImagePerson import ImagePerson
 from datetime import datetime
-
+from sqlalchemy.orm import joinedload
 
 from config import db
 
@@ -414,17 +414,19 @@ class ImageController:
     #  ===================================
 
     @staticmethod
-    def add_image(image_path, data):
+    def add_image(data):
         try:
+            
             image = Image(
-            path=image_path,
+            path=data['path'],
             is_sync=data.get('is_sync',0),
             capture_date=data.get('capture_date', datetime.utcnow()),
             event_date=data.get('event_date', None),
             last_modified=datetime.utcnow())
+            print(image)
             db.session.add(image)
             db.session.commit()
-
+            print(image)
             return jsonify(image.to_dict()), 201
         except Exception as e:
             db.session.rollback()
@@ -516,6 +518,121 @@ class ImageController:
         except Exception as e:
             # Catch any exceptions and return an error response
             return jsonify({"error": str(e)}), 500
+            
+
+    @staticmethod
+    def sync_images():
+        images = Image.query.filter(Image.is_sync == False).all()
+        syncImage=[]
+        for image in images:
+                syncImage.append(image.to_dict())
+        return jsonify(syncImage)
+        
+    @staticmethod
+    def Load_images():
+        data = request.get_json()
+    
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+    
+        person_id = data.get("person_id")  # Expecting a single value, not a list
+        event_name = data.get("event")  # Expecting a single event name
+        capture_date = data.get("capture_date")  # Expecting a single date
+        location_name = data.get("location")  # Expecting a single location name
+    
+        image_ids = set()  # Using set to avoid duplicates
+    
+        # 🔹 Filter by Person ID
+        if person_id:
+            person = Person.query.filter_by(id=person_id).first()
+            if person:
+                person_images = (
+                    db.session.query(Image.id)
+                    .join(ImagePerson, ImagePerson.image_id == Image.id)
+                    .filter(ImagePerson.person_id == person_id)
+                    .all()
+                )
+                image_ids.update([image.id for image in person_images])
+    
+        # 🔹 Filter by Event Name
+        if event_name:
+            event = Event.query.filter_by(name=event_name).first()
+            if event:
+                event_images = (
+                    db.session.query(Image.id)
+                    .join(ImageEvent, ImageEvent.image_id == Image.id)
+                    .filter(ImageEvent.event_id == event.id)
+                    .all()
+                )
+                image_ids.update([image.id for image in event_images])
+    
+        # 🔹 Filter by Capture Date
+        if capture_date:
+            date_images = Image.query.filter_by(capture_date=capture_date).all()
+            image_ids.update([image.id for image in date_images])
+    
+        # 🔹 Filter by Location Name
+        if location_name:
+            location = Location.query.filter_by(name=location_name).first()
+            if location:
+                location_images = Image.query.filter_by(location_id=location.id).all()
+                image_ids.update([image.id for image in location_images])
+    
+        # 🔹 Fetch and return full image details
+        if image_ids:
+            images = Image.query.filter(Image.id.in_(image_ids)).all()
+            image_data = []
+    
+            for img in images:
+                # Fetch location name
+                location = Location.query.filter_by(id=img.location_id).first()
+                location_name = location.name if location else None
+    
+                # Fetch all events associated with the image
+                events = (
+                    db.session.query(Event.id, Event.name)
+                    .join(ImageEvent, ImageEvent.event_id == Event.id)
+                    .filter(ImageEvent.image_id == img.id)
+                    .all()
+                )
+                event_list = [{"id": event.id, "name": event.name} for event in events]
+    
+                # Fetch all persons associated with the image
+                persons = (
+                    db.session.query(Person.id, Person.name, Person.gender)
+                    .join(ImagePerson, ImagePerson.person_id == Person.id)
+                    .filter(ImagePerson.image_id == img.id)
+                    .all()
+                )
+                person_list = [
+                    {"id": person.id, "name": person.name, "gender": person.gender}
+                    for person in persons
+                ]
+    
+                image_data.append(
+                    {
+                        "id": img.id,
+                        "path": img.path,
+                        "is_sync": img.is_sync,
+                        "capture_date": img.capture_date,
+                        "location_id": img.location_id,
+                        "location_name": location_name,
+                        "event_date": img.event_date,
+                        "modified_at": img.last_modified,
+                        "events": event_list,
+                        "persons": person_list,
+                    }
+                )
+    
+            return jsonify({"images": image_data}), 200
+    
+        return jsonify({"error": "No matching images found"}), 404
+    
+       
+            
+        
+        
+         
         
     
     # getting unlabel images

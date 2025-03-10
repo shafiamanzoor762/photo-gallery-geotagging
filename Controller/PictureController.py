@@ -164,18 +164,39 @@ class PictureController():
             grouped_data = {}
 
             for record in records:
-                if record.person_id not in grouped_data:
-                    grouped_data[record.person_id] = []
-                grouped_data[record.person_id].append(record.image_id)
+                # Fetch person details
+                person = db.session.query(Person).filter_by(id=record.person_id).first()
+                # Fetch image details
+                image = db.session.query(Image).filter_by(id=record.image_id).first()
 
-            # Convert the grouped data to the desired format
-            # Convert the grouped data to the desired format
-            result = []
-            for person_id, images in grouped_data.items():
-               jsonify(result.append({"Person_id": person_id, "Images": images}))
+                if person and image:
+                    if person.id not in grouped_data:
+                        # Initialize person's data
+                        grouped_data[person.id] = {
+                            "Person": {
+                                "id": person.id,
+                                "name": person.name,  # Assuming person has a name field
+                                "path": person.path,    # Example field
+                                "gender": person.gender  # Any other fields
+                            },
+                            "Images": []
+                        }
 
-            # Ensure that the order is as expected
-            return (result)
+                    # Append image details
+                    grouped_data[person.id]["Images"].append({
+                        "id": image.id,
+                        "path": image.path,  
+                        "is_sync": image.is_sync, 
+                        "capture_date": image.capture_date,
+                        "event_date":image.event_date,
+                        "last_modified":image.last_modified,
+                        "location_id":image.location_id
+                    })
+
+            # Convert dictionary to list of objects
+            result = list(grouped_data.values())
+            print(result)
+            return jsonify(result)  # Return JSON response
         except Exception as e:
             print(f"Error: {e}")
             return jsonify({"error": str(e)}), 500
