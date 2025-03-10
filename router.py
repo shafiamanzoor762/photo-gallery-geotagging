@@ -145,6 +145,9 @@ def edit_Image():
 def searching():
     return ImageController.searching_on_image()
 
+@app.route('/Load_images', methods=['GET'])
+def Load_images():
+    return ImageController.Load_images()
 @app.route('/group_by_date',methods = ['GET'])
 def group_by_date():
     return ImageController.group_by_date()
@@ -316,13 +319,13 @@ def upload_file():
         # Ensure 'assets' folder exists
         ASSETS_FOLDER = 'Assets'
         os.makedirs(ASSETS_FOLDER, exist_ok=True)
-
+        data=""
         file_paths = os.path.join(ASSETS_FOLDER, file.filename)
         file_path="images/"+file.filename
         with open(file_paths, "wb") as f:
             f.write(file_bytes)
         
-        ImageController.add_image({"path": file_path})
+        ImageController.add_image({"path": file_path},data)
         return jsonify({"message": "File uploaded successfully", "filename": file.filename})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

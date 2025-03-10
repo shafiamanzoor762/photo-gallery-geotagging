@@ -195,7 +195,7 @@ class PictureController():
 
             # Convert dictionary to list of objects
             result = list(grouped_data.values())
-
+            print(result)
             return jsonify(result)  # Return JSON response
         except Exception as e:
             print(f"Error: {e}")
