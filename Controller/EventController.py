@@ -9,19 +9,19 @@ class EventController():
     def fetch_all_events():
         events = Event.query.all()
         return [{
-        'event_id':e.id,
-        'name': e.name} for e in events]
+        'Id':e.id,
+        'Name': e.name} for e in events]
     
     @staticmethod
     def addnewevent(json_data):
         try:
-            
+            # Extract the data from the JSON
             name = json_data.get('name')
             print(name)
             existing_event = Event.query.filter_by(name=name).first()
 
             if existing_event:
-               
+               # If the event already exists, return a message
                 return {"message": "Event with this name already exists."}, 400
 
            
@@ -29,7 +29,7 @@ class EventController():
                 name=name, 
             )
             
-           
+            # Add and commit to the database
             db.session.add(new_event)
            
             db.session.commit()
@@ -41,76 +41,32 @@ class EventController():
             return {"error": str(e)}, 500
         
 
-    @staticmethod
-    def addevents(json_data):
-        events_data=[]
-        try:
-           
-            id = json_data.get('id')
-            print(id)
-            existing_id= Image.query.filter_by(id=id).first()
-            print(existing_id)
-            if existing_id:
-                name = json_data.get('names')
-                names=name.split(',')
-                for n in names:
-                   existing_event = Event.query.filter_by(name=n).first()  
-    
-                   if existing_event:
-                    
-                     event_id = existing_event.id
-                     print(f"Event ID for {n}: {event_id}")
-                     add_events = ImageEvent(
-                         image_id=existing_id.id,
-                         event_id=event_id,
-               
-                          )
-                      
-                     db.session.add(add_events)
-           
-                     db.session.commit()
-                   else:
-                   
-                     print(f"No event found with the name: {n}")
-                   
-                
-                events_data.append({
-                            'id': existing_id.id,
-                            'name': event_id,
-                            
-                        })
-            else:
-                return {"message":"No ID Found"}, 201
-            
-           
-            
-            return {"message":"Done"}, 201
-        except Exception as e:
-            db.session.rollback()
-            return {"error": str(e)}, 500
-    
+        
     @staticmethod
     def groupbyevents():
         try:
-           
+            # Extract the data from the JSON
             
             event_image_dict = {}
-           
+            # print(name)
             events = Event.query.all()
             for event in events:
               event_id = event.id
-            
+            #   print(f"Event Name: {event.name}, Event ID: {event.id}")
+            # Query Image_Event table to get all image_ids for the given event_id
               image_events = ImageEvent.query.filter_by(event_id=event_id).all()
 
-              
+              # Create a list of image_ids corresponding to the event_id
               image_ids = [image_event.image_id for image_event in image_events]
 
-              
+                # Print the list of image_ids
               print(f"Image IDs for event '{event.name}': {image_ids}")
               image_data = []
               for image_id in image_ids:
-                 image = Image.query.get(image_id)  
+        # Query Image table to get detailed info about each image
+                 image = Image.query.get(image_id)  # Adjust query as needed for your model
                  if image:
+            # Collect any data you need for each image, e.g., name, file path, etc.
                      image_data.append({
                 "image_id": image.id,
                 "path": image.path,

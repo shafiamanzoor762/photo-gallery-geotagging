@@ -107,27 +107,16 @@ def extract_face():
 
 @app.route('/recognize_person', methods=['GET'])
 def recognize_person():
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error':'file not attatched'}), 404
-        
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error':'filename is empty'}), 404
-        
-        image_path = os.path.join('.',ASSETS_FOLDER, file.filename)
-        print(image_path)
-        image = Image.open(io.BytesIO(file.read()))
-        image.save(image_path)
+    # Get query parameters from the GET request
+    image_path = request.args.get('image_path')
+    person_name = request.args.get('name', None)
 
-        name = request.form.get('name')
-        if not name:
-            return jsonify({'error': 'Name not found'}), 400
+    if not image_path:
+        return make_response(jsonify({'error': 'Missing required parameters'}), 400)
 
-        # Call the method from the PictureController class
-        return PictureController.recognize_person(image_path, name)
-    except Exception as exp:
-        return jsonify({'error':str(exp)}), 500
+    # Call the method from the PictureController class
+    return PictureController.recognize_person(image_path, person_name)
+
 
 @app.route('/group_by_person', methods=['GET'])
 def group_by_person():
@@ -137,7 +126,7 @@ def group_by_person():
 
 # --------------------------IMAGE---------------------------------
 
-@app.route('/edit_image', methods=['PUT'])
+@app.route('/edit_image', methods=['POST'])
 def edit_Image():
     return ImageController.edit_image_data()
 
@@ -154,81 +143,49 @@ def group_by_date():
 
 
 # -----------------------------------------------------------
-
+#done
 @app.route('/add_image', methods=['POST'])
 def add_image():
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error':'file not attatched'}), 404
-        
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error':'filename is empty'}), 404
-        
-        image_path = os.path.join('.',ASSETS_FOLDER, file.filename)
-        print(image_path)
-        image = Image.open(io.BytesIO(file.read()))
-        image.save(image_path)
-
-        metadata = request.form.get('metadata')
-        data=""
-        if metadata:
-            data=json.loads(metadata)
-        
-        return ImageController.add_image(image_path,data)
-    except Exception as exp:
-        return jsonify({'error':str(exp)}), 500
+    data = request.get_json()
+    if 'path' not in data:
+        return jsonify({'error': 'Missing required fields'}), 400
+    return ImageController.add_image(data)
 
 
-
+# Get details of a specific Image (Read)
 @app.route('/images/<int:image_id>', methods=['GET'])
 def get_image_details(image_id):
     return ImageController.get_image_details(image_id)
 
 @app.route('/image_complete_details/<int:image_id>', methods=['GET'])
 def get_image_complete_details(image_id):
-        return ImageController.get_image_complete_details(image_id)
+    return ImageController.get_image_complete_details(image_id)
 
+# Delete an Image (Delete)
 @app.route('/images/<int:image_id>', methods=['DELETE'])
 def delete_image(image_id):
     return ImageController.delete_image(image_id)
 
-@app.route('/sync_images', methods=['GET'])
-def sync_images():
-    return ImageController.sync_images()
-
 # --------------------------EVENT---------------------------------
+#done
 @app.route('/fetch_events', methods = ['GET'])
 def fetch_events():
+    # print('am here')
     return EventController.fetch_all_events()
 
-
-
-# [POST] http://127.0.0.1:5000/addnewevent
-# BODY - raw (JSON)
-# {
-#     "name": "New Year Party",
-  
-# }
 #add a new event 
 @app.route('/addnewevent', methods=['POST'])
 def addnewevent():
+    #print("am in addnew event method")
     if request.is_json:
            
            json_data = request.get_json()
            
-           if 'name' not in json_data:
+           if 'Name' not in json_data:
              return {"error": "Missing 'name' in JSON data"}, 200
+           #print("Received JSON data:", json_data)
     
     return EventController.addnewevent(json_data)
-
-
-
-# {
-#     "id":"5",
-#     "names":"Birthday Party, abc"
-# }
-  
 
 #add events to an image 
 @app.route('/addevents', methods=['POST'])
@@ -243,8 +200,9 @@ def addevents():
            print("Received JSON data:", json_data)
     
     return EventController.addevents(json_data)
+#done
 
-#sorting of events for making folders
+#sorting of events for Dropdown
 @app.route('/groupbyevents', methods=['GET'])
 def sortevents():
     
@@ -253,7 +211,7 @@ def sortevents():
 
 # ================Location=================
 
-@app.route('/get_loc_from_lat_lon' , methods=['GET'])
+@app.route('/get_loc_from_lat_lon' , methods=['POST'])
 def getlocation_from_lat_lon():
     
 
@@ -264,12 +222,14 @@ def getlocation_from_lat_lon():
     if latitude is None or longitude is None:
         return jsonify({"error": "Latitude and Longitude are required"}), 400
     else:
-        return LocationController.get_location_from_lat_lon(latitude,longitude)
+        return jsonify(LocationController.get_location_from_lat_lon(latitude,longitude))
 
-# add location
+
 @app.route('/addLocation' , methods=['POST'])
 def addLocation():
-    
+    # # Extract latitude and longitude from query parameters
+    # latitude = request.args.get('latitude', type=float)
+    # longitude = request.args.get('longitude', type=float)
 
     data = request.get_json()
     latitude =data.get('latitude')
@@ -287,11 +247,11 @@ def group_by_location():
 
 # [GET] http://127.0.0.1:5000/images/2
 
-# Route to serve images
+
 @app.route('/images/<filename>', methods=['GET'])
 def get_image(filename):
     try:
-        # Serve the image from the Assets folder
+        
         return send_from_directory(ASSETS_FOLDER, filename)
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
@@ -334,7 +294,7 @@ if __name__ == '__main__':
     app.run(debug=True)
 
 
-# accept both local and ip Add
+
 # if __name__ == '__main__':
 #     if not os.path.exists("temp"):
 #         os.makedirs("temp")

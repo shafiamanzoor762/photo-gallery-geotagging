@@ -15,30 +15,39 @@ BODY - form-data
 file
 
 ---------RECOGNIZE PERSON (NAME) OPTIONAL--------
-[GET] http://127.0.0.1:5000/recognize_person
-BODY - form-data
-file
-name
+[GET] http://127.0.0.1:5000/recognize_person?image_path=F:/semester_7/python-test/stored-faces/f628933e6a4440b3b570bd85f69a9f93.jpg&name=
+QUERY - params
 
 ---------ADD IMAGE--------
 [POST] http://127.0.0.1:5000/add_image
-BODY - form-data
-file
-metadata {"is_sync":"", "capture_date":"", "event_date":""}
+BODY - raw (JSON)
+{
+    "path": "F:/work1/python-test/BabyGirl.jpeg",
+  
+}
 
-<<<<<<< HEAD
-Note: if there is no data at initial then 
-metadata {}
-
-=======
->>>>>>> 83f75b159395e89437aa383aefb5a25eb631dfb1
+---------EDIT IMAGE--------
+[POST] http://127.0.0.1:5000/edit_image
+BODY - raw (JSON)
+{
+    "1": {
+        "event_names": ["Concert", "Art Exhibition", "Tech Conference"],
+        "event_date": "2024-03-08",
+        "location": ["Central Park", "40.785091", "-73.968285"],
+        "persons_id": [
+            { "id": 1, "name": "Alice", "gender": "F" },
+            { "id": 2, "name": "Bob", "gender": "M" }
+        ]
+    }
+}
+-------------------to here -----------------------
 ---------DELETE IMAGE--------
 [DELETE] http://127.0.0.1:5000/images/3
 
 ---------GET IMAGE--------
 [GET] http://127.0.0.1:5000/images/2
 
----------GROUP BY IMAGE DATE--------
+---------GROUP BY DATE--------
 [GET] http://127.0.0.1:5000/group_by_date
 
 ---------GROUP BY IMAGE LOCATION--------
@@ -55,12 +64,11 @@ metadata {}
 [POST] http://127.0.0.1:5000/addnewevent
 BODY - raw (JSON)
 {
-<<<<<<< HEAD
     "name": "New Year Party"
 }
 
 -----------  get location from lat and lon -------------
-[GET]  http://127.0.0.1:5000/get_loc_from_lat_lon 
+[POST]  http://127.0.0.1:5000/get_loc_from_lat_lon 
 BODY - raw (JSON)
 {
     "latitude":"40.748817",
@@ -73,76 +81,6 @@ BODY - raw (JSON)
 {
     "latitude":"40.748817",
     "longitude":"-73.985428"
-}
-
-=======
     "name": "New Year Party",
-  
-}
------- addevents -----
-[post]
-
-# {
-#     "id":"5",
-#     "names":"Birthday Party"
-# }
-  
-
----------------AddnewLocation--------------
-[POST]   http://127.0.0.1:5000/addLocation
-BODY - RAW(JSON)
-{
-    
-   "latitude":"31.5204",
-   "longitude":"74.3587"
 }
 
--------------get location by lat lon---------------
-[GET]  http://127.0.0.1:5000/get_loc_from_lat_lon
-BODY - RAW(JSON)
-{
-    
-   "latitude":"31.5204",
-   "longitude":"74.3587"
-
-}
-
-
->>>>>>> 83f75b159395e89437aa383aefb5a25eb631dfb1
--------------    EDIT IMAGE ----------
-[PUT]   http://127.0.0.1:5000/edit_image
-{
-  "2": {
-    "persons_id": [
-      {"id": 1, "name": "Ali","gender": "M"},
-      {"id": 2, "name": "Amna","gender": "F"}
-    ],
-    "event_name": "iNDEPENDENCE DAY",
-    "event_date": "2025-01-17",
-    "location": ["New yORK", "33.1234", "73.5678"]
-  }
-}
-
-
---------------  searching_on_image ON image ------------
-
-[Get] http://127.0.0.1:5000/searching_on_image
-Body - raw 
-
-
-{
-    "name": ["Ali","Amna"],
-    "gender": "F",
-    "events": [""],
-    "capture_date": [""],
-    "location": {
-        "latitude": "",
-        "longitude": ""
-    }
-}
-
---------------- Group by person ----------
-
-[GET]  http://127.0.0.1:5000/group_by_person
-
---------------
