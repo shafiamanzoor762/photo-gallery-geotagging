@@ -249,6 +249,43 @@ def get_image(filename):
         return send_from_directory(ASSETS_FOLDER, filename)
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
+    
+    ######remove Metadata####################
+@app.route('/remove_metadata', methods=['POST'])
+def remove_metadata():
+    try:
+        # Ensure the file is present in the request
+        if 'file' not in request.files:
+            return jsonify({'error': 'File not attached'}), 404
+        
+        file = request.files['file']
+        
+        # Ensure the file has a valid filename
+        if file.filename == '':
+            return jsonify({'error': 'Filename is empty'}), 404
+        
+        # Try reading the image
+        try:
+            image = Image.open(io.BytesIO(file.read()))
+        except Exception as e:
+            return jsonify({'error': f"Failed to open image: {str(e)}"}), 500
+        
+        # Create a BytesIO buffer to save the image without any metadata (Exif, etc.)
+        img_io = BytesIO()
+        
+        # Save the image without any metadata (Exif)
+        image.save(img_io, format="JPEG")  # This strips out the Exif metadata
+        img_io.seek(0)  # Go back to the start of the BytesIO buffer
+        
+        return send_file(img_io, mimetype='image/jpeg', download_name='image_without_metadata.jpg')
+        
+    except Exception as exp:
+        # Provide a detailed error message for debugging
+        return jsonify({'error': str(exp)}), 500
+
+
+
+
 
 # only accept localhost
 if __name__ == '__main__':
