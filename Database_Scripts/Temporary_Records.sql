@@ -19,6 +19,10 @@ INSERT INTO Event (name) VALUES
 ('Conference'),
 ('Picnic');
 
+
+INSERT INTO Image (path, is_sync, capture_date, event_date, last_modified, location_id) VALUES
+('/images/event1.jpg', 0, '2023-12-01', null, '2023-12-03', null)
+ 
 -- Insert records into Image table
 INSERT INTO Image (path, is_sync, capture_date, event_date, last_modified, location_id) VALUES
 ('/images/event1.jpg', 1, '2023-12-01', '2023-12-02', '2023-12-03', 1),
@@ -28,14 +32,14 @@ INSERT INTO Image (path, is_sync, capture_date, event_date, last_modified, locat
 
 -- Insert records into ImagePerson table (many-to-many relationship between Image and Person)
 INSERT INTO ImagePerson (image_id, person_id) VALUES
-(1, 1),  -- Alina linked to image 1
+(1003, 1),  -- Alina linked to image 1
 (1, 2),  -- Aliya linked to image 1
 (2, 3),  -- Abeeha linked to image 2
 (3, 4);  -- Abeera linked to image 3
 
 -- Insert records into ImageEvent table (many-to-many relationship between Image and Event)
 INSERT INTO ImageEvent (image_id, event_id) VALUES
-(1, 1),  -- Image 1 linked to Birthday Party
+(1003, 1),  -- Image 1 linked to Birthday Party
 (2, 2),  -- Image 2 linked to Wedding
 (3, 3),  -- Image 3 linked to Conference
 (4, 4);  -- Image 4 linked to Picnic

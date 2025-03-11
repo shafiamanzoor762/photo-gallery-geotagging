@@ -130,7 +130,7 @@ def group_by_person():
 def edit_Image():
     return ImageController.edit_image_data()
 
-@app.route('/searching_on_image', methods=['GET'])
+@app.route('/searching_on_image', methods=['POST'])
 def searching():
     return ImageController.searching_on_image()
 
@@ -140,6 +140,11 @@ def Load_images():
 @app.route('/group_by_date',methods = ['GET'])
 def group_by_date():
     return ImageController.group_by_date()
+
+
+@app.route('/unedited-images', methods=['GET'])
+def get_unedited_images_route():
+    return ImageController.get_unedited_images()
 
 
 # -----------------------------------------------------------
