@@ -142,7 +142,7 @@ def group_by_date():
     return ImageController.group_by_date()
 
 
-@app.route('/unedited-images', methods=['GET'])
+@app.route('/unedited_images', methods=['GET'])
 def get_unedited_images_route():
     return ImageController.get_unedited_images()
 
