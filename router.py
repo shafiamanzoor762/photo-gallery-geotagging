@@ -134,7 +134,7 @@ def edit_Image():
 def searching():
     return ImageController.searching_on_image()
 
-@app.route('/Load_images', methods=['GET'])
+@app.route('/Load_images', methods=['POST'])
 def Load_images():
     return ImageController.Load_images()
 @app.route('/group_by_date',methods = ['GET'])

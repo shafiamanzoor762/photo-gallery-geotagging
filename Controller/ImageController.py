@@ -531,15 +531,16 @@ class ImageController:
     @staticmethod
     def Load_images():
         data = request.get_json()
-    
+        
         if not data:
             return jsonify({"error": "No data provided"}), 400
-    
+        
+        # Fetch the filtering criteria
         person_id = data.get("person_id")  # Expecting a single value, not a list
         event_name = data.get("event")  # Expecting a single event name
         capture_date = data.get("capture_date")  # Expecting a single date
         location_name = data.get("location")  # Expecting a single location name
-    
+        
         image_ids = set()  # Using set to avoid duplicates
     
         # 🔹 Filter by Person ID
@@ -609,25 +610,33 @@ class ImageController:
                     for person in persons
                 ]
     
+                # Add image data to the list
                 image_data.append(
                     {
                         "id": img.id,
                         "path": img.path,
                         "is_sync": img.is_sync,
                         "capture_date": img.capture_date,
-                        "location_id": img.location_id,
-                        "location_name": location_name,
+                        #"location_id": img.location_id,
+                        #"location_name": location_name,
                         "event_date": img.event_date,
-                        "modified_at": img.last_modified,
+                        "last_modified": img.last_modified,
                         "events": event_list,
                         "persons": person_list,
+                        "location": {
+                        "id": location.id if location else None,
+                        "name": location.name if location else None,
+                        "latitude": location.latitude if location else None,
+                        "longitude": location.longitude if location else None,
+                    },
                     }
                 )
-    
+            print(image_data)
+            # Wrap the response data correctly
             return jsonify({"images": image_data}), 200
     
         return jsonify({"error": "No matching images found"}), 404
-    
+
        
             
         
