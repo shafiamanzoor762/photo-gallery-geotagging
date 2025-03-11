@@ -125,18 +125,26 @@ def group_by_person():
         
 
 # --------------------------IMAGE---------------------------------
-#done
-@app.route('/edit_image', methods=['PUT'])
+
+@app.route('/edit_image', methods=['POST'])
 def edit_Image():
     return ImageController.edit_image_data()
 
-@app.route('/searching_on_image', methods=['GET'])
+@app.route('/searching_on_image', methods=['POST'])
 def searching():
     return ImageController.searching_on_image()
-#done
+
+@app.route('/Load_images', methods=['POST'])
+def Load_images():
+    return ImageController.Load_images()
 @app.route('/group_by_date',methods = ['GET'])
 def group_by_date():
     return ImageController.group_by_date()
+
+
+@app.route('/unedited-images', methods=['GET'])
+def get_unedited_images_route():
+    return ImageController.get_unedited_images()
 
 
 # -----------------------------------------------------------
@@ -153,7 +161,10 @@ def add_image():
 @app.route('/images/<int:image_id>', methods=['GET'])
 def get_image_details(image_id):
     return ImageController.get_image_details(image_id)
-#done
+
+@app.route('/image_complete_details/<int:image_id>', methods=['GET'])
+def get_image_complete_details(image_id):
+    return ImageController.get_image_complete_details(image_id)
 
 # Delete an Image (Delete)
 @app.route('/images/<int:image_id>', methods=['DELETE'])
@@ -204,8 +215,8 @@ def sortevents():
     return EventController.groupbyevents()
 
 # ================Location=================
-#done
-@app.route('/get_loc_from_lat_lon' , methods=['GET'])
+
+@app.route('/get_loc_from_lat_lon' , methods=['POST'])
 def getlocation_from_lat_lon():
     
 
@@ -216,8 +227,8 @@ def getlocation_from_lat_lon():
     if latitude is None or longitude is None:
         return jsonify({"error": "Latitude and Longitude are required"}), 400
     else:
-        return LocationController.get_location_from_lat_lon(latitude,longitude)
-#done
+        return jsonify(LocationController.get_location_from_lat_lon(latitude,longitude))
+
 
 @app.route('/addLocation' , methods=['POST'])
 def addLocation():
@@ -274,6 +285,39 @@ def remove_metadata():
     except Exception as e:
         return jsonify({'error': f'Error processing image: {str(e)}'}), 500
 
+#=====================dummy method after sync -------------------------
+
+@app.route('/upload_image', methods=['POST'])
+def upload_file():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'File not attached'}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'Filename is empty'}), 400
+
+        # Read file content once
+        file_bytes = file.read()
+        
+        # Convert image if necessary
+        image = Image.open(io.BytesIO(file_bytes))
+        if image.mode == 'RGBA':
+            image = image.convert('RGB')
+
+        # Ensure 'assets' folder exists
+        ASSETS_FOLDER = 'Assets'
+        os.makedirs(ASSETS_FOLDER, exist_ok=True)
+        data=""
+        file_paths = os.path.join(ASSETS_FOLDER, file.filename)
+        file_path="images/"+file.filename
+        with open(file_paths, "wb") as f:
+            f.write(file_bytes)
+        
+        ImageController.add_image({"path": file_path})
+        return jsonify({"message": "File uploaded successfully", "filename": file.filename})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 # only accept localhost
 if __name__ == '__main__':
     app.run(debug=True)
