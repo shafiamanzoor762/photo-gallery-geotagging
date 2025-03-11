@@ -663,6 +663,7 @@ class ImageController:
         # Convert images to JSON format
         image_list = []
         for img in unedited_images:
+            location = img.location if img.location else None
             image_list.append({
                 "id": img.id,
                 "path": img.path,
@@ -670,12 +671,18 @@ class ImageController:
                 "capture_date": img.capture_date.strftime('%Y-%m-%d') if img.capture_date else None,
                 "event_date": img.event_date.strftime('%Y-%m-%d') if img.event_date else None,
                 "last_modified": img.last_modified.strftime('%Y-%m-%d %H:%M:%S') if img.last_modified else None,
-                "location_id": img.location_id,
+                # "location_id": img.location_id,
+                "location": {
+                        "id": location.id if location else None,
+                        "name": location.name if location else None,
+                        "latitude": location.latitude if location else None,
+                        "longitude": location.longitude if location else None,
+                    },
                 "persons": [{"id": p.id, "name": p.name, "gender": p.gender} for p in img.persons],  # Include person details
                 "events": [{"id": e.id, "name": e.name} for e in img.events]  # Include event details
             })
-
-        return jsonify({"status": "success", "unedited_images": image_list}), 200
+        print(image_list)
+        return jsonify({"unedited_images": image_list}), 200
 
 
 
