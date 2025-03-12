@@ -16,7 +16,7 @@ class EventController():
     def addnewevent(json_data):
         try:
             # Extract the data from the JSON
-            name = json_data.get('name')
+            name = json_data.get('Name')
             print(name)
             existing_event = Event.query.filter_by(name=name).first()
 

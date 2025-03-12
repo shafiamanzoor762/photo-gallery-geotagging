@@ -136,7 +136,7 @@ class ImageController:
 
         # Extract necessary fields
         persons = image_data.get('persons_id')  # Corrected key name to 'persons_id'
-        event_name = image_data.get('event_name')
+        event_names = image_data.get('event_names')
         event_date = image_data.get('event_date')
         locations = image_data.get('location')
 
@@ -149,10 +149,22 @@ class ImageController:
         # Update event_date and event_name if provided
         if event_date:
             image.event_date = event_date
-        if event_name:
+
+        if event_names:
+            image.events = []  # Clears the relationship in the ORM
+            db.session.commit()
             # Access the related events
-            for event in image.events:
-                event.name = event_name
+            # for event in image.events:
+            #     event = Event.query.filter_by(id=event.id).first()
+            #     event.name = event_name
+            events = Event.query.filter(Event.name.in_(event_names)).all()
+            if not events:
+                return {"error": "No matching events found"}, 404
+
+            # Associate image with events
+            for event in events:
+                if event not in image.events:
+                    image.events.append(event)
 
         # Update location if provided
         if locations:
