@@ -71,9 +71,11 @@ class LocationController:
                     Image.capture_date,
                     Image.event_date,
                     Image.last_modified,
-                    Image.location_id
+                    Image.location_id,
+                    Image.is_deleted
                 )
                 .join(Image, Image.location_id == Location.id)
+                .filter(Image.is_deleted == False)
                 .all()
             )
 
@@ -101,7 +103,8 @@ class LocationController:
                     'captureDate': row[7],
                     'eventDate': row[8],
                     'lastModified': row[9],
-                    'location_id': row[10]
+                    'location_id': row[10],
+                    'is_deleted':row[11]
                 })
 
             # Return the response as JSON
