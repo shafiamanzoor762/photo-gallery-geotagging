@@ -167,10 +167,14 @@ def get_image_complete_details(image_id):
     return ImageController.get_image_complete_details(image_id)
 
 # Delete an Image (Delete)
-@app.route('/images/<int:image_id>', methods=['DELETE'])
-def delete_image(image_id):
-    return ImageController.delete_image(image_id)
+# @app.route('/images/<int:image_id>', methods=['DELETE'])
+# def delete_image(image_id):
+#     return ImageController.delete_image(image_id)
 
+@app.route('/images/<int:image_id>', methods=['DELETE'])
+def delete_image_route(image_id):
+    # Call the delete_image method from ImageController to mark the image as deleted
+    return ImageController.delete_image(image_id)
 # --------------------------EVENT---------------------------------
 #done
 @app.route('/fetch_events', methods = ['GET'])

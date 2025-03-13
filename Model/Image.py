@@ -11,6 +11,9 @@ class Image(db.Model):
     last_modified = db.Column(db.Date)
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'), nullable=True)
     
+    # New 'is_deleted' column
+    is_deleted = db.Column(db.Boolean, default=False)  # Added 'is_deleted' field
+    
     persons = db.relationship('Person', secondary='imagePerson', back_populates='images')
     events = db.relationship('Event', secondary='imageEvent', back_populates='images', lazy='dynamic')
 

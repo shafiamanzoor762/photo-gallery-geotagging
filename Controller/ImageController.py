@@ -480,21 +480,35 @@ class ImageController:
     
         return jsonify(image_data)
 
+    # @staticmethod
+    # def delete_image(image_id):
+    #         image = Image.query.get(image_id)
+    #         if not image:
+    #             return jsonify({'error': 'Image not found'}), 404
+            
+    #         try:
+    #             db.session.delete(image)
+    #             db.session.commit()
+    #             return jsonify({'message': 'Image deleted successfully'}), 200
+    #         except Exception as e:
+    #             db.session.rollback()
+    #             return jsonify({'error': str(e)}), 500
+            
     @staticmethod
     def delete_image(image_id):
-            image = Image.query.get(image_id)
-            if not image:
-                return jsonify({'error': 'Image not found'}), 404
+        image = Image.query.get(image_id)  # Fetch image from the database by ID
+        
+        if not image:
+            return jsonify({'error': 'Image not found'}), 404  # Return error if image not found
+        
+        try:
+            image.is_deleted = True  # Mark the image as deleted (soft delete)
+            db.session.commit()  # Commit the change to the database
             
-            try:
-                db.session.delete(image)
-                db.session.commit()
-                return jsonify({'message': 'Image deleted successfully'}), 200
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({'error': str(e)}), 500
-            
-
+            return jsonify({'message': 'Image marked as deleted successfully'}), 200  # Success response
+        except Exception as e:
+            db.session.rollback()  # Rollback any changes in case of error
+            return jsonify({'error': str(e)}), 500    
     
     @staticmethod
     def group_by_date():
