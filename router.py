@@ -191,7 +191,7 @@ def addnewevent():
            json_data = request.get_json()
            
            if 'Name' not in json_data:
-             return {"error": "Missing 'name' in JSON data"}, 200
+             return {"error": "Missing 'Name' in JSON data"}, 200
            #print("Received JSON data:", json_data)
     
     return EventController.addnewevent(json_data)
