@@ -122,7 +122,10 @@ def recognize_person():
 def group_by_person():
     return PictureController.group_by_person()
 
-        
+@app.route('/get_all_person', methods=['GET'])
+def get_all_person():
+    return ImageController.get_all_person()
+       
 
 # --------------------------IMAGE---------------------------------
 
