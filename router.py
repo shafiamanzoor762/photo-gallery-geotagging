@@ -12,6 +12,7 @@ from Controller.PictureController import PictureController
 from Controller.EventController import EventController
 from Controller.ImageController import ImageController
 from Controller.LocationController import LocationController
+from Controller.LinkController import LinkController
 
 @app.route('/tagimage', methods = ['POST'])
 def tagImage():
@@ -126,6 +127,18 @@ def group_by_person():
 def get_all_person():
     return ImageController.get_all_person()
        
+#--------------------Link----------------
+@app.route('/create_link', methods=['POST'])
+def create_link():
+        data = request.get_json()
+        person1_id = data.get('person1_id')
+        person2_id = data.get('person2_id')
+        
+        if not person1_id or not person2_id:
+            return jsonify({'error': 'Both person1_id and person2_id are required'}), 400
+        
+        new_link = LinkController.insert_link(person1_id, person2_id)
+        return jsonify({'message': 'Link created successfully'})
 
 # --------------------------IMAGE---------------------------------
 
