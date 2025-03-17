@@ -2,6 +2,7 @@ from flask import jsonify, request
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import func
 from collections import defaultdict
+import json
 
 from Controller.LocationController import LocationController
 from Model.Person import Person
@@ -138,7 +139,7 @@ class ImageController:
         persons = image_data.get('persons_id')  # Corrected key name to 'persons_id'
         event_names = image_data.get('event_names')
         event_date = image_data.get('event_date')
-        locations = image_data.get('location')
+        location_data = image_data.get('location')
 
         # Fetch the image record by image_id
         image = Image.query.filter(Image.id == image_id).first()
@@ -166,18 +167,29 @@ class ImageController:
                 if event not in image.events:
                     image.events.append(event)
 
-        # Update location if provided
-        if locations:
-            if not image.location_id:
-                return jsonify({"error": "No location associated with this image"}), 404
+        print(location_data)
 
-            location = Location.query.filter_by(id=image.location_id).first()
-            if location:
-                location.name = locations[0] if len(locations) > 0 else location.name
-                location.latitude = locations[2] if len(locations) > 2 else location.latitude
-                location.longitude = locations[3] if len(locations) > 3 else location.longitude
+        # Update location if provided
+        if location_data:
+            location_name = location_data[0]
+            location_list = json.loads(location_name)
+            location_name = ", ".join(location_list)
+            latitude = location_data[1]
+            longitude = location_data[2]
+            print(location_name, latitude, longitude)
+
+            # Check if the location exists
+            existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
+
+            if existing_location:
+                image.location_id = existing_location.id  # Associate existing location
             else:
-                return jsonify({"error": "Location record not found"}), 404
+                # Create new location
+                print("yes am here")
+                new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
+                db.session.add(new_location)
+                db.session.flush()  # Get the new location ID before committing
+                image.location_id = new_location.id
 
         # Update persons if provided
         if persons:
