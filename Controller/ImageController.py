@@ -154,10 +154,8 @@ class ImageController:
         if event_names:
             image.events = []  # Clears the relationship in the ORM
             db.session.commit()
+            
             # Access the related events
-            # for event in image.events:
-            #     event = Event.query.filter_by(id=event.id).first()
-            #     event.name = event_name
             events = Event.query.filter(Event.name.in_(event_names)).all()
             if not events:
                 return {"error": "No matching events found"}, 404

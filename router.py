@@ -83,6 +83,11 @@ def extractImageTags():
 ASSETS_FOLDER = 'Assets'  
 if not os.path.exists(ASSETS_FOLDER):
     os.makedirs(ASSETS_FOLDER)
+
+FACES_FOLDER = 'stored-faces'  
+if not os.path.exists(FACES_FOLDER):
+    os.makedirs(FACES_FOLDER)
+
 # =================== PICTURE CONTROLLER ==============
 
 @app.route('/extract_face', methods=['POST'])
@@ -247,19 +252,7 @@ def addLocation():
 
 @app.route('/group_by_location',methods = ['GET'])
 def group_by_location():
-    return LocationController.group_by_location()
-
-
-# [GET] http://127.0.0.1:5000/images/2
-
-
-@app.route('/images/<filename>', methods=['GET'])
-def get_image(filename):
-    try:
-        
-        return send_from_directory(ASSETS_FOLDER, filename)
-    except FileNotFoundError:
-        return jsonify({"error": "Image not found"}), 404
+    return LocationController.group_by_location() 
     
     ######remove Metadata####################
 @app.route('/remove_metadata', methods=['POST'])
@@ -318,6 +311,31 @@ def upload_file():
         return jsonify({"message": "File uploaded successfully", "filename": file.filename})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+
+# NOTE: These methods should be at the end of the file
+
+# [GET] http://127.0.0.1:5000/images/2
+
+
+@app.route('/images/<filename>', methods=['GET'])
+def get_image(filename):
+    try:
+        
+        return send_from_directory(ASSETS_FOLDER, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
+
+@app.route('/face_images/<filename>', methods=['GET'])
+def get_face_image(filename):
+    try:
+        
+        return send_from_directory(FACES_FOLDER, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
 # only accept localhost
 if __name__ == '__main__':
     app.run(debug=True)
