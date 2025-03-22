@@ -7,7 +7,7 @@ import json
 from config import db,app
 import os
 import base64
-from werkzeug.utils import secure_filename
+import uuid
 
 from Controller.PictureController import PictureController
 from Controller.EventController import EventController
@@ -102,7 +102,7 @@ def extract_face():
         if file.filename == '':
             return jsonify({'error':'filename is empty'}), 404
         
-        image_path = os.path.join('.',ASSETS_FOLDER, file.filename)
+        image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
         print(image_path)
         image = Image.open(io.BytesIO(file.read()))
         image.save(image_path)
@@ -204,9 +204,11 @@ def add_image():
         ASSETS_FOLDER = 'Assets'
         os.makedirs(ASSETS_FOLDER, exist_ok=True)
 
+        path = str(uuid.uuid4().hex) + '.jpg'
+        
         # Save the file to the 'Assets' folder
-        file_paths = os.path.join(ASSETS_FOLDER, file.filename)
-        file_path = "images/" + file.filename  # Relative path for database storage
+        file_paths = os.path.join(ASSETS_FOLDER, path)
+        file_path = "images/" + path  # Relative path for database storage
 
         with open(file_paths, "wb") as f:
             f.write(file_bytes)
@@ -366,7 +368,7 @@ def upload_file():
         ASSETS_FOLDER = 'Assets'
         os.makedirs(ASSETS_FOLDER, exist_ok=True)
         data=""
-        file_paths = os.path.join(ASSETS_FOLDER, file.filename)
+        file_paths = os.path.join(ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
         file_path="images/"+file.filename
         with open(file_paths, "wb") as f:
             f.write(file_bytes)
