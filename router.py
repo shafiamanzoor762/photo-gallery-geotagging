@@ -7,6 +7,7 @@ import json
 from config import db,app
 import os
 import base64
+import uuid
 
 from Controller.PictureController import PictureController
 from Controller.EventController import EventController
@@ -365,7 +366,7 @@ def upload_file():
         ASSETS_FOLDER = 'Assets'
         os.makedirs(ASSETS_FOLDER, exist_ok=True)
         data=""
-        file_paths = os.path.join(ASSETS_FOLDER, file.filename)
+        file_paths = os.path.join(ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
         file_path="images/"+file.filename
         with open(file_paths, "wb") as f:
             f.write(file_bytes)
