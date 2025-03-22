@@ -13,6 +13,7 @@ from Controller.PictureController import PictureController
 from Controller.EventController import EventController
 from Controller.ImageController import ImageController
 from Controller.LocationController import LocationController
+from Controller.LinkController import LinkController
 
 @app.route('/tagimage', methods = ['POST'])
 def tagImage():
@@ -84,6 +85,11 @@ def extractImageTags():
 ASSETS_FOLDER = 'Assets'  
 if not os.path.exists(ASSETS_FOLDER):
     os.makedirs(ASSETS_FOLDER)
+
+FACES_FOLDER = 'stored-faces'  
+if not os.path.exists(FACES_FOLDER):
+    os.makedirs(FACES_FOLDER)
+
 # =================== PICTURE CONTROLLER ==============
 
 @app.route('/extract_face', methods=['POST'])
@@ -123,7 +129,22 @@ def recognize_person():
 def group_by_person():
     return PictureController.group_by_person()
 
+@app.route('/get_all_person', methods=['GET'])
+def get_all_person():
+    return ImageController.get_all_person()
+       
+#--------------------Link----------------
+@app.route('/create_link', methods=['POST'])
+def create_link():
+        data = request.get_json()
+        person1_id = data.get('person1_id')
+        person2_id = data.get('person2_id')
         
+        if not person1_id or not person2_id:
+            return jsonify({'error': 'Both person1_id and person2_id are required'}), 400
+        
+        new_link = LinkController.insert_link(person1_id, person2_id)
+        return jsonify({'message': 'Link created successfully'})
 
 # --------------------------IMAGE---------------------------------
 
@@ -237,7 +258,7 @@ def addnewevent():
            json_data = request.get_json()
            
            if 'Name' not in json_data:
-             return {"error": "Missing 'name' in JSON data"}, 200
+             return {"error": "Missing 'Name' in JSON data"}, 200
            #print("Received JSON data:", json_data)
     
     return EventController.addnewevent(json_data)
@@ -295,19 +316,7 @@ def addLocation():
 
 @app.route('/group_by_location',methods = ['GET'])
 def group_by_location():
-    return LocationController.group_by_location()
-
-
-# [GET] http://127.0.0.1:5000/images/2
-
-
-@app.route('/images/<filename>', methods=['GET'])
-def get_image(filename):
-    try:
-        
-        return send_from_directory(ASSETS_FOLDER, filename)
-    except FileNotFoundError:
-        return jsonify({"error": "Image not found"}), 404
+    return LocationController.group_by_location() 
     
     ######remove Metadata####################
 @app.route('/remove_metadata', methods=['POST'])
@@ -366,6 +375,31 @@ def upload_file():
         return jsonify({"message": "File uploaded successfully", "filename": file.filename})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+
+# NOTE: These methods should be at the end of the file
+
+# [GET] http://127.0.0.1:5000/images/2
+
+
+@app.route('/images/<filename>', methods=['GET'])
+def get_image(filename):
+    try:
+        
+        return send_from_directory(ASSETS_FOLDER, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
+
+@app.route('/face_images/<filename>', methods=['GET'])
+def get_face_image(filename):
+    try:
+        
+        return send_from_directory(FACES_FOLDER, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
 # only accept localhost
 if __name__ == '__main__':
     app.run(debug=True)

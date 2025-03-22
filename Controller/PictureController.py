@@ -363,16 +363,17 @@ class PictureController():
         try:
             # Query all data from the ImagePerson table
             records = db.session.query(ImagePerson).all()
-
+    
             # Group data by person_id
             grouped_data = {}
-
+    
             for record in records:
                 # Fetch person details
                 person = db.session.query(Person).filter_by(id=record.person_id).first()
-                # Fetch image details
-                image = db.session.query(Image).filter_by(id=record.image_id).first()
-
+                
+                # Fetch image details, ensuring only images where is_deleted = False (0)
+                image = db.session.query(Image).filter_by(id=record.image_id, is_deleted=False).first()
+    
                 if person and image:
                     if person.id not in grouped_data:
                         # Initialize person's data
@@ -380,23 +381,24 @@ class PictureController():
                             "Person": {
                                 "id": person.id,
                                 "name": person.name,  # Assuming person has a name field
-                                "path": person.path,    # Example field
+                                "path": person.path,  # Example field
                                 "gender": person.gender  # Any other fields
                             },
                             "Images": []
                         }
-
+    
                     # Append image details
                     grouped_data[person.id]["Images"].append({
                         "id": image.id,
                         "path": image.path,  
                         "is_sync": image.is_sync, 
                         "capture_date": image.capture_date,
-                        "event_date":image.event_date,
-                        "last_modified":image.last_modified,
-                        "location_id":image.location_id
+                        "event_date": image.event_date,
+                        "last_modified": image.last_modified,
+                        "location_id": image.location_id,
+                        "is_deleted":image.is_deleted
                     })
-
+    
             # Convert dictionary to list of objects
             result = list(grouped_data.values())
             print(result)
@@ -404,6 +406,6 @@ class PictureController():
         except Exception as e:
             print(f"Error: {e}")
             return jsonify({"error": str(e)}), 500
-
-
-
+    
+    
+    
