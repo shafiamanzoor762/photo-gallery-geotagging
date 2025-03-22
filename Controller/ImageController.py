@@ -780,7 +780,7 @@ class ImageController:
 
 
     
-    def get_all_person():
+def get_all_person():
         persons = (
             db.session.query(Person.id, Person.name, Person.path, Person.gender)
             .all()
