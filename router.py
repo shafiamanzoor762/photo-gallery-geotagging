@@ -7,6 +7,7 @@ import json
 from config import db,app
 import os
 import base64
+import uuid
 
 from Controller.PictureController import PictureController
 from Controller.EventController import EventController
@@ -101,7 +102,7 @@ def extract_face():
         if file.filename == '':
             return jsonify({'error':'filename is empty'}), 404
         
-        image_path = os.path.join('.',ASSETS_FOLDER, file.filename)
+        image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
         print(image_path)
         image = Image.open(io.BytesIO(file.read()))
         image.save(image_path)
