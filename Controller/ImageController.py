@@ -773,7 +773,14 @@ class ImageController:
         return jsonify({"unedited_images": image_list}), 200
 
 
-
+def get_all_person():
+        persons = (
+            db.session.query(Person.id, Person.name, Person.path, Person.gender)
+            .all()
+            )    
+    
+    # Convert result to list of dictionaries
+        return [{"id": p.id, "name": p.name, "path": p.path, "gender": p.gender} for p in persons]
 
 
     
