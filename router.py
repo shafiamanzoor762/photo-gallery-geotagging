@@ -7,7 +7,6 @@ import json
 from config import db,app
 import os
 import base64
-import uuid
 
 from Controller.PictureController import PictureController
 from Controller.EventController import EventController
@@ -171,13 +170,62 @@ def get_unedited_images_route():
 
 # -----------------------------------------------------------
 #done
+# @app.route('/add_image', methods=['POST'])
+# def add_image():
+#     data = request.get_json()
+#     if 'path' not in data:
+#         return jsonify({'error': 'Missing required fields'}), 400
+#     return ImageController.add_image(data)
+
+# Route to handle image uploads
 @app.route('/add_image', methods=['POST'])
 def add_image():
-    data = request.get_json()
-    if 'path' not in data:
-        return jsonify({'error': 'Missing required fields'}), 400
-    return ImageController.add_image(data)
+    try:
+        # Check if the file is present in the request
+        if 'file' not in request.files:
+            return jsonify({'error': 'File not attached'}), 400
 
+        file = request.files['file']
+
+        # Check if the file is empty
+        if file.filename == '':
+            return jsonify({'error': 'Filename is empty'}), 400
+
+        # Read file content once
+        file_bytes = file.read()
+
+        # Convert image if necessary
+        image = Image.open(io.BytesIO(file_bytes))
+        if image.mode == 'RGBA':
+            image = image.convert('RGB')
+
+        # Ensure 'Assets' folder exists
+        ASSETS_FOLDER = 'Assets'
+        os.makedirs(ASSETS_FOLDER, exist_ok=True)
+
+        # Save the file to the 'Assets' folder
+        file_paths = os.path.join(ASSETS_FOLDER, file.filename)
+        file_path = "images/" + file.filename  # Relative path for database storage
+
+        with open(file_paths, "wb") as f:
+            f.write(file_bytes)
+
+        # Get JSON data from the request
+        json_data = request.form.get('data')
+        if not json_data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+
+        # Parse the JSON data
+        data = json.loads(json_data)
+
+        # Add the file path to the data
+        data['path'] = file_path
+
+        # Call the ImageController.add_image method with the data
+        return ImageController.add_image(data)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Get details of a specific Image (Read)
 @app.route('/images/<int:image_id>', methods=['GET'])
@@ -232,8 +280,6 @@ def addevents():
 #sorting of events for Dropdown
 @app.route('/groupbyevents', methods=['GET'])
 def sortevents():
-    
-    
     return EventController.groupbyevents()
 
 # ================Location=================
