@@ -731,8 +731,9 @@ class ImageController:
         
         
          
-
-     # getting unlabel images
+        
+    
+    # getting unlabel images
     def get_unedited_images():
          try:
              unedited_images = (
@@ -776,7 +777,81 @@ class ImageController:
  
          except Exception as e:
              return jsonify({"error": str(e)}), 500     
-        
+    
+    # getting unlabel images
+    #  def get_unedited_images():
+    #     try:
+    #         unedited_images = (
+    #             db.session.query(Image)
+    #             .outerjoin(Image.persons)  # Join with Person table
+    #             .outerjoin(Image.events)  # Join with Event table
+    #             .filter(
+    #                 (Image.is_deleted == False) &  # Exclude deleted images
+    #                 (Image.event_date.is_(None)) &  # No event date
+    #                 (Image.location_id.is_(None)) &  # No location
+    #                 ((Person.name == "unknown") | (Person.name.is_(None))) &  # Person's name is "unknown" or NULL
+    #                 (Person.gender.is_(None)) &  # Person's gender is NULL
+    #                 ((Event.name == "unknown") | (Event.name.is_(None)))  # Event name is "unknown" or NULL
+    #             )
+    #             .all()
+    #         )
+    
+    #         # Convert images to JSON format
+    #         image_list = []
+    #         for img in unedited_images:
+    #             location = img.location if img.location else None
+    #             image_list.append({
+    #                 "id": img.id,
+    #                 "path": img.path,
+    #                 "is_sync": img.is_sync,
+    #                 "capture_date": img.capture_date.strftime('%Y-%m-%d') if img.capture_date else None,
+    #                 "event_date": img.event_date.strftime('%Y-%m-%d') if img.event_date else None,
+    #                 "last_modified": img.last_modified.strftime('%Y-%m-%d %H:%M:%S') if img.last_modified else None,
+    #                 "location": {
+    #     unedited_images = (
+    #         db.session.query(Image)
+    #         .outerjoin(Image.persons)  # Join with Person table
+    #         .outerjoin(Image.events)  # Join with Event table
+    #         .filter(
+    #             (Image.event_date.is_(None)) &  # No event date
+    #             (Image.location_id.is_(None)) &  # No location
+    #             # (Image.last_modified.is_(None)) &  # No last modified date
+    #             ((Person.name == "unknown") | (Person.name.is_(None))) &  # Person's name is "unknown" or NULL
+    #             (Person.gender.is_(None)) &  # Person's gender is NULL
+    #             ((Event.name == "unknown") | (Event.name.is_(None)))  # Event name is "unknown" or NULL
+    #         )
+    #         .all()
+    #     )
+
+    #     # Convert images to JSON format
+    #     image_list = []
+    #     for img in unedited_images:
+    #         location = img.location if img.location else None
+    #         image_list.append({
+    #             "id": img.id,
+    #             "path": img.path,
+    #             "is_sync": img.is_sync,
+    #             "capture_date": img.capture_date.strftime('%Y-%m-%d') if img.capture_date else None,
+    #             "event_date": img.event_date.strftime('%Y-%m-%d') if img.event_date else None,
+    #             "last_modified": img.last_modified.strftime('%Y-%m-%d %H:%M:%S') if img.last_modified else None,
+    #             # "location_id": img.location_id,
+    #             "location": {
+    #                     "id": location.id if location else None,
+    #                     "name": location.name if location else None,
+    #                     "latitude": location.latitude if location else None,
+    #                     "longitude": location.longitude if location else None,
+    #                 },
+    #                 "persons": [{"id": p.id, "name": p.name, "gender": p.gender} for p in img.persons],  # Include person details
+    #                 "events": [{"id": e.id, "name": e.name} for e in img.events]  # Include event details
+    #             })
+    
+    #         print(image_list)
+    #         return jsonify({"unedited_images": image_list}), 200
+    
+    #     except Exception as e:
+    #         return jsonify({"error": str(e)}), 500
+
+    
     def get_all_person():
         persons = (
             db.session.query(Person.id, Person.name, Person.path, Person.gender)
@@ -785,4 +860,9 @@ class ImageController:
     
     # Convert result to list of dictionaries
         return [{"id": p.id, "name": p.name, "path": p.path, "gender": p.gender} for p in persons]
+
+
+    
+
+
 
