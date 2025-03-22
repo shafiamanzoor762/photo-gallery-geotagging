@@ -46,6 +46,7 @@ class PictureController():
                     if len(parts) > 1:  
                         encoding = np.array([float(num) for num in parts[1].split(',')])  
                         stored_encodings.append(encoding)
+                f.close()
 
         
         unique_faces_count = 0
@@ -74,6 +75,7 @@ class PictureController():
                     with open(encodings_file, 'a') as f:
                         encoding_str = ",".join([str(num) for num in current_encoding])
                         f.write(f"unknown;{encoding_str};{target_file_name}\n")
+                        f.close()
 
                 else:
                    
@@ -85,6 +87,7 @@ class PictureController():
                             with open(encodings_file, 'a') as f:
                                 encoding_str = ",".join([str(num) for num in current_encoding])
                                 f.write(f"unknown;{encoding_str};{target_file_name}\n")
+                                f.close()
                             save_file = str(uuid.uuid4().hex)
             else:
                 
