@@ -8,6 +8,7 @@ from config import db,app
 import os
 import base64
 import uuid
+from werkzeug.utils import secure_filename
 
 from Controller.PictureController import PictureController
 from Controller.EventController import EventController
@@ -192,6 +193,9 @@ def add_image():
         if file.filename == '':
             return jsonify({'error': 'Filename is empty'}), 400
 
+        # Get the original filename
+        original_filename = secure_filename(file.filename)  # Ensures filename safety
+
         # Read file content once
         file_bytes = file.read()
 
@@ -204,11 +208,9 @@ def add_image():
         ASSETS_FOLDER = 'Assets'
         os.makedirs(ASSETS_FOLDER, exist_ok=True)
 
-        path = str(uuid.uuid4().hex) + '.jpg'
-        
-        # Save the file to the 'Assets' folder
-        file_paths = os.path.join(ASSETS_FOLDER, path)
-        file_path = "images/" + path  # Relative path for database storage
+        # Save the file to the 'Assets' folder with original filename
+        file_paths = os.path.join(ASSETS_FOLDER, original_filename)
+        file_path = "images/" + original_filename  # Relative path for database storage
 
         with open(file_paths, "wb") as f:
             f.write(file_bytes)
@@ -229,6 +231,7 @@ def add_image():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # Get details of a specific Image (Read)
 @app.route('/images/<int:image_id>', methods=['GET'])
