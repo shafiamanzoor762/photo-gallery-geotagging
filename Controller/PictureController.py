@@ -17,8 +17,8 @@ from Model.Image import Image
     # Folder where uploaded images will be saved.
 # ASSETS_FOLDER = "Assets"
 # Folder and file where face encodings are stored.
-STORED_FACES_DIR = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces"
-# STORED_FACES_DIR = "stored-faces"
+# STORED_FACES_DIR = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces"
+STORED_FACES_DIR = "stored-faces"
 
 ENCODINGS_FILE = os.path.join(STORED_FACES_DIR, "person.txt")
     
@@ -28,12 +28,114 @@ if not os.path.exists(STORED_FACES_DIR):
 
 
 class PictureController():
-    
+    # @staticmethod
+    # def extract_face(image_path):
+    #     # Load Haar Cascade classifier for face detection.
+    #     cascade_path = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\haarcascade_frontalface_default.xml"
+    #     # cascade_path = "haarcascade_frontalface_default.xml"
+
+    #     haar_cascade = cv2.CascadeClassifier(cascade_path)
+
+    #     # Read image using OpenCV and convert to grayscale.
+    #     img = cv2.imread(image_path)
+    #     if img is None:
+    #         print("Failed to read image at:", image_path)
+    #         # Instead of returning an HTTP response, return an empty list.
+    #         return []
+    #     # Use the original BGR image for saving cropped faces (to keep them colorful)
+    #     gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
+    #     # Detect faces in the image.
+    #     faces = haar_cascade.detectMultiScale(
+    #         gray_img, scaleFactor=1.05, minNeighbors=13, minSize=(100, 100)
+    #     )
+
+    #     # Load stored face encodings from text file.
+    #     stored_encodings = []
+    #     stored_paths = []
+    #     if os.path.exists(ENCODINGS_FILE) and os.stat(ENCODINGS_FILE).st_size > 0:
+    #         with open(ENCODINGS_FILE, 'r') as f:
+    #             for line in f.readlines():
+    #                 parts = line.strip().split(';')
+    #                 if len(parts) > 2:
+    #                     encoding_values = parts[1].split(',')
+    #                     try:
+    #                         encoding = np.array([float(num) for num in encoding_values])
+    #                         if encoding.shape[0] == 128:  # Valid encoding should be 128-dimensional.
+    #                             stored_encodings.append(encoding)
+    #                             stored_paths.append(parts[2])
+    #                         else:
+    #                             print(f"Skipping invalid encoding (wrong size): {parts[1]}")
+    #                     except ValueError:
+    #                         print(f"Skipping malformed encoding: {parts[1]}")
+    #                         continue
+
+    #     extracted_faces = []  # List to store info for each extracted face.
+
+    #     # Process each detected face.
+    #     for (x, y, w, h) in faces:
+    #         # Crop the face from the original image (BGR) so that the saved image remains colorful.
+    #         cropped_face = img[y:y + h, x:x + w]
+
+    #         # Generate a unique filename for this cropped face.
+    #         save_file = str(uuid.uuid4().hex)
+    #         target_file_name = os.path.join(STORED_FACES_DIR, f"{save_file}.jpg")
+    #         cv2.imwrite(target_file_name, cropped_face)
+
+    #         # Convert the cropped face to RGB for face_recognition.
+    #         rgb_cropped_face = cv2.cvtColor(cropped_face, cv2.COLOR_BGR2RGB)
+
+    #         # Encode the image as Base64 for display (optional).
+    #         _, buffer = cv2.imencode('.jpg', rgb_cropped_face)
+    #         face_base64 = base64.b64encode(buffer).decode('utf-8')
+
+    #         # Compute the face encoding.
+    #         encoding = face_recognition.face_encodings(rgb_cropped_face)
+    #         if len(encoding) > 0:
+    #             current_encoding = np.array(encoding[0])
+    #             is_duplicate = False
+    #             duplicate_path = None
+
+    #             # Compare with stored encodings if any exist.
+    #             if stored_encodings:
+    #                 matches = face_recognition.compare_faces(stored_encodings, current_encoding, tolerance=0.55)
+    #                 print(f"Face matches: {matches}")
+    #                 if any(matches):
+    #                     is_duplicate = True
+    #                     duplicate_index = matches.index(True)
+    #                     duplicate_path = stored_paths[duplicate_index]
+    #                     print(f"Duplicate detected, reusing stored face: {duplicate_path}")
+
+    #             # If duplicate is found, reuse its path.
+    #             if is_duplicate:
+    #                 final_face_path = duplicate_path
+    #                 os.remove(target_file_name)  # Remove the newly saved duplicate.
+    #             else:
+    #                 final_face_path = target_file_name
+    #                 # Save the new encoding to the ENCODINGS_FILE.
+    #                 with open(ENCODINGS_FILE, 'a') as f:
+    #                     encoding_str = ",".join([str(num) for num in current_encoding])
+    #                     f.write(f"unknown;{encoding_str};{target_file_name}\n")
+    #                 print(f"New face saved: {target_file_name}")
+
+    #             extracted_faces.append({
+    #                 "face_path": final_face_path,
+    #                 "encoding": current_encoding.tolist(),
+    #                 "face_base64": face_base64
+    #             })
+    #         else:
+    #             print(f"No encoding found for face in image: {image_path}")
+    #             os.remove(target_file_name)
+    #             continue
+
+    #     # Instead of returning an HTTP response, we return the extracted face info.
+    #     return extracted_faces
+
 
     @staticmethod
     def extract_face(image_path):
         # Load Haar Cascade classifier for face detection.
-        cascade_path = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\haarcascade_frontalface_default.xml"
+        cascade_path = "haarcascade_frontalface_default.xml"
         haar_cascade = cv2.CascadeClassifier(cascade_path)
 
         # Read image using OpenCV and convert to grayscale.
