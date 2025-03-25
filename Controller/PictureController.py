@@ -135,8 +135,7 @@ class PictureController():
     @staticmethod
     def extract_face(image_path):
         # Load Haar Cascade classifier for face detection.
-        # cascade_path = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\haarcascade_frontalface_default.xml"
-        cascade_path = "haarcascade_frontalface_default.xml"
+        cascade_path = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\haarcascade_frontalface_default.xml"
         haar_cascade = cv2.CascadeClassifier(cascade_path)
 
         # Read image using OpenCV and convert to grayscale.

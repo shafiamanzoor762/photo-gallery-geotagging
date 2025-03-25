@@ -449,10 +449,10 @@ class ImageController:
              # 1. Check if image path already exists
             existing_image = Image.query.filter_by(path=data['path']).first()
             if existing_image:
-                print(f"⚠️ Image already exists: {existing_image.path}")
+                print(f"\u26a0\ufe0f Image already exists: {existing_image.path}")
                 return jsonify({'message': 'Image already exists'}), 200
 
-            # 1. Insert image record into the Image table.
+            # 2. Insert image record into the Image table.
             image = Image(
                 path=data['path'],
                 is_sync=data.get('is_sync', 0),
@@ -462,40 +462,23 @@ class ImageController:
             )
             db.session.add(image)
             db.session.commit()
-            print(f"✅ Image saved: {image.path}")
+            print(f"\u2705 Image saved: {image.path}")
 
-            # 2. Extract faces from the added image.
+            # 3. Extract faces from the added image.
             extracted_faces = PictureController.extract_face(image.path.replace('images', 'Assets'))
             if not extracted_faces:
                 return jsonify({'message': 'No faces found'}), 200
 
-            # 3. For each extracted face, check if a matching Person exists.
+            # 4. For each extracted face, check if a matching Person exists based on path.
             for face_data in extracted_faces:
                 face_path = face_data["face_path"]
                 face_filename = os.path.basename(face_path)
                 db_face_path = f"face_images/{face_filename}"
-                face_encoding = np.array(face_data["encoding"])  # Convert encoding back to numpy array.
-                matched_person = None
 
-                # Loop over existing Person records.
-                persons = Person.query.all()
-                for person in persons:
-                    if not person.path:
-                        continue
-                    try:
-                        stored_img = face_recognition.load_image_file(person.path)
-                        stored_encodings = face_recognition.face_encodings(stored_img)
-                    except Exception as ex:
-                        print(f"Error processing person image from {person.path}: {ex}")
-                        continue
+                # Check if face already exists in Person table based on path
+                matched_person = Person.query.filter_by(path=db_face_path).first()
 
-                    if stored_encodings:
-                        if face_recognition.compare_faces([stored_encodings[0]], face_encoding, tolerance=0.55)[0]:
-                            matched_person = person
-                            print(f"🔹 Matched with existing person: {person.name}")
-                            break
-
-                # 4. If no matching person is found, create a new Person record.
+                # 5. If no matching person is found, create a new Person record.
                 if not matched_person:
                     new_person = Person(
                         name="unknown",
@@ -504,10 +487,12 @@ class ImageController:
                     )
                     db.session.add(new_person)
                     db.session.commit()
-                    print(f"✅ New person added: {new_person.path}")
+                    print(f"\u2705 New person added: {new_person.path}")
                     matched_person = new_person
+                else:
+                    print(f"\ud83d\udd39 Matched with existing person: {matched_person.name}")
 
-                # 5. Link the Person with the Image in the ImagePerson table.
+                # 6. Link the Person with the Image in the ImagePerson table.
                 image_person = ImagePerson(image_id=image.id, person_id=matched_person.id)
                 db.session.add(image_person)
 
@@ -518,7 +503,6 @@ class ImageController:
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
-     
     
 
     @staticmethod
@@ -732,62 +716,50 @@ class ImageController:
         
          
         
-    
+    @staticmethod
     # getting unlabel images
     def get_unedited_images():
-         try:
-             unedited_images = (
-                 db.session.query(Image)
-                 .outerjoin(Image.persons)  # Join with Person table
-                 .outerjoin(Image.events)  # Join with Event table
-                 .filter(
-                     (Image.is_deleted == False) &  # Exclude deleted images
-                     (Image.event_date.is_(None)) &  # No event date
-                     (Image.location_id.is_(None)) &  # No location
-                     ((Person.name == "unknown") | (Person.name.is_(None))) &  # Person's name is "unknown" or NULL
-                     (Person.gender.is_(None)) &  # Person's gender is NULL
-                     ((Event.name == "unknown") | (Event.name.is_(None)))  # Event name is "unknown" or NULL
-                 )
-                 .all()
-             )
- 
-             # Convert images to JSON format
-             image_list = []
-             for img in unedited_images:
-                 location = img.location if img.location else None
-                 image_list.append({
-                     "id": img.id,
-                     "path": img.path,
-                     "is_sync": img.is_sync,
-                     "capture_date": img.capture_date.strftime('%Y-%m-%d') if img.capture_date else None,
-                     "event_date": img.event_date.strftime('%Y-%m-%d') if img.event_date else None,
-                     "last_modified": img.last_modified.strftime('%Y-%m-%d %H:%M:%S') if img.last_modified else None,
-                     "location": {
-                         "id": location.id if location else None,
-                         "name": location.name if location else None,
-                         "latitude": location.latitude if location else None,
-                         "longitude": location.longitude if location else None,
-                     },
-                     "persons": [{"id": p.id, "name": p.name, "gender": p.gender} for p in img.persons],  # Include person details
-                     "events": [{"id": e.id, "name": e.name} for e in img.events]  # Include event details
-                 })
- 
-             print(image_list)
-             return jsonify({"unedited_images": image_list}), 200
- 
-         except Exception as e:
-             return jsonify({"error": str(e)}), 500     
-
-
-    
-def get_all_person():
-        persons = (
-            db.session.query(Person.id, Person.name, Person.path, Person.gender)
+        unedited_images = (
+            db.session.query(Image)
+            .outerjoin(Image.persons)  # Join with Person table
+            .outerjoin(Image.events)  # Join with Event table
+            .filter(
+                (Image.event_date.is_(None)) &  # No event date
+                (Image.location_id.is_(None)) &  # No location
+                ((Person.name == "unknown") | (Person.name.is_(None))) &  # Person's name is "unknown" or NULL
+                (Person.gender.is_(None)| (Person.gender == 'U')) &  # Person's gender is NULL
+                ((Event.name == "unknown") | (Event.name.is_(None)))  # Event name is "unknown" or NULL
+            )
             .all()
-            )    
-    
-    # Convert result to list of dictionaries
-        return [{"id": p.id, "name": p.name, "path": p.path, "gender": p.gender} for p in persons]
+        )
+
+        # Convert images to JSON format
+        image_list = []
+        for img in unedited_images:
+            image_list.append({
+                "id": img.id,
+                "path": img.path,
+                "is_sync": img.is_sync,
+                "capture_date": img.capture_date.strftime('%Y-%m-%d') if img.capture_date else None,
+                "event_date": img.event_date.strftime('%Y-%m-%d') if img.event_date else None,
+                "last_modified": img.last_modified.strftime('%Y-%m-%d %H:%M:%S') if img.last_modified else None,
+                "location_id": img.location_id,
+                "persons": [{"id": p.id, "name": p.name, "gender": p.gender} for p in img.persons],  # Include person details
+                "events": [{"id": e.id, "name": e.name} for e in img.events]  # Include event details
+            })
+
+        return jsonify({"status": "success", "unedited_images": image_list}), 200
+
+
+   
+    def get_all_person():
+            persons = (
+                db.session.query(Person.id, Person.name, Person.path, Person.gender)
+                .all()
+                )    
+        
+        # Convert result to list of dictionaries
+            return [{"id": p.id, "name": p.name, "path": p.path, "gender": p.gender} for p in persons]
 
 
     

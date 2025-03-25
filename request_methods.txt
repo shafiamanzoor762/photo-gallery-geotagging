@@ -84,3 +84,15 @@ BODY - raw (JSON)
     "name": "New Year Party",
 }
 
+
+
+
+
+
+delete from ImageEvent
+delete from ImagePerson
+delete from Location
+delete from Link
+delete from Person
+delete from Event
+delete from Image
