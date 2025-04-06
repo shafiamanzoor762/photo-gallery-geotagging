@@ -168,7 +168,6 @@ def group_by_date():
 def get_unedited_images_route():
     return ImageController.get_unedited_images()
 
-
 # -----------------------------------------------------------
 #done
 # @app.route('/add_image', methods=['POST'])
