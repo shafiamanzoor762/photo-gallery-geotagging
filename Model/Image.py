@@ -9,7 +9,7 @@ class Image(db.Model):
     capture_date = db.Column(db.Date)
     event_date = db.Column(db.Date)
     last_modified = db.Column(db.Date)
-    hash = db.Column(db.String(255), unique=True, nullable=True)  # <-- Important
+    hash = db.Column(db.String(255), unique=True, nullable=False)  # <-- Important
 
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'), nullable=True)
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
