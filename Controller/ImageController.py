@@ -443,18 +443,81 @@ class ImageController:
     
     #  ===================================
 
+    # @staticmethod
+    # def add_image(data):
+    #     try:
+    #          # 1. Check if image path already exists
+    #         existing_image = Image.query.filter_by(path=data['path']).first()
+    #         if existing_image:
+    #             print(f"\u26a0\ufe0f Image already exists: {existing_image.path}")
+    #             return jsonify({'message': 'Image already exists'}), 200
+
+    #         # 2. Insert image record into the Image table.
+    #         image = Image(
+    #             path=data['path'],
+    #             is_sync=data.get('is_sync', 0),
+    #             capture_date=data.get('capture_date', datetime.utcnow()),
+    #             event_date=data.get('event_date', None),
+    #             last_modified=datetime.utcnow()
+    #         )
+    #         db.session.add(image)
+    #         db.session.commit()
+    #         print(f"\u2705 Image saved: {image.path}")
+
+    #         # 3. Extract faces from the added image.
+    #         extracted_faces = PictureController.extract_face(image.path.replace('images', 'Assets'))
+    #         if not extracted_faces:
+    #             return jsonify({'message': 'No faces found'}), 200
+
+    #         # 4. For each extracted face, check if a matching Person exists based on path.
+    #         for face_data in extracted_faces:
+    #             face_path = face_data["face_path"]
+    #             face_filename = os.path.basename(face_path)
+    #             db_face_path = f"face_images/{face_filename}"
+
+    #             # Check if face already exists in Person table based on path
+    #             matched_person = Person.query.filter_by(path=db_face_path).first()
+
+    #             # 5. If no matching person is found, create a new Person record.
+    #             if not matched_person:
+    #                 new_person = Person(
+    #                     name="unknown",
+    #                     path=db_face_path,  # Use the constructed face path.
+    #                     gender="U"       # Use a valid value according to your constraint.
+    #                 )
+    #                 db.session.add(new_person)
+    #                 db.session.commit()
+    #                 print(f"\u2705 New person added: {new_person.path}")
+    #                 matched_person = new_person
+    #             else:
+    #                 print(f"\ud83d\udd39 Matched with existing person: {matched_person.name}")
+
+    #             # 6. Link the Person with the Image in the ImagePerson table.
+    #             image_person = ImagePerson(image_id=image.id, person_id=matched_person.id)
+    #             db.session.add(image_person)
+
+    #         db.session.commit()
+    #         return jsonify({'message': 'Image and faces saved successfully'}), 201
+
+    #     except Exception as e:
+    #         db.session.rollback()
+    #         return jsonify({'error': str(e)}), 500
+
+
+
     @staticmethod
     def add_image(data):
         try:
-             # 1. Check if image path already exists
-            existing_image = Image.query.filter_by(path=data['path']).first()
+            # 1. Check if image already exists based on HASH
+            existing_image = Image.query.filter_by(hash=data['hash']).first()
             if existing_image:
-                print(f"\u26a0\ufe0f Image already exists: {existing_image.path}")
+                print(f"⚠️ Image already exists with hash: {existing_image.hash}")
                 return jsonify({'message': 'Image already exists'}), 200
 
-            # 2. Insert image record into the Image table.
+            # 2. Insert new image record
             image = Image(
                 path=data['path'],
+                hash=data['hash'],  # Save the hash into database
                 is_sync=data.get('is_sync', 0),
                 capture_date=data.get('capture_date', datetime.utcnow()),
                 event_date=data.get('event_date', None),
@@ -462,37 +525,37 @@ class ImageController:
             )
             db.session.add(image)
             db.session.commit()
-            print(f"\u2705 Image saved: {image.path}")
+            print(f"✅ Image saved: {image.path}")
 
-            # 3. Extract faces from the added image.
+            # 3. Extract faces from the saved image
             extracted_faces = PictureController.extract_face(image.path.replace('images', 'Assets'))
             if not extracted_faces:
                 return jsonify({'message': 'No faces found'}), 200
 
-            # 4. For each extracted face, check if a matching Person exists based on path.
+            # 4. For each extracted face
             for face_data in extracted_faces:
                 face_path = face_data["face_path"]
                 face_filename = os.path.basename(face_path)
                 db_face_path = f"face_images/{face_filename}"
 
-                # Check if face already exists in Person table based on path
+                # Check if this face already exists based on path
                 matched_person = Person.query.filter_by(path=db_face_path).first()
 
-                # 5. If no matching person is found, create a new Person record.
+                # 5. If not found, create a new person
                 if not matched_person:
                     new_person = Person(
                         name="unknown",
-                        path=db_face_path,  # Use the constructed face path.
-                        gender="U"       # Use a valid value according to your constraint.
+                        path=db_face_path,
+                        gender="U"  # Unknown gender
                     )
                     db.session.add(new_person)
                     db.session.commit()
-                    print(f"\u2705 New person added: {new_person.path}")
+                    print(f"✅ New person added: {new_person.path}")
                     matched_person = new_person
                 else:
-                    print(f"\ud83d\udd39 Matched with existing person: {matched_person.name}")
+                    print(f"🔹 Matched with existing person: {matched_person.name}")
 
-                # 6. Link the Person with the Image in the ImagePerson table.
+                # 6. Link the image and the person
                 image_person = ImagePerson(image_id=image.id, person_id=matched_person.id)
                 db.session.add(image_person)
 
@@ -501,6 +564,7 @@ class ImageController:
 
         except Exception as e:
             db.session.rollback()
+            print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
 
     
