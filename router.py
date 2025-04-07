@@ -171,7 +171,6 @@ def group_by_date():
 def get_unedited_images_route():
     return ImageController.get_unedited_images()
 
-
 # -----------------------------------------------------------
 # --- ROUTE TO HANDLE IMAGE UPLOAD ---
 # --- ROUTE TO HANDLE IMAGE UPLOAD ---

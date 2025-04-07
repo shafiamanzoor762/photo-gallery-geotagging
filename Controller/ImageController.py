@@ -123,7 +123,9 @@ class ImageController:
 
     @staticmethod
     def edit_image_data():
-        data = request.get_json()  # Get JSON data from the request
+        data = request.get_json(force=True, silent=True)  # Get JSON data from the request
+        
+        print("Parsed JSON:", data)
 
         if not data:
             return jsonify({"error": "No data provided"}), 400
@@ -134,7 +136,7 @@ class ImageController:
 
         # Extract the numeric image_id and its associated data
         try:
-            image_id = int(next(iter(data.keys())))  
+            image_id = int(next(iter(data.keys())))
         except ValueError:
             return jsonify({"error": "image_id must be a numeric value"}), 400
 
@@ -177,9 +179,24 @@ class ImageController:
 
         # Update location if provided
         if location_data:
-            location_name = location_data[0]
-            location_list = json.loads(location_name)
-            location_name = ", ".join(location_list)
+            # location_name = location_data[0]
+            # location_list = json.loads(location_name)
+            # location_name = ", ".join(location_list)
+
+            raw_location_name = location_data[0]
+
+            try:
+                # Try to parse as JSON list
+                location_list = json.loads(raw_location_name)
+                if isinstance(location_list, list):
+                    location_name = ", ".join(location_list)
+                else:
+                    # Not a list? Fall back to string
+                    location_name = str(raw_location_name)
+            except (json.JSONDecodeError, TypeError):
+                # It's not JSON formatted — treat as plain string
+                location_name = str(raw_location_name)
+                
             latitude = location_data[1]
             longitude = location_data[2]
             print(location_name, latitude, longitude)
