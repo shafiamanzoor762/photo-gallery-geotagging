@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask, request, jsonify, send_file,make_response, send_from_directory
 from PIL import Image
 import io
@@ -8,12 +9,22 @@ from config import db,app
 import os
 import base64
 import uuid
+from werkzeug.utils import secure_filename
 
 from Controller.PictureController import PictureController
 from Controller.EventController import EventController
 from Controller.ImageController import ImageController
 from Controller.LocationController import LocationController
 from Controller.LinkController import LinkController
+
+
+ASSETS_FOLDER = 'Assets'  
+if not os.path.exists(ASSETS_FOLDER):
+    os.makedirs(ASSETS_FOLDER)
+
+FACES_FOLDER = 'stored-faces'  
+if not os.path.exists(FACES_FOLDER):
+    os.makedirs(FACES_FOLDER)
 
 @app.route('/tagimage', methods = ['POST'])
 def tagImage():
@@ -81,14 +92,6 @@ def extractImageTags():
         
     except Exception as exp:
         return jsonify({'error':str(exp)}), 500
-
-ASSETS_FOLDER = 'Assets'  
-if not os.path.exists(ASSETS_FOLDER):
-    os.makedirs(ASSETS_FOLDER)
-
-FACES_FOLDER = 'stored-faces'  
-if not os.path.exists(FACES_FOLDER):
-    os.makedirs(FACES_FOLDER)
 
 # =================== PICTURE CONTROLLER ==============
 
@@ -180,67 +183,111 @@ def group_by_date():
 def get_unedited_images_route():
     return ImageController.get_unedited_images()
 
-
 # -----------------------------------------------------------
-#done
-# @app.route('/add_image', methods=['POST'])
-# def add_image():
-#     data = request.get_json()
-#     if 'path' not in data:
-#         return jsonify({'error': 'Missing required fields'}), 400
-#     return ImageController.add_image(data)
-
-# Route to handle image uploads
+# --- ROUTE TO HANDLE IMAGE UPLOAD ---
+# --- ROUTE TO HANDLE IMAGE UPLOAD ---
 @app.route('/add_image', methods=['POST'])
 def add_image():
     try:
-        # Check if the file is present in the request
+        # 1. Check if file is in request
         if 'file' not in request.files:
             return jsonify({'error': 'File not attached'}), 400
 
         file = request.files['file']
 
-        # Check if the file is empty
         if file.filename == '':
             return jsonify({'error': 'Filename is empty'}), 400
 
-        # Read file content once
+        original_filename = secure_filename(file.filename)
+
+        # 2. Read file bytes
         file_bytes = file.read()
 
-        # Convert image if necessary
-        image = Image.open(io.BytesIO(file_bytes))
-        if image.mode == 'RGBA':
-            image = image.convert('RGB')
+        # 3. Convert to RGB if image is RGBA
+        image_obj = Image.open(io.BytesIO(file_bytes))
+        if image_obj.mode == 'RGBA':
+            image_obj = image_obj.convert('RGB')
 
-        # Ensure 'Assets' folder exists
-        ASSETS_FOLDER = 'Assets'
-        os.makedirs(ASSETS_FOLDER, exist_ok=True)
-
-        path = str(uuid.uuid4().hex) + '.jpg'
-        
-        # Save the file to the 'Assets' folder
-        file_paths = os.path.join(ASSETS_FOLDER, path)
-        file_path = "images/" + path  # Relative path for database storage
-
-        with open(file_paths, "wb") as f:
+        # 4. Save the image to Assets folder
+        file_save_path = os.path.join(ASSETS_FOLDER, original_filename)
+        with open(file_save_path, "wb") as f:
             f.write(file_bytes)
 
-        # Get JSON data from the request
-        json_data = request.form.get('data')
-        if not json_data:
-            return jsonify({'error': 'No JSON data provided'}), 400
+        # 5. Get the hash from form (sent by frontend)
+        hash_value = request.form.get('hash')
+        if not hash_value:
+            return jsonify({'error': 'No hash provided'}), 400
 
-        # Parse the JSON data
-        data = json.loads(json_data)
+        # 6. Build the metadata dictionary
+        data = {
+            'path': "images/" + original_filename,  # relative path for database
+            'hash': hash_value,
+            # Optionally, add other fields with default values
+            'is_sync': 0,
+            'capture_date': datetime.utcnow().isoformat(),
+            'event_date': None
+        }
 
-        # Add the file path to the data
-        data['path'] = file_path
-
-        # Call the ImageController.add_image method with the data
+        # 7. Call Controller to save data
         return ImageController.add_image(data)
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
+
+# # Route to handle image uploads
+# @app.route('/add_image', methods=['POST'])
+# def add_image():
+#     try:
+#         # Check if the file is present in the request
+#         if 'file' not in request.files:
+#             return jsonify({'error': 'File not attached'}), 400
+
+#         file = request.files['file']
+
+#         # Check if the file is empty
+#         if file.filename == '':
+#             return jsonify({'error': 'Filename is empty'}), 400
+
+#         # Get the original filename
+#         original_filename = secure_filename(file.filename)  # Ensures filename safety
+
+#         # Read file content once
+#         file_bytes = file.read()
+
+#         # Convert image if necessary
+#         image = Image.open(io.BytesIO(file_bytes))
+#         if image.mode == 'RGBA':
+#             image = image.convert('RGB')
+        
+        
+#         if not os.path.exists(ASSETS_FOLDER):
+#             os.makedirs(ASSETS_FOLDER)
+
+
+#         # Save the file to the 'Assets' folder with original filename
+#         file_paths = os.path.join(ASSETS_FOLDER, original_filename)
+#         file_path = "images/" + original_filename  # Relative path for database storage
+
+#         with open(file_paths, "wb") as f:
+#             f.write(file_bytes)
+
+#         # Get JSON data from the request
+#         json_data = request.form.get('data')
+#         if not json_data:
+#             return jsonify({'error': 'No JSON data provided'}), 400
+
+#         # Parse the JSON data
+#         data = json.loads(json_data)
+
+#         # Add the file path to the data
+#         data['path'] = file_path
+
+#         # Call the ImageController.add_image method with the data
+#         return ImageController.add_image(data)
+
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
 
 # Get details of a specific Image (Read)
 @app.route('/images/<int:image_id>', methods=['GET'])
@@ -400,7 +447,7 @@ def upload_file():
 @app.route('/images/<filename>', methods=['GET'])
 def get_image(filename):
     try:
-        
+
         return send_from_directory(ASSETS_FOLDER, filename)
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
@@ -425,3 +472,5 @@ if __name__ == '__main__':
 #         os.makedirs("temp")
 #     app.run(host='0.0.0.0', port=5000, debug=True)
 
+# ye sai h na hn ok sae ha thanks ❤ 
+#kl ao na zara uni m batati hn sai keh ry thy director aj tumhary liye k time waste kiya h tumny maron gi m ab tum kro gi to bakion sy kiya umeed rakhen batao na   //////phly b chal rha tha na ma nay change nahi kia isy tu ma isy lya khaon k ya asy b chlna cahe  chlo sae ha hn sai h peha tha pehly humary jesy hi tah q k project to yehi clone kiya h na is liye ye cheezen to sabki ame hua ye hoga k tumsy uper chala gya ho ga open jo ni sai kiya hua project is liye t

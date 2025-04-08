@@ -18,9 +18,9 @@ from Model.Link import Link
 # ASSETS_FOLDER = "Assets"
 # Folder and file where face encodings are stored.
 # STORED_FACES_DIR = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces"
-STORED_FACES_DIR = "stored-faces"
+STORED_FACES_DIR = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces"
 
-ENCODINGS_FILE = os.path.join(STORED_FACES_DIR, "person.txt")
+ENCODINGS_FILE = os.path.join(STORED_FACES_DIR, "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces\\person.txt")
     
     # Ensure the stored faces directory exists.
 if not os.path.exists(STORED_FACES_DIR):
@@ -135,7 +135,7 @@ class PictureController():
     @staticmethod
     def extract_face(image_path):
         # Load Haar Cascade classifier for face detection.
-        cascade_path = "haarcascade_frontalface_default.xml"
+        cascade_path = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\haarcascade_frontalface_default.xml"
         haar_cascade = cv2.CascadeClassifier(cascade_path)
 
         # Read image using OpenCV and convert to grayscale.

@@ -14,6 +14,10 @@ CREATE TABLE Person (
 	gender CHAR(1) CHECK (Gender IN ('M', 'F'))
 );
 
+ALTER TABLE Person 
+ADD CONSTRAINT CK_Person_Genderr CHECK (gender IN ('M', 'F', 'U'));
+
+
 -- 3 Table for Event entity
 CREATE TABLE Event (
     id INT PRIMARY KEY IDENTITY(1,1),  -- Auto-increment primary key
