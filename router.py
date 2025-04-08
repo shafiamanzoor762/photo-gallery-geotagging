@@ -146,6 +146,18 @@ def create_link():
         new_link = LinkController.insert_link(person1_id, person2_id)
         return jsonify({'message': 'Link created successfully'})
 
+@app.route('/check_link', methods=['POST'])
+def check_link():
+        data = request.get_json()
+        person1_id = data.get('person1_id')
+        person2_id = data.get('person2_id')
+        
+        if not person1_id or not person2_id:
+            return jsonify({'error': 'Both person1_id and person2_id are required'}), 400
+        
+        new_link = LinkController.link_exists(person1_id, person2_id)
+        return jsonify(new_link)
+
 # --------------------------IMAGE---------------------------------
 
 @app.route('/edit_image', methods=['POST'])

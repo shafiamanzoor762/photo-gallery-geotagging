@@ -18,6 +18,7 @@ from Model.Location import Location
 from Model.Event import Event
 from Model.ImageEvent import ImageEvent
 from Model.ImagePerson import ImagePerson
+from Model.Link import Link
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 
@@ -176,26 +177,26 @@ class ImageController:
         print(location_data)
 
         # Update location if provided
-        if location_data:
-            location_name = location_data[0]
-            location_list = json.loads(location_name)
-            location_name = ", ".join(location_list)
-            latitude = location_data[1]
-            longitude = location_data[2]
-            print(location_name, latitude, longitude)
+        # if location_data:
+        #     location_name = location_data[0]
+        #     location_list = json.loads(location_name)
+        #     location_name = ", ".join(location_list)
+        #     latitude = location_data[1]
+        #     longitude = location_data[2]
+        #     print(location_name, latitude, longitude)
 
-            # Check if the location exists
-            existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
+        #     # Check if the location exists
+        #     existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
 
-            if existing_location:
-                image.location_id = existing_location.id  # Associate existing location
-            else:
-                # Create new location
-                print("yes am here")
-                new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
-                db.session.add(new_location)
-                db.session.flush()  # Get the new location ID before committing
-                image.location_id = new_location.id
+        #     if existing_location:
+        #         image.location_id = existing_location.id  # Associate existing location
+        #     else:
+        #         # Create new location
+        #         print("yes am here")
+        #         new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
+        #         db.session.add(new_location)
+        #         db.session.flush()  # Get the new location ID before committing
+        #         image.location_id = new_location.id
 
         # Update persons if provided
         if persons:
@@ -617,17 +618,36 @@ class ImageController:
         image_ids = set()  # Using set to avoid duplicates
     
         # 🔹 Filter by Person ID
+        # 🔹 Filter by Person ID and include linked persons via the Link table
         if person_id:
             person = Person.query.filter_by(id=person_id).first()
+        
             if person:
+                # Get all linked person IDs (bidirectional lookup)
+                linked_ids = (
+                    db.session.query(Link.person2_id)
+                    .filter(Link.person1_id == person_id)
+                    .union(
+                        db.session.query(Link.person1_id)
+                        .filter(Link.person2_id == person_id)
+                    )
+                    .all()
+                )
+        
+                # Flatten and combine all linked person IDs with the original person_id
+                linked_person_ids = {person_id} | {id for (id,) in linked_ids}
+        
+                # Get all image IDs associated with those persons
                 person_images = (
                     db.session.query(Image.id)
                     .join(ImagePerson, ImagePerson.image_id == Image.id)
-                    .filter(ImagePerson.person_id == person_id)
+                    .filter(ImagePerson.person_id.in_(linked_person_ids))
                     .all()
                 )
+        
                 image_ids.update([image.id for image in person_images])
-    
+        
+            
         # 🔹 Filter by Event Name
         if event_name:
             event = Event.query.filter_by(name=event_name).first()
