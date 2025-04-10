@@ -471,6 +471,3 @@ if __name__ == '__main__':
 #     if not os.path.exists("temp"):
 #         os.makedirs("temp")
 #     app.run(host='0.0.0.0', port=5000, debug=True)
-
-# ye sai h na hn ok sae ha thanks ❤ 
-#kl ao na zara uni m batati hn sai keh ry thy director aj tumhary liye k time waste kiya h tumny maron gi m ab tum kro gi to bakion sy kiya umeed rakhen batao na   //////phly b chal rha tha na ma nay change nahi kia isy tu ma isy lya khaon k ya asy b chlna cahe  chlo sae ha hn sai h peha tha pehly humary jesy hi tah q k project to yehi clone kiya h na is liye ye cheezen to sabki ame hua ye hoga k tumsy uper chala gya ho ga open jo ni sai kiya hua project is liye t

@@ -17,6 +17,8 @@ from Model.Link import Link
     # Folder where uploaded images will be saved.
 # ASSETS_FOLDER = "Assets"
 # Folder and file where face encodings are stored.
+STORED_FACES_DIR = "stored-faces"
+ENCODINGS_FILE =  "stored-faces\\person.txt"
 # STORED_FACES_DIR = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces"
 STORED_FACES_DIR = "stored-faces"
 
