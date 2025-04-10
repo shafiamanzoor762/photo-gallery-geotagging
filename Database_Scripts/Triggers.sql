@@ -109,7 +109,6 @@ END;
 
 
 ---------------linkperson
-
 CREATE TRIGGER trg_UpdateLinkHistory
 ON Link
 AFTER UPDATE
@@ -118,14 +117,14 @@ BEGIN
     SET NOCOUNT ON;
 
     -- Insert the old data (before update) into the history table
-    INSERT INTO LinkHistroy (person1_id, person2_id, version_no,is_Active)
+    INSERT INTO LinkHistory (person1_id, person2_id, version_no, is_Active)
     SELECT 
         d.person1_id,
         d.person2_id,
-        ISNULL(v.MaxVersion, 0) + 1 , -- Increment the version number
-		0 AS is_active
+        ISNULL(v.MaxVersion, 0) + 1,  -- Increment the version number based on the maximum version
+        0 AS is_active
     FROM 
-        Deleted d  -- The 'Deleted' table holds the old data
+        Deleted d  -- The 'Deleted' table holds the old data (before update)
     OUTER APPLY (
         SELECT MAX(version_no) AS MaxVersion
         FROM LinkHistory
