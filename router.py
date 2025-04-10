@@ -18,9 +18,17 @@ from Controller.LocationController import LocationController
 from Controller.LinkController import LinkController
 
 
-ASSETS_FOLDER = 'Assets'  
-if not os.path.exists(ASSETS_FOLDER):
-    os.makedirs(ASSETS_FOLDER)
+ASSETS_FOLDER = 'Assets'
+
+from dotenv import load_dotenv
+import os
+
+load_dotenv(dotenv_path='directory.env')  # Load your env file
+
+ROOT_DIR = os.getenv('root_final')  # Read the path
+print(ROOT_DIR)
+# if not os.path.exists(ASSETS_FOLDER):
+#     os.makedirs(ASSETS_FOLDER)
 
 FACES_FOLDER = 'stored-faces'  
 if not os.path.exists(FACES_FOLDER):
@@ -414,7 +422,7 @@ def upload_file():
         # Ensure 'assets' folder exists
         ASSETS_FOLDER = 'Assets'
         os.makedirs(ASSETS_FOLDER, exist_ok=True)
-        data=""
+        data="" 
         file_paths = os.path.join(ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
         file_path="images/"+file.filename
         with open(file_paths, "wb") as f:
@@ -431,6 +439,15 @@ def upload_file():
 
 # [GET] http://127.0.0.1:5000/images/2
 
+
+@app.route('/images/<path:filename>', methods=['GET'])
+def get_image1(filename):
+    try:
+
+        return send_from_directory(ROOT_DIR, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+    
 
 @app.route('/images/<filename>', methods=['GET'])
 def get_image(filename):
@@ -459,6 +476,3 @@ if __name__ == '__main__':
 #     if not os.path.exists("temp"):
 #         os.makedirs("temp")
 #     app.run(host='0.0.0.0', port=5000, debug=True)
-
-# ye sai h na hn ok sae ha thanks ❤ 
-#kl ao na zara uni m batati hn sai keh ry thy director aj tumhary liye k time waste kiya h tumny maron gi m ab tum kro gi to bakion sy kiya umeed rakhen batao na   //////phly b chal rha tha na ma nay change nahi kia isy tu ma isy lya khaon k ya asy b chlna cahe  chlo sae ha hn sai h peha tha pehly humary jesy hi tah q k project to yehi clone kiya h na is liye ye cheezen to sabki ame hua ye hoga k tumsy uper chala gya ho ga open jo ni sai kiya hua project is liye t
