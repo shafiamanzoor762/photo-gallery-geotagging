@@ -14,14 +14,16 @@ from config import db
 from Model.ImagePerson import ImagePerson
 from Model.Person import Person
 from Model.Image import Image
-
+from Model.Link import Link
     # Folder where uploaded images will be saved.
 # ASSETS_FOLDER = "Assets"
 # Folder and file where face encodings are stored.
+STORED_FACES_DIR = "stored-faces"
+ENCODINGS_FILE =  "stored-faces\\person.txt"
 # STORED_FACES_DIR = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces"
-STORED_FACES_DIR = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces"
+STORED_FACES_DIR = "stored-faces"
 
-ENCODINGS_FILE = os.path.join(STORED_FACES_DIR, "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces\\person.txt")
+ENCODINGS_FILE = os.path.join(STORED_FACES_DIR, "person.txt")
     
     # Ensure the stored faces directory exists.
 if not os.path.exists(STORED_FACES_DIR):
@@ -332,48 +334,80 @@ class PictureController():
             # Query all data from the ImagePerson table
             records = db.session.query(ImagePerson).all()
     
-            # Group data by person_id
+            # Dictionary to store merged persons
+            merged_persons = {}
+    
+            def find_root(person_id):
+                """ Find the representative person ID (root) for linked persons """
+                if person_id not in merged_persons:
+                    return person_id
+                while merged_persons[person_id] != person_id:
+                    person_id = merged_persons[person_id]
+                return person_id
+    
+            # Initialize merged persons with self-links
+            all_links = db.session.query(Link).all()
+            for link in all_links:
+                merged_persons[link.person1_id] = link.person1_id
+                merged_persons[link.person2_id] = link.person2_id
+    
+            # Union-Find to merge linked persons
+            for link in all_links:
+                root1 = find_root(link.person1_id)
+                root2 = find_root(link.person2_id)
+                if root1 != root2:
+                    merged_persons[root2] = root1
+    
             grouped_data = {}
     
             for record in records:
+                person_id = find_root(record.person_id)  # Get the merged person ID
+    
                 # Fetch person details
-                person = db.session.query(Person).filter_by(id=record.person_id).first()
-                
-                # Fetch image details, ensuring only images where is_deleted = False (0)
+                person = db.session.query(Person).filter_by(id=person_id).first()
+                if not person:
+                    continue
+    
+                # Fetch image details, ensuring only non-deleted images
                 image = db.session.query(Image).filter_by(id=record.image_id, is_deleted=False).first()
+                if not image:
+                    continue
     
-                if person and image:
-                    if person.id not in grouped_data:
-                        # Initialize person's data
-                        grouped_data[person.id] = {
-                            "Person": {
-                                "id": person.id,
-                                "name": person.name,  # Assuming person has a name field
-                                "path": person.path,  # Example field
-                                "gender": person.gender  # Any other fields
-                            },
-                            "Images": []
-                        }
+                if person.id not in grouped_data:
+                    grouped_data[person.id] = {
+                        "Person": {
+                            "id": person.id,
+                            "name": person.name,
+                            "path": person.path,
+                            "gender": person.gender
+                        },
+                        "Images": []
+                    }
     
-                    # Append image details
-                    grouped_data[person.id]["Images"].append({
-                        "id": image.id,
-                        "path": image.path,  
-                        "is_sync": image.is_sync, 
-                        "capture_date": image.capture_date,
-                        "event_date": image.event_date,
-                        "last_modified": image.last_modified,
-                        "location_id": image.location_id,
-                        "is_deleted":image.is_deleted
-                    })
+                # Append image details
+                grouped_data[person.id]["Images"].append({
+                    "id": image.id,
+                    "path": image.path,
+                    "is_sync": image.is_sync,
+                    "capture_date": image.capture_date,
+                    "event_date": image.event_date,
+                    "last_modified": image.last_modified,
+                    "location_id": image.location_id,
+                    "is_deleted": image.is_deleted
+                })
     
-            # Convert dictionary to list of objects
+            # Convert dictionary to list
             result = list(grouped_data.values())
-            print(result)
-            return jsonify(result)  # Return JSON response
+            return jsonify(result)
+        
         except Exception as e:
             print(f"Error: {e}")
             return jsonify({"error": str(e)}), 500
     
+
     
+    
+        
+            
+            
     

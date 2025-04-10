@@ -18,6 +18,10 @@ from Controller.LocationController import LocationController
 from Controller.LinkController import LinkController
 
 
+from dotenv import load_dotenv
+load_dotenv('directory.env')
+IMAGE_ROOT_DIR = os.getenv('IMAGE_ROOT_DIR')
+
 ASSETS_FOLDER = 'Assets'
 
 from dotenv import load_dotenv
@@ -156,6 +160,18 @@ def create_link():
         
         new_link = LinkController.insert_link(person1_id, person2_id)
         return jsonify({'message': 'Link created successfully'})
+
+@app.route('/check_link', methods=['POST'])
+def check_link():
+        data = request.get_json()
+        person1_id = data.get('person1_id')
+        person2_id = data.get('person2_id')
+        
+        if not person1_id or not person2_id:
+            return jsonify({'error': 'Both person1_id and person2_id are required'}), 400
+        
+        new_link = LinkController.link_exists(person1_id, person2_id)
+        return jsonify(new_link)
 
 # --------------------------IMAGE---------------------------------
 
@@ -449,11 +465,11 @@ def get_image1(filename):
         return jsonify({"error": "Image not found"}), 404
     
 
-@app.route('/images/<filename>', methods=['GET'])
+@app.route('/images/<path:filename>', methods=['GET'])
 def get_image(filename):
     try:
 
-        return send_from_directory(ASSETS_FOLDER, filename)
+        return send_from_directory(IMAGE_ROOT_DIR, filename)
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
 

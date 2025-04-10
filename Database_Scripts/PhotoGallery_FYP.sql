@@ -62,3 +62,35 @@ Create TABLE Link(
     FOREIGN KEY (person1_id) REFERENCES Person(id),
     FOREIGN KEY (person2_id) REFERENCES Person(id)
 );
+
+
+
+--------------is_active column
+delete from ImageHistory
+delete from ImagePersonHistory
+delete from personhistory
+
+
+
+
+
+
+ALTER TABLE ImagePersonHistory
+ADD is_Active bit Not NULL DEFAULT 0;
+
+ALTER TABLE PersonHistory
+ADD is_Active bit Not NULL DEFAULT 0;
+
+ALTER TABLE EventHistory
+ADD is_Active bit Not NULL DEFAULT 0;
+
+delete from ImageEventHistory
+
+ALTER TABLE ImageEventHistory
+ADD is_Active bit Not NULL DEFAULT 0;
+
+ALTER TABLE LocationHistory
+ADD is_Active bit Not NULL DEFAULT 0;
+
+
+SELECT * FROM ImageHistory
