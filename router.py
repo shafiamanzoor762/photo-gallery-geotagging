@@ -18,6 +18,10 @@ from Controller.LocationController import LocationController
 from Controller.LinkController import LinkController
 
 
+from dotenv import load_dotenv
+load_dotenv('directory.env')
+IMAGE_ROOT_DIR = os.getenv('IMAGE_ROOT_DIR')
+
 ASSETS_FOLDER = 'Assets'  
 if not os.path.exists(ASSETS_FOLDER):
     os.makedirs(ASSETS_FOLDER)
@@ -444,11 +448,11 @@ def upload_file():
 # [GET] http://127.0.0.1:5000/images/2
 
 
-@app.route('/images/<filename>', methods=['GET'])
+@app.route('/images/<path:filename>', methods=['GET'])
 def get_image(filename):
     try:
 
-        return send_from_directory(ASSETS_FOLDER, filename)
+        return send_from_directory(IMAGE_ROOT_DIR, filename)
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
 
