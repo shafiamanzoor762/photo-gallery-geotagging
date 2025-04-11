@@ -1,38 +1,56 @@
 from datetime import datetime
 from flask import Flask, request, jsonify, send_file,make_response, send_from_directory
 from PIL import Image
-import io
 from io import BytesIO
-import piexif
-import json
 from config import db,app
-import os
-import base64
-import uuid
+
+import os,re,uuid,base64,json,piexif,io
+
 from werkzeug.utils import secure_filename
 
-from Controller.PictureController import PictureController
+from Controller.PersonController import PersonController
 from Controller.EventController import EventController
 from Controller.ImageController import ImageController
 from Controller.LocationController import LocationController
 from Controller.LinkController import LinkController
 
 
-from dotenv import load_dotenv
-load_dotenv('directory.env')
-IMAGE_ROOT_DIR = os.getenv('IMAGE_ROOT_DIR')
+# from dotenv import load_dotenv
+# load_dotenv('directory.env')
+# IMAGE_ROOT_DIR = os.getenv('ROOT_DIR1')
+
+
+ENV_FILE_PATH = 'directory.env'
+
+
+# 🔁 Reusable helper to get latest ROOT_DIR path
+def get_latest_directory():
+    if not os.path.exists(ENV_FILE_PATH):
+        return None
+
+    latest_path = None
+    latest_index = 0
+    root_dir_pattern = re.compile(r'^ROOT_DIR(\d+)=(.*)')
+
+    with open(ENV_FILE_PATH, 'r') as file:
+        for line in file:
+            match = root_dir_pattern.match(line.strip())
+            if match:
+                index = int(match.group(1))
+                path = match.group(2)
+                if index > latest_index:
+                    latest_index = index
+                    latest_path = path
+    return latest_path
+
+
+# ✅ Set this dynamically on startup using your helper
+IMAGE_ROOT_DIR = get_latest_directory()
+print(IMAGE_ROOT_DIR)
+if not IMAGE_ROOT_DIR:
+    raise RuntimeError("No ROOT_DIR found in directory.env")
 
 ASSETS_FOLDER = 'Assets'
-
-from dotenv import load_dotenv
-import os
-
-load_dotenv(dotenv_path='directory.env')  # Load your env file
-
-ROOT_DIR = os.getenv('root_final')  # Read the path
-print(ROOT_DIR)
-# if not os.path.exists(ASSETS_FOLDER):
-#     os.makedirs(ASSETS_FOLDER)
 
 FACES_FOLDER = 'stored-faces'  
 if not os.path.exists(FACES_FOLDER):
@@ -122,7 +140,7 @@ def extract_face():
         image = Image.open(io.BytesIO(file.read()))
         image.save(image_path)
         
-        return PictureController.extract_face(image_path)
+        return PersonController.extract_face(image_path)
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
 
@@ -137,12 +155,12 @@ def recognize_person():
         return make_response(jsonify({'error': 'Missing required parameters'}), 400)
 
     # Call the method from the PictureController class
-    return PictureController.recognize_person(image_path, person_name)
+    return PersonController.recognize_person(image_path, person_name)
 
 
 @app.route('/group_by_person', methods=['GET'])
 def group_by_person():
-    return PictureController.group_by_person()
+    return PersonController.group_by_person()
 
 @app.route('/get_all_person', methods=['GET'])
 def get_all_person():
@@ -453,20 +471,53 @@ def upload_file():
 
 # NOTE: These methods should be at the end of the file
 
+# Method 1: Append path to directory.env with incremented ROOT_DIR version
+@app.route('/add-directory', methods=['POST'])
+def add_directory_path():
+    data = request.get_json()
+    new_path = data.get("path")
+
+    if not new_path:
+        return jsonify({"error": "Missing 'path' in request body"}), 400
+
+    # Ensure .env exists
+    if not os.path.exists(ENV_FILE_PATH):
+        open(ENV_FILE_PATH, 'w').close()
+
+    # Read existing lines
+    with open(ENV_FILE_PATH, 'r') as file:
+        lines = file.readlines()
+
+    # Find the last ROOT_DIRX key
+    root_dir_pattern = re.compile(r'^ROOT_DIR(\d+)=')
+    max_index = 0
+    for line in lines:
+        match = root_dir_pattern.match(line)
+        if match:
+            index = int(match.group(1))
+            max_index = max(max_index, index)
+
+    new_key = f"ROOT_DIR{max_index + 1}"
+    with open(ENV_FILE_PATH, 'a') as file:
+        file.write(f"{new_key}={new_path}\n")
+
+    return jsonify({"message": "Path added successfully", "key": new_key}), 200
+
+
 # [GET] http://127.0.0.1:5000/images/2
 
 
-@app.route('/images/<path:filename>', methods=['GET'])
-def get_image1(filename):
+@app.route('/images/<filename>', methods=['GET'])
+def get_image(filename):
     try:
 
-        return send_from_directory(ROOT_DIR, filename)
+        return send_from_directory(ASSETS_FOLDER, filename)
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
     
 
 @app.route('/images/<path:filename>', methods=['GET'])
-def get_image(filename):
+def get_image1(filename):
     try:
 
         return send_from_directory(IMAGE_ROOT_DIR, filename)

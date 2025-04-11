@@ -1,16 +1,13 @@
-import os
-import uuid
-import cv2
-import face_recognition
+import os,cv2,uuid,json,face_recognition
+
 from flask import jsonify, request
 import numpy as np
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import func
 from collections import defaultdict
-import json
 
 from Controller.LocationController import LocationController
-from Controller.PictureController import PictureController
+from Controller.PersonController import PersonController
 
 from Model.Person import Person
 from Model.Image import Image
@@ -546,7 +543,7 @@ class ImageController:
             print(f"✅ Image saved: {image.path}")
 
             # 3. Extract faces from the saved image
-            extracted_faces = PictureController.extract_face(image.path.replace('images', 'Assets'))
+            extracted_faces = PersonController.extract_face(image.path.replace('images', 'Assets'))
             if not extracted_faces:
                 return jsonify({'message': 'No faces found'}), 200
 

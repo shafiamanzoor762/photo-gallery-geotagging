@@ -1,12 +1,10 @@
-import base64
+import base64, cv2, face_recognition, os, uuid, traceback
+import numpy as np
+
 from collections import defaultdict
 from flask import jsonify,make_response
-import cv2
-import face_recognition
-import os
-import numpy as np
-import uuid
-import traceback
+
+
 
 from sqlalchemy import func
 from config import db
@@ -30,7 +28,7 @@ if not os.path.exists(STORED_FACES_DIR):
     os.makedirs(STORED_FACES_DIR)
 
 
-class PictureController():
+class PersonController():
 
     # @staticmethod
     # def extract_face(image_path):
@@ -118,7 +116,7 @@ class PictureController():
     def extract_face(image_path):
         try:
             # 1. Load Haar cascade with validation
-            alg = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\haarcascade_frontalface_default.xml"
+            alg = "haarcascade_frontalface_default.xml"
             haar_cascade = cv2.CascadeClassifier(alg)
             if haar_cascade.empty():
                 print("harcascade empty")
@@ -153,7 +151,7 @@ class PictureController():
                 return []
 
             # 5. Prepare storage directory
-            storage_dir = "E:\\PhotoGalleryGeotagging\\photo-gallery-geotagging\\stored-faces"
+            storage_dir = "stored-faces"
             os.makedirs(storage_dir, exist_ok=True)
             encodings_file = os.path.join(storage_dir, "person.txt")
 
