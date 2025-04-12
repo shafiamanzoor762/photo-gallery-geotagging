@@ -6,6 +6,8 @@ import piexif
 import json
 from config import db,app
 import os
+from sqlalchemy import text
+
 import base64
 
 from Controller.PictureController import PictureController
@@ -171,6 +173,15 @@ def get_image_complete_details(image_id):
 # def delete_image(image_id):
 #     return ImageController.delete_image(image_id)
 
+
+@app.route('/delete_metadata/<int:image_id>', methods=['DELETE'])
+def delete_metadata_route(image_id):
+    try:
+        # Call the delete_metadata method from ImageController
+        return ImageController.delete_metadata(image_id)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/images/<int:image_id>', methods=['DELETE'])
 def delete_image_route(image_id):
     # Call the delete_image method from ImageController to mark the image as deleted
@@ -324,7 +335,9 @@ def upload_file():
         return jsonify({"error": str(e)}), 500
 # only accept localhost
 if __name__ == '__main__':
-    app.run(debug=True)
+   # app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000,debug=True)
+
 
 
 
