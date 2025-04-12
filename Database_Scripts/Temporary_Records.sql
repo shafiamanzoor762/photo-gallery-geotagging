@@ -1,14 +1,14 @@
 -- Insert records into Location table
 INSERT INTO Location (name, latitude, longitude) VALUES 
-('Park', 40.712776, -74.005974),
-('Museum', 34.052235, -118.243683),
-('Library', 51.507351, -0.127758),
-('Cafe', 48.856613, 2.352222);
+('BIIT', 33.6432715788722, 73.07902684454514),
+('Sports Ground', 33.643285534790735, 73.07859433834076),
+('Library', 33.643240875842814, 73.07872777823846),
+('BIIT Amphitheatre', 33.643343591388884, 73.07889943961703);
 
 -- Insert records into Person table
 INSERT INTO Person (name, path, gender) VALUES
-('Alina', '/images/alina.jpg', 'F'),
-('Aliya', '/images/aliya.jpg', 'F'),
+('Sir Noman', '/face_images/ba5a33aca3bb475f89dc7e57d24432a6.jpg', 'F'),
+('Sir Ahsan', '/images/f8d03d6f37174faf803a7a21c3338842.jpg', 'F'),
 ('Abeeha', '/images/abeeha.jpg', 'F'),
 ('Abeera', '/images/abeera.jpg', 'F');
 
@@ -25,14 +25,14 @@ INSERT INTO Image (path, is_sync, capture_date, event_date, last_modified, locat
  
 -- Insert records into Image table
 INSERT INTO Image (path, is_sync, capture_date, event_date, last_modified, location_id) VALUES
-('/images/event1.jpg', 1, '2023-12-01', '2023-12-02', '2023-12-03', 1),
-('/images/event2.jpg', 0, '2023-11-01', '2023-11-05', '2023-11-06', 2),
+('/images/Snapinsta.app_467019764_1046914550780505_5493082528341713749_n_1080.jpg', 1, '2023-12-01', '2023-12-02', '2023-12-03', 1),
+('/images/Snapinsta.app_467148011_1046914534113840_6542700807049905997_n_1080.jpg', 0, '2023-11-01', '2023-11-05', '2023-11-06', 2),
 ('/images/event3.jpg', 1, '2023-10-01', '2023-10-10', '2023-10-11', 3),
 ('/images/event4.jpg', 0, '2023-09-01', '2023-09-15', '2023-09-16', 4);
 
 -- Insert records into ImagePerson table (many-to-many relationship between Image and Person)
 INSERT INTO ImagePerson (image_id, person_id) VALUES
-(1003, 1),  -- Alina linked to image 1
+(1, 1),  --Sir Noman  linked to image 1
 (1, 2),  -- Aliya linked to image 1
 (2, 3),  -- Abeeha linked to image 2
 (3, 4);  -- Abeera linked to image 3

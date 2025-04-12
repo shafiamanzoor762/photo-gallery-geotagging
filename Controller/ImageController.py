@@ -1,17 +1,22 @@
+import os,cv2,uuid,json,face_recognition
+
 from flask import jsonify, request
+import numpy as np
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import func
 from collections import defaultdict
 import json
-from sqlalchemy import text
 
 from Controller.LocationController import LocationController
+from Controller.PersonController import PersonController
+
 from Model.Person import Person
 from Model.Image import Image
 from Model.Location import Location
 from Model.Event import Event
 from Model.ImageEvent import ImageEvent
 from Model.ImagePerson import ImagePerson
+from Model.Link import Link
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 
@@ -117,7 +122,9 @@ class ImageController:
 
     @staticmethod
     def edit_image_data():
-        data = request.get_json()  # Get JSON data from the request
+        data = request.get_json(force=True, silent=True)  # Get JSON data from the request
+        
+        print("Parsed JSON:", data)
 
         if not data:
             return jsonify({"error": "No data provided"}), 400
@@ -128,7 +135,7 @@ class ImageController:
 
         # Extract the numeric image_id and its associated data
         try:
-            image_id = int(next(iter(data.keys())))  
+            image_id = int(next(iter(data.keys())))
         except ValueError:
             return jsonify({"error": "image_id must be a numeric value"}), 400
 
@@ -151,14 +158,13 @@ class ImageController:
         # Update event_date and event_name if provided
         if event_date:
             image.event_date = event_date
+            image.last_modified=datetime.utcnow()
 
         if event_names:
             image.events = []  # Clears the relationship in the ORM
             db.session.commit()
+            
             # Access the related events
-            # for event in image.events:
-            #     event = Event.query.filter_by(id=event.id).first()
-            #     event.name = event_name
             events = Event.query.filter(Event.name.in_(event_names)).all()
             if not events:
                 return {"error": "No matching events found"}, 404
@@ -172,25 +178,40 @@ class ImageController:
 
         # Update location if provided
         if location_data:
-            location_name = location_data[0]
-            location_list = json.loads(location_name)
-            location_name = ", ".join(location_list)
+            # location_name = location_data[0]
+            # location_list = json.loads(location_name)
+            # location_name = ", ".join(location_list)
+
+            raw_location_name = location_data[0]
+
+            try:
+                # Try to parse as JSON list
+                location_list = json.loads(raw_location_name)
+                if isinstance(location_list, list):
+                    location_name = ", ".join(location_list)
+                else:
+                    # Not a list? Fall back to string
+                    location_name = str(raw_location_name)
+            except (json.JSONDecodeError, TypeError):
+                # It's not JSON formatted — treat as plain string
+                location_name = str(raw_location_name)
+                
             latitude = location_data[1]
             longitude = location_data[2]
             print(location_name, latitude, longitude)
 
-            # Check if the location exists
-            existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
+        #     # Check if the location exists
+        #     existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
 
-            if existing_location:
-                image.location_id = existing_location.id  # Associate existing location
-            else:
-                # Create new location
-                print("yes am here")
-                new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
-                db.session.add(new_location)
-                db.session.flush()  # Get the new location ID before committing
-                image.location_id = new_location.id
+        #     if existing_location:
+        #         image.location_id = existing_location.id  # Associate existing location
+        #     else:
+        #         # Create new location
+        #         print("yes am here")
+        #         new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
+        #         db.session.add(new_location)
+        #         db.session.flush()  # Get the new location ID before committing
+        #         image.location_id = new_location.id
 
         # Update persons if provided
         if persons:
@@ -201,6 +222,7 @@ class ImageController:
                 if person_id:
                     person = Person.query.filter(Person.id == person_id).first()
                     if person:
+                        PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         if person_name and gender:
                             person.name = person_name
                             person.gender  =gender
@@ -438,25 +460,132 @@ class ImageController:
     
     #  ===================================
 
+    # @staticmethod
+    # def add_image(data):
+    #     try:
+    #          # 1. Check if image path already exists
+    #         existing_image = Image.query.filter_by(path=data['path']).first()
+    #         if existing_image:
+    #             print(f"\u26a0\ufe0f Image already exists: {existing_image.path}")
+    #             return jsonify({'message': 'Image already exists'}), 200
+
+    #         # 2. Insert image record into the Image table.
+    #         image = Image(
+    #             path=data['path'],
+    #             is_sync=data.get('is_sync', 0),
+    #             capture_date=data.get('capture_date', datetime.utcnow()),
+    #             event_date=data.get('event_date', None),
+    #             last_modified=datetime.utcnow()
+    #         )
+    #         db.session.add(image)
+    #         db.session.commit()
+    #         print(f"\u2705 Image saved: {image.path}")
+
+    #         # 3. Extract faces from the added image.
+    #         extracted_faces = PictureController.extract_face(image.path.replace('images', 'Assets'))
+    #         if not extracted_faces:
+    #             return jsonify({'message': 'No faces found'}), 200
+
+    #         # 4. For each extracted face, check if a matching Person exists based on path.
+    #         for face_data in extracted_faces:
+    #             face_path = face_data["face_path"]
+    #             face_filename = os.path.basename(face_path)
+    #             db_face_path = f"face_images/{face_filename}"
+
+    #             # Check if face already exists in Person table based on path
+    #             matched_person = Person.query.filter_by(path=db_face_path).first()
+
+    #             # 5. If no matching person is found, create a new Person record.
+    #             if not matched_person:
+    #                 new_person = Person(
+    #                     name="unknown",
+    #                     path=db_face_path,  # Use the constructed face path.
+    #                     gender="U"       # Use a valid value according to your constraint.
+    #                 )
+    #                 db.session.add(new_person)
+    #                 db.session.commit()
+    #                 print(f"\u2705 New person added: {new_person.path}")
+    #                 matched_person = new_person
+    #             else:
+    #                 print(f"\ud83d\udd39 Matched with existing person: {matched_person.name}")
+
+    #             # 6. Link the Person with the Image in the ImagePerson table.
+    #             image_person = ImagePerson(image_id=image.id, person_id=matched_person.id)
+    #             db.session.add(image_person)
+
+    #         db.session.commit()
+    #         return jsonify({'message': 'Image and faces saved successfully'}), 201
+
+    #     except Exception as e:
+    #         db.session.rollback()
+    #         return jsonify({'error': str(e)}), 500
+
+
+
     @staticmethod
     def add_image(data):
         try:
-            
+            # 1. Check if image already exists based on HASH
+            existing_image = Image.query.filter_by(hash=data['hash']).first()
+            if existing_image:
+                print(f"⚠️ Image already exists with hash: {existing_image.hash}")
+                return jsonify({'message': 'Image already exists'}), 200
+
+            # 2. Insert new image record
             image = Image(
-            path=data['path'],
-            is_sync=data.get('is_sync',0),
-            capture_date=data.get('capture_date', datetime.utcnow()),
-            event_date=data.get('event_date', None),
-            last_modified=datetime.utcnow())
-            print(image)
+                path=data['path'],
+                hash=data['hash'],  # Save the hash into database
+                is_sync=data.get('is_sync', 0),
+                capture_date=data.get('capture_date', datetime.utcnow()),
+                event_date=data.get('event_date', None),
+                last_modified=datetime.utcnow()
+            )
             db.session.add(image)
             db.session.commit()
-            print(image)
-            return jsonify(image.to_dict()), 201
+            print(f"✅ Image saved: {image.path}")
+
+            # 3. Extract faces from the saved image
+            extracted_faces = PersonController.extract_face(image.path.replace('images', 'Assets'))
+            if not extracted_faces:
+                return jsonify({'message': 'No faces found'}), 200
+
+            # 4. For each extracted face
+            for face_data in extracted_faces:
+                face_path = face_data["face_path"]
+                face_filename = os.path.basename(face_path)
+                db_face_path = f"face_images/{face_filename}"
+
+                # Check if this face already exists based on path
+                matched_person = Person.query.filter_by(path=db_face_path).first()
+
+                # 5. If not found, create a new person
+                if not matched_person:
+                    new_person = Person(
+                        name="unknown",
+                        path=db_face_path,
+                        gender="U"  # Unknown gender
+                    )
+                    db.session.add(new_person)
+                    db.session.commit()
+                    print(f"✅ New person added: {new_person.path}")
+                    matched_person = new_person
+                else:
+                    print(f"🔹 Matched with existing person: {matched_person.name}")
+
+                # 6. Link the image and the person
+                image_person = ImagePerson(image_id=image.id, person_id=matched_person.id)
+                db.session.add(image_person)
+
+            db.session.commit()
+            return jsonify({'message': 'Image and faces saved successfully'}), 201
+
         except Exception as e:
             db.session.rollback()
+            print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
-        
+
+    
+
     @staticmethod
     def get_image_details(image_id):
             image = Image.query.get(image_id)
@@ -635,17 +764,36 @@ class ImageController:
         image_ids = set()  # Using set to avoid duplicates
     
         # 🔹 Filter by Person ID
+        # 🔹 Filter by Person ID and include linked persons via the Link table
         if person_id:
             person = Person.query.filter_by(id=person_id).first()
+        
             if person:
+                # Get all linked person IDs (bidirectional lookup)
+                linked_ids = (
+                    db.session.query(Link.person2_id)
+                    .filter(Link.person1_id == person_id)
+                    .union(
+                        db.session.query(Link.person1_id)
+                        .filter(Link.person2_id == person_id)
+                    )
+                    .all()
+                )
+        
+                # Flatten and combine all linked person IDs with the original person_id
+                linked_person_ids = {person_id} | {id for (id,) in linked_ids}
+        
+                # Get all image IDs associated with those persons
                 person_images = (
                     db.session.query(Image.id)
                     .join(ImagePerson, ImagePerson.image_id == Image.id)
-                    .filter(ImagePerson.person_id == person_id)
+                    .filter(ImagePerson.person_id.in_(linked_person_ids))
                     .all()
                 )
+        
                 image_ids.update([image.id for image in person_images])
-    
+        
+            
         # 🔹 Filter by Event Name
         if event_name:
             event = Event.query.filter_by(name=event_name).first()
@@ -734,53 +882,53 @@ class ImageController:
         
          
         
-    
+    @staticmethod
     # getting unlabel images
     def get_unedited_images():
-        try:
-            unedited_images = (
-                db.session.query(Image)
-                .outerjoin(Image.persons)  # Join with Person table
-                .outerjoin(Image.events)  # Join with Event table
-                .filter(
-                    (Image.is_deleted == False) &  # Exclude deleted images
-                    (Image.event_date.is_(None)) &  # No event date
-                    (Image.location_id.is_(None)) &  # No location
-                    ((Person.name == "unknown") | (Person.name.is_(None))) &  # Person's name is "unknown" or NULL
-                    (Person.gender.is_(None)) &  # Person's gender is NULL
-                    ((Event.name == "unknown") | (Event.name.is_(None)))  # Event name is "unknown" or NULL
-                )
-                .all()
+        unedited_images = (
+            db.session.query(Image)
+            .outerjoin(Image.persons)  # Join with Person table
+            .outerjoin(Image.events)  # Join with Event table
+            .filter(
+                (Image.event_date.is_(None)) &  # No event date
+                (Image.location_id.is_(None)) &  # No location
+                ((Person.name == "unknown") | (Person.name.is_(None))) &  # Person's name is "unknown" or NULL
+                (Person.gender.is_(None)| (Person.gender == 'U')) &  # Person's gender is NULL
+                ((Event.name == "unknown") | (Event.name.is_(None)))  # Event name is "unknown" or NULL
             )
-    
-            # Convert images to JSON format
-            image_list = []
-            for img in unedited_images:
-                location = img.location if img.location else None
-                image_list.append({
-                    "id": img.id,
-                    "path": img.path,
-                    "is_sync": img.is_sync,
-                    "capture_date": img.capture_date.strftime('%Y-%m-%d') if img.capture_date else None,
-                    "event_date": img.event_date.strftime('%Y-%m-%d') if img.event_date else None,
-                    "last_modified": img.last_modified.strftime('%Y-%m-%d %H:%M:%S') if img.last_modified else None,
-                    "location": {
-                        "id": location.id if location else None,
-                        "name": location.name if location else None,
-                        "latitude": location.latitude if location else None,
-                        "longitude": location.longitude if location else None,
-                    },
-                    "persons": [{"id": p.id, "name": p.name, "gender": p.gender} for p in img.persons],  # Include person details
-                    "events": [{"id": e.id, "name": e.name} for e in img.events]  # Include event details
-                })
-    
-            print(image_list)
-            return jsonify({"unedited_images": image_list}), 200
-    
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            .all()
+        )
+
+        # Convert images to JSON format
+        image_list = []
+        for img in unedited_images:
+            image_list.append({
+                "id": img.id,
+                "path": img.path,
+                "is_sync": img.is_sync,
+                "capture_date": img.capture_date.strftime('%Y-%m-%d') if img.capture_date else None,
+                "event_date": img.event_date.strftime('%Y-%m-%d') if img.event_date else None,
+                "last_modified": img.last_modified.strftime('%Y-%m-%d %H:%M:%S') if img.last_modified else None,
+                "location_id": img.location_id,
+                "persons": [{"id": p.id, "name": p.name, "gender": p.gender} for p in img.persons],  # Include person details
+                "events": [{"id": e.id, "name": e.name} for e in img.events]  # Include event details
+            })
+
+        return jsonify({"status": "success", "unedited_images": image_list}), 200
 
 
+   
+    def get_all_person():
+            persons = (
+                db.session.query(Person.id, Person.name, Person.path, Person.gender)
+                .all()
+                )    
+        
+        # Convert result to list of dictionaries
+            return [{"id": p.id, "name": p.name, "path": p.path, "gender": p.gender} for p in persons]
+
+
+    
 
 
 

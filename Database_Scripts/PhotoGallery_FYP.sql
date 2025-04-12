@@ -14,6 +14,10 @@ CREATE TABLE Person (
 	gender CHAR(1) CHECK (Gender IN ('M', 'F'))
 );
 
+ALTER TABLE Person 
+ADD CONSTRAINT CK_Person_Genderr CHECK (gender IN ('M', 'F', 'U'));
+
+
 -- 3 Table for Event entity
 CREATE TABLE Event (
     id INT PRIMARY KEY IDENTITY(1,1),  -- Auto-increment primary key
@@ -58,3 +62,35 @@ Create TABLE Link(
     FOREIGN KEY (person1_id) REFERENCES Person(id),
     FOREIGN KEY (person2_id) REFERENCES Person(id)
 );
+
+
+
+--------------is_active column
+delete from ImageHistory
+delete from ImagePersonHistory
+delete from personhistory
+
+
+
+
+
+
+ALTER TABLE ImagePersonHistory
+ADD is_Active bit Not NULL DEFAULT 0;
+
+ALTER TABLE PersonHistory
+ADD is_Active bit Not NULL DEFAULT 0;
+
+ALTER TABLE EventHistory
+ADD is_Active bit Not NULL DEFAULT 0;
+
+delete from ImageEventHistory
+
+ALTER TABLE ImageEventHistory
+ADD is_Active bit Not NULL DEFAULT 0;
+
+ALTER TABLE LocationHistory
+ADD is_Active bit Not NULL DEFAULT 0;
+
+
+SELECT * FROM ImageHistory

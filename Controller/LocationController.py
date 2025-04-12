@@ -5,10 +5,6 @@ from config import db
 from Model.Image import Image
 from Model.Location import Location
 
-import requests
-from flask import jsonify
-from config import db
-from Model.Location import Location
 from geopy.geocoders import Nominatim
 
 
