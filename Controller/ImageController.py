@@ -221,6 +221,7 @@ class ImageController:
                 if person_id:
                     person = Person.query.filter(Person.id == person_id).first()
                     if person:
+                        PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         if person_name and gender:
                             person.name = person_name
                             person.gender  =gender
