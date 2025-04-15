@@ -834,6 +834,7 @@ class ImageController:
             .outerjoin(Image.persons)  # Join with Person table
             .outerjoin(Image.events)  # Join with Event table
             .filter(
+                (Image.is_deleted != 1), 
                 (Image.event_date.is_(None)) &  # No event date
                 (Image.location_id.is_(None)) &  # No location
                 ((Person.name == "unknown") | (Person.name.is_(None))) &  # Person's name is "unknown" or NULL

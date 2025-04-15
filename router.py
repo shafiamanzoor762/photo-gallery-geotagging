@@ -177,9 +177,9 @@ def add_image():
         # 1. Check if file is in request
         if 'file' not in request.files:
             return jsonify({'error': 'File not attached'}), 400
-
+        
         file = request.files['file']
-
+        
         if file.filename == '':
             return jsonify({'error': 'Filename is empty'}), 400
 
