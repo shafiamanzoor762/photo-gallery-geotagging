@@ -177,9 +177,9 @@ def add_image():
         # 1. Check if file is in request
         if 'file' not in request.files:
             return jsonify({'error': 'File not attached'}), 400
-
+        
         file = request.files['file']
-
+        
         if file.filename == '':
             return jsonify({'error': 'Filename is empty'}), 400
 
@@ -193,27 +193,28 @@ def add_image():
         if image_obj.mode == 'RGBA':
             image_obj = image_obj.convert('RGB')
 
-        # 4. Save the image to Assets folder
-        file_save_path = os.path.join(ASSETS_FOLDER, original_filename)
-        with open(file_save_path, "wb") as f:
-            f.write(file_bytes)
+        # # 5. Save the image to Assets folder (or wherever you want)
+        # file_save_path = os.path.join(ASSETS_FOLDER, original_filename)
+        # with open(file_save_path, "wb") as f:
+        #     f.write(file_bytes)
+        path = request.form.get('path')
 
-        # 5. Get the hash from form (sent by frontend)
+        # 6. Get the hash from form
         hash_value = request.form.get('hash')
+
         if not hash_value:
             return jsonify({'error': 'No hash provided'}), 400
 
-        # 6. Build the metadata dictionary
+        # 7. Build the metadata dictionary
         data = {
-            'path': "images/" + original_filename,  # relative path for database
+            'path': path.replace("\\", "/"),  # Use relativePath properly (make sure it's using slashes /)
             'hash': hash_value,
-            # Optionally, add other fields with default values
             'is_sync': 0,
             'capture_date': datetime.utcnow().isoformat(),
             'event_date': None
         }
 
-        # 7. Call Controller to save data
+        # 8. Call Controller to save data
         return ImageController.add_image(data)
 
     except Exception as e:
