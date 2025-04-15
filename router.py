@@ -456,6 +456,24 @@ def get_image1(filename):
         return jsonify({"error": "Image not found"}), 404
 
 
+@app.route('/images', methods=['GET'])
+def get_image2():
+    try:
+        filepath = request.args.get('path')
+
+        if not filepath:
+            return jsonify({"error": "Missing 'path' parameter"}), 400
+
+        # Normalize Windows path
+        filepath = filepath.replace('\\', '/')
+
+        directory = os.path.dirname(filepath)
+        filename = os.path.basename(filepath)
+
+        return send_from_directory(directory, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
 @app.route('/face_images/<filename>', methods=['GET'])
 def get_face_image(filename):
     try:
