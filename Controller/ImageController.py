@@ -529,6 +529,8 @@ class ImageController:
             if existing_image:
                 print(f"⚠️ Image already exists with hash: {existing_image.hash}")
                 return jsonify({'message': 'Image already exists'}), 200
+                
+                
 
             # 2. Insert new image record
             image = Image(
@@ -544,7 +546,16 @@ class ImageController:
             print(f"✅ Image saved: {image.path}")
 
             # 3. Extract faces from the saved image
-            extracted_faces = PersonController.extract_face(image.path.replace('images', 'Assets'))
+            # extracted_faces = PersonController.extract_face(image.path.replace('images', 'Assets'))
+                        
+            # Combine base path and relative path safely
+            # path =relative path
+            full_path = os.path.join(data['path'])
+            clean_path = os.path.abspath(full_path)
+            print("in a method :",clean_path)
+
+            # Now use this full path
+            extracted_faces = PersonController.extract_face(full_path)
             if not extracted_faces:
                 return jsonify({'message': 'No faces found'}), 200
 

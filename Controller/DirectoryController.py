@@ -51,6 +51,7 @@ class DirectoryController():
 
         new_key = f"ROOT_DIR{max_index + 1}"
         with open(ENV_FILE_PATH, 'a') as file:
-            file.write(f"{new_key}={new_path}\n")
+            normalized_root_dir = new_path.replace("\\", "/")
+            file.write(f"{new_key}={normalized_root_dir}\n")
         
         return jsonify({"message": "Path added successfully", "key": new_key}), 200
