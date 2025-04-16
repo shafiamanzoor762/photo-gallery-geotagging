@@ -1,4 +1,5 @@
 env/
+venv/
 __pycache__/
 Model/__pycache__/
 Controller/__pycache__/

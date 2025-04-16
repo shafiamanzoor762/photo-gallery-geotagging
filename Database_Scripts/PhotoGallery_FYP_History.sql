@@ -7,6 +7,8 @@ CREATE TABLE LocationHistory (
     longitude DECIMAL(11, 8),
 	version_no INT,
 );
+ALTER TABLE LocationHistory
+ADD is_Active bit Not NULL DEFAULT 0;
 
 -- 2 Table for Person entity
 CREATE TABLE PersonHistory (
@@ -17,6 +19,8 @@ CREATE TABLE PersonHistory (
 	gender CHAR(1) CHECK (Gender IN ('M', 'F')),
 	version_no INT,
 );
+ALTER TABLE PersonHistory
+ADD is_Active bit Not NULL DEFAULT 0;
 
 -- 3 Table for Event entity
 CREATE TABLE EventHistory (
@@ -25,6 +29,8 @@ CREATE TABLE EventHistory (
     name VARCHAR(255),
 	version_no INT,
 );
+ALTER TABLE EventHistory
+ADD is_Active bit Not NULL DEFAULT 0;
 
 -- 4 Table for Image entity
 CREATE TABLE ImageHistory (
@@ -38,6 +44,12 @@ CREATE TABLE ImageHistory (
     location_id INT,
 	version_no INT,
 );
+ALTER TABLE imagehistory
+ADD is_deleted BIT NOT NULL DEFAULT 0;
+ALTER TABLE ImageHistory
+ADD hash VARCHAR(64) NOT NULL;
+ALTER TABLE ImagePersonHistory
+ADD is_Active bit Not NULL DEFAULT 0;
 
 -- 5 Associative table for Image-Person relationship (many-to-many)
 CREATE TABLE ImagePersonHistory (
@@ -46,6 +58,8 @@ CREATE TABLE ImagePersonHistory (
     person_id INT,
 	version_no INT,
 );
+ALTER TABLE ImagePersonHistory
+ADD is_Active bit Not NULL DEFAULT 0;
 
 -- 6 Associative table for Image-Event relationship (many-to-many)
 CREATE TABLE ImageEventHistory (
@@ -54,6 +68,8 @@ CREATE TABLE ImageEventHistory (
     event_id INT,
 	version_no INT,
 );
+ALTER TABLE ImageEventHistory
+ADD is_Active bit Not NULL DEFAULT 0;
 
 --7 Link Table (NEW)
 Create TABLE LinkHistory(
@@ -62,3 +78,5 @@ Create TABLE LinkHistory(
     person2_id INT,
     version_no INT,
 );
+ALTER TABLE LinkHistory
+ADD is_Active bit Not NULL DEFAULT 0;
