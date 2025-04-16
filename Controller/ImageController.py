@@ -3,7 +3,7 @@ import os,cv2,uuid,json,face_recognition
 from flask import jsonify, request
 import numpy as np
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import func
+from sqlalchemy import func, text
 from collections import defaultdict
 import json
 
