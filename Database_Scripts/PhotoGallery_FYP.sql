@@ -11,11 +11,16 @@ CREATE TABLE Person (
     id INT PRIMARY KEY IDENTITY(1,1),  -- Auto-increment primary key
     name VARCHAR(255),
     path VARCHAR(255),
-	gender CHAR(1) CHECK (Gender IN ('M', 'F'))
+	gender CHAR(1) CHECK (Gender IN ('M', 'F','U'))
 );
 
-ALTER TABLE Person 
-ADD CONSTRAINT CK_Person_Genderr CHECK (gender IN ('M', 'F', 'U'));
+-- ALTER TABLE Person 
+-- ADD CONSTRAINT CK_Person_Genderr CHECK (gender IN ('M', 'F', 'U'));
+-- if above not working, use below
+-- ALTER TABLE Person 
+-- drop CK_Person_Genderr
+-- ALTER TABLE Person
+-- ADD CONSTRAINT CK__Person__gender__398D8EEE CHECK (gender IN ('M', 'F', 'U'));
 
 
 -- 3 Table for Event entity
@@ -35,6 +40,12 @@ CREATE TABLE Image (
     location_id INT,  -- Define location_id column for foreign key reference
     CONSTRAINT FK_Image_Location FOREIGN KEY (location_id) REFERENCES Location(id)
 );
+
+ALTER TABLE image
+ADD hash VARCHAR(64) NOT NULL;
+
+ALTER TABLE image
+ADD is_deleted BIT NOT NULL DEFAULT 0;
 
 -- 5 Associative table for Image-Person relationship (many-to-many)
 CREATE TABLE ImagePerson (
@@ -62,6 +73,10 @@ Create TABLE Link(
     FOREIGN KEY (person1_id) REFERENCES Person(id),
     FOREIGN KEY (person2_id) REFERENCES Person(id)
 );
+
+
+
+
 
 
 

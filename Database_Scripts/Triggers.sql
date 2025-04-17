@@ -1,5 +1,7 @@
 -----imagehistory
 
+drop trigger trg_UpdateImageHistory_new
+
 CREATE TRIGGER trg_UpdateImageHistory_new
 ON Image
 AFTER UPDATE
@@ -9,24 +11,24 @@ BEGIN
 
     INSERT INTO ImageHistory (id, path, is_sync, capture_date, event_date, last_modified, location_id, version_no,is_deleted,hash,is_active)
     SELECT 
-        i.id,
-        i.path,
-        i.is_sync,
-        i.capture_date,
-        i.event_date,
-        i.last_modified,
-        i.location_id,
+        d.id,
+        d.path,
+        d.is_sync,
+        d.capture_date,
+        d.event_date,
+        d.last_modified,
+        d.location_id,
         ISNULL(MAX(h.version_no), 0) + 1,
 		
-		i.is_deleted,
-		i.hash,
+		d.is_deleted,
+		d.hash,
 		0 as inactive
     FROM 
-        Inserted i
+        Deleted d
     LEFT JOIN 
-        ImageHistory h ON i.id = h.id
+        ImageHistory h ON d.id = h.id
     GROUP BY 
-        i.id, i.path, i.is_sync, i.capture_date, i.event_date, i.last_modified, i.location_id,i.is_deleted,i.hash;
+        d.id, d.path, d.is_sync, d.capture_date, d.event_date, d.last_modified, d.location_id,d.is_deleted,d.hash;
 END;
 
 
@@ -42,20 +44,20 @@ BEGIN
 
     INSERT INTO PersonHistory (id, name,path,gender,version_no)
     SELECT 
-        i.id,
-		i.name,
-        i.path,
-		i.gender,
+        d.id,
+		d.name,
+        d.path,
+		d.gender,
         
         ISNULL(MAX(h.version_no), 0) + 1
 		
 		
     FROM 
-        Inserted i
+        Deleted d
     LEFT JOIN 
-        PersonHistory h ON i.id = h.id
+        PersonHistory h ON d.id = h.id
     GROUP BY 
-        i.id,i.name, i.path,i.gender;
+        d.id,d.name, d.path,d.gender;
 END;
 
 
@@ -132,3 +134,11 @@ BEGIN
     ) v;
 END;
 
+
+
+-----create column is_active in each histry table for example
+ALTER TABLE LinkHistory
+ADD is_active BIT;
+
+ALTER TABLE ImageHistory
+ADD is_active varchar(64) NOT NULL;
