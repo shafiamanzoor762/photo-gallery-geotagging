@@ -1,6 +1,7 @@
 from config import db
 from Model.Link import Link
 from Model.Person import Person
+
 class LinkController():
     @staticmethod
     def insert_link(person1_id, person2_id):
@@ -10,12 +11,25 @@ class LinkController():
         if not person1 or not person2:
             return {"error": "One or both persons not found"}, 404
     
-        # Ensure name and gender match
-        if person1.name != person2.name or person1.gender != person2.gender:
-            # Choose to make person2 match person1 (or vice versa based on your logic)
-            person2.name = person1.name
+        # Normalize names for comparison
+        name1 = person1.name.strip().lower()
+        name2 = person2.name.strip().lower()
+    
+        # Handle name
+        if name1 != name2:
+            if name1 != "unknown" and name2 == "unknown":
+                person2.name = person1.name
+            elif name2 != "unknown" and name1 == "unknown":
+                person1.name = person2.name
+            # If both are non-unknown and different, pick a policy (keep person1's name for now)
+            elif name1 != "unknown" and name2 != "unknown":
+                person2.name = person1.name
+    
+        # Handle gender (simpler logic for now, but you can expand similarly)
+        if person1.gender != person2.gender:
             person2.gender = person1.gender
-            db.session.commit()  # Save the changes
+    
+        db.session.commit()
     
         # Check for existing link
         existing = Link.query.filter(
@@ -25,13 +39,13 @@ class LinkController():
     
         if existing:
             return {"error": "Link already exists"}, 409  # Conflict
-
+    
         # Create new link
         new_link = Link(person1_id=person1_id, person2_id=person2_id)
         db.session.add(new_link)
         db.session.commit()
         return {"message": "Link created successfully"}
-    
+
         # new_link = Link(person1_id=person1_id, person2_id=person2_id)
         # db.session.add(new_link)
         # db.session.commit()
