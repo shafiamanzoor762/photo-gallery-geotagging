@@ -199,18 +199,18 @@ class ImageController:
             longitude = location_data[2]
             print(location_name, latitude, longitude)
 
-        #     # Check if the location exists
-        #     existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
+            # Check if the location exists
+            existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
 
-        #     if existing_location:
-        #         image.location_id = existing_location.id  # Associate existing location
-        #     else:
-        #         # Create new location
-        #         print("yes am here")
-        #         new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
-        #         db.session.add(new_location)
-        #         db.session.flush()  # Get the new location ID before committing
-        #         image.location_id = new_location.id
+            if existing_location:
+                image.location_id = existing_location.id  # Associate existing location
+            else:
+                # Create new location
+                print("yes am here")
+                new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
+                db.session.add(new_location)
+                db.session.flush()  # Get the new location ID before committing
+                image.location_id = new_location.id
 
         # Update persons if provided
         if persons:

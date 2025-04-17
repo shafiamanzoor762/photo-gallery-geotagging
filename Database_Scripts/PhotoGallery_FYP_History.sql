@@ -21,6 +21,8 @@ CREATE TABLE PersonHistory (
 );
 ALTER TABLE PersonHistory
 ADD is_Active bit Not NULL DEFAULT 0;
+ALTER TABLE Person 
+ADD CONSTRAINT CK_Person_Gender CHECK (gender IN ('M', 'F', 'U'));
 
 -- 3 Table for Event entity
 CREATE TABLE EventHistory (
