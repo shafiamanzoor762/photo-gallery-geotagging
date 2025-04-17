@@ -2,6 +2,8 @@ from datetime import datetime
 from flask import Flask, request, jsonify, send_file,make_response, send_from_directory
 from PIL import Image
 from io import BytesIO
+
+import urllib
 from config import db,app
 
 import os, uuid, base64, json, piexif, io
@@ -439,41 +441,43 @@ def add_directory_path():
 # [GET] http://127.0.0.1:5000/images/2
 
 
-@app.route('/images/<filename>', methods=['GET'])
-def get_image(filename):
+
+
+# @app.route('/images/<path:filename>', methods=['GET'])
+# def get_image1(filename):
+#     try:
+#         print(IMAGE_ROOT_DIR,filename)
+# #
+#         return send_from_directory(IMAGE_ROOT_DIR, filename)
+#     except FileNotFoundError:
+#         return jsonify({"error": "Image not found"}), 404
+
+
+@app.route('/images/<path:filepath>', methods=['GET'])
+def get_image2(filepath):
     try:
-
-        return send_from_directory(ASSETS_FOLDER, filename)
-    except FileNotFoundError:
-        return jsonify({"error": "Image not found"}), 404
-    
-
-@app.route('/images/<path:filename>', methods=['GET'])
-def get_image1(filename):
-    try:
-
-        return send_from_directory(IMAGE_ROOT_DIR, filename)
-    except FileNotFoundError:
-        return jsonify({"error": "Image not found"}), 404
-
-
-@app.route('/images', methods=['GET'])
-def get_image2():
-    try:
-        filepath = request.args.get('path')
-
+        print("iamegsss")
         if not filepath:
-            return jsonify({"error": "Missing 'path' parameter"}), 400
+            return jsonify({"error": "Missing file path"}), 400
 
-        # Normalize Windows path
-        filepath = filepath.replace('\\', '/')
+        # Decode any URL-encoded characters
+        decoded_path = urllib.parse.unquote(filepath)
+        print("Decoded path:", decoded_path)
 
-        directory = os.path.dirname(filepath)
-        filename = os.path.basename(filepath)
+        # Normalize slashes
+        normalized_path = decoded_path.replace("\\", "/")
+        print("Normalized path:", normalized_path)
+
+        if not os.path.exists(normalized_path):
+            return jsonify({"error": "Image not found", "path": normalized_path}), 404
+
+        directory = os.path.dirname(normalized_path)
+        filename = os.path.basename(normalized_path)
 
         return send_from_directory(directory, filename)
-    except FileNotFoundError:
-        return jsonify({"error": "Image not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/face_images/<filename>', methods=['GET'])
 def get_face_image(filename):
