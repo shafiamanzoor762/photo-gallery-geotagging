@@ -566,7 +566,17 @@ class ImageController:
                 db_face_path = f"face_images/{face_filename}"
 
                 # Check if this face already exists based on path
-                matched_person = Person.query.filter_by(path=db_face_path).first()
+                # matched_person = Person.query.filter_by(path=db_face_path).first()
+
+                match_data = PersonController.recognize_person(f"./stored-faces/{face_filename}") #db_face_path.path.replace('face_images','./stored-faces')
+                
+                if match_data:
+                    result = match_data["results"][0]
+                    file_path = result["file"]  # e.g. "stored-faces\\3ec88a981d204ab8b0501cc4da150bf5.jpg"
+                    normalized_path = file_path.replace("\\", "/")
+                    face_path_1 = normalized_path.replace('stored-faces', 'face_images')
+                    matched_person = Person.query.filter_by(path=face_path_1).first()
+
 
                 # 5. If not found, create a new person
                 if not matched_person:
@@ -580,7 +590,14 @@ class ImageController:
                     print(f"✅ New person added: {new_person.path}")
                     matched_person = new_person
                 else:
-                    print(f"🔹 Matched with existing person: {matched_person.name}")
+                    new_person = Person(
+                        name=matched_person.name,
+                        path=db_face_path,
+                        gender=matched_person.gender  # Unknown gender
+                    )
+                    db.session.add(new_person)
+                    db.session.commit()
+                    matched_person = new_person
 
                 # 6. Link the image and the person
                 image_person = ImagePerson(image_id=image.id, person_id=matched_person.id)

@@ -82,9 +82,12 @@ Create TABLE Link(
 
 --------------is_active column
 delete from ImageHistory
+delete from ImageEventHistory
 delete from ImagePersonHistory
 delete from personhistory
-
+delete from linkHistory
+delete from LocationHistory
+delete from EventHistory
 
 
 
