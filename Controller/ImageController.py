@@ -214,6 +214,15 @@ class ImageController:
                 db.session.add(new_location)
                 db.session.flush()  # Get the new location ID before committing
                 image.location_id = new_location.id
+            if existing_location:
+                image.location_id = existing_location.id  # Associate existing location
+            else:
+                # Create new location
+                print("yes am here")
+                new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
+                db.session.add(new_location)
+                db.session.flush()  # Get the new location ID before committing
+                image.location_id = new_location.id
 
 # ///////
         # Update persons if provided
