@@ -195,10 +195,13 @@ class ImageController:
                 # It's not JSON formatted — treat as plain string
                 location_name = str(raw_location_name)
                 
-            latitude = location_data[1]
-            longitude = location_data[2]
+            latitude = round(float(location_data[1]), 6)
+            longitude = round(float(location_data[2]), 6)
+
             print(location_name, latitude, longitude)
 
+
+# ///////
             # Check if the location exists
             existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
 
@@ -211,7 +214,17 @@ class ImageController:
                 db.session.add(new_location)
                 db.session.flush()  # Get the new location ID before committing
                 image.location_id = new_location.id
+            if existing_location:
+                image.location_id = existing_location.id  # Associate existing location
+            else:
+                # Create new location
+                print("yes am here")
+                new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
+                db.session.add(new_location)
+                db.session.flush()  # Get the new location ID before committing
+                image.location_id = new_location.id
 
+# ///////
         # Update persons if provided
         if persons:
             for person_data in persons:
@@ -278,7 +291,7 @@ class ImageController:
         # Extract parameters
         person_names = data.get('name', [])  
         gender = data.get('gender', [])  # Now a list
-        events = data.get('events', [])
+        events = data.get('selectedEvents', [])
         capture_dates = data.get('capture_date', [])
         locations = data.get('location', {})
 

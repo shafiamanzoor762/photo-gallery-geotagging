@@ -17,6 +17,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://DESKTOP-831NKE6/PhotoGal
 
 #aimen db connection string 
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:123@DESKTOP-R50Q2I1\\SQLEXPRESS/FYP2PhotoGallery?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:123@DESKTOP-R50Q2I1\\SQLEXPRESS/FYP2PhotoGallery?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
