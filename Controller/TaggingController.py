@@ -71,47 +71,11 @@ class TaggingController:
 #             "path": "cropped/ali.jpg"
 #         }
 #     },
-#     "event": "Convocation",
+#     "event": ["Convocation","Graduation"],
 #     "location": "Islamabad"
 #    "event_date": "2023-10-01"
 # }
  
-    # @staticmethod
-    # def tagImage(file, tags):
-    #   try:
-    #     image = Image.open(BytesIO(file.read()))
-    #     if image.mode == 'RGBA':
-    #         image = image.convert('RGB')
-
-    #     # Serialize metadata with UTF-16 encoding (EXIF standard)
-    #     metadata_json = json.dumps(tags, ensure_ascii=False)
-    #     user_comment = piexif.helper.UserComment.dump(
-    #         metadata_json,
-    #         encoding="unicode"  # EXIF-compliant UTF-16 encoding
-    #     )
-
-    #     exif_dict = {
-    #         "Exif": {
-    #             piexif.ExifIFD.UserComment: user_comment
-    #         }
-    #     }
-
-    #     exif_bytes = piexif.dump(exif_dict)
-        
-    #     img_io = BytesIO()
-    #     image.save(img_io, format="JPEG", exif=exif_bytes)
-    #     img_io.seek(0)
-
-    #     return send_file(
-    #         img_io,
-    #         mimetype='image/jpeg',
-    #         download_name='tagged_image.jpg'
-    #     )
-
-    #   except Exception as e:
-    #     print(f"Tagging error: {str(e)}")
-    #     return jsonify({"error": str(e)}), 500
-
 
     @staticmethod
     def tagImage(file, tags):

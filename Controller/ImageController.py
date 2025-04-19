@@ -236,6 +236,7 @@ class ImageController:
                         if person_name and gender:
                             person.name = person_name
                             person.gender  =gender
+                            person_data['path'] = person.path # saving this for tagging
                         else:
                             return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
                     else:
@@ -253,7 +254,7 @@ class ImageController:
 
         try:
             image_path = image.path  # Full path to original image
-        
+            print(persons)
         # Reconstruct the tag JSON structure
             tag_data = {
                 "persons": {
