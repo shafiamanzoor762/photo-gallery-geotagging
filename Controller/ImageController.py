@@ -253,15 +253,14 @@ class ImageController:
 
         try:
             image_path = image.path  # Full path to original image
-            print(f"Tagging image at: {image_path}")
-
+        
         # Reconstruct the tag JSON structure
             tag_data = {
                 "persons": {
                     str(p.get("id")): {
                         "name": p.get("name"),
                         "gender": p.get("gender"),
-                        "path": p.get("cropped_face_path", "")
+                        "path": p.get("path", "")
                     }
                     for p in persons
                 } if persons else {},
@@ -273,15 +272,15 @@ class ImageController:
              # Read image file as binary to pass to TaggingController.tagImage
             with open(image_path, "rb") as img_file:
                 img_bytes = BytesIO(img_file.read())
-                tagged_response = TaggingController.tagImage(img_bytes, tag_data)
+                tagged_img_io = TaggingController.tagImage(img_bytes, tag_data)
 
-                if isinstance(tagged_response.response, list):
-                    # Save the returned tagged image to original file path
-                    tagged_image_data = b"".join(tagged_response.response)
+                if tagged_img_io:
+
                     with open(image_path, "wb") as output:
-                        output.write(tagged_image_data)
+                        output.write(tagged_img_io.read())
+                        return jsonify({f"Image saved with EXIF data at:": "{image_path}"}), 200
                 else:
-                    return jsonify({"error": "Invalid response from tagImage"}), 500
+                    return jsonify({"error": "Tagging failed."}), 500
 
         except Exception as e:
             print(f"Error tagging and saving image: {str(e)}")
@@ -575,6 +574,9 @@ class ImageController:
             # 1. Check if image already exists based on HASH
             existing_image = Image.query.filter_by(hash=data['hash']).first()
             if existing_image:
+                existing_image.is_deleted = 0  # Mark as not deleted
+                existing_image.last_modified = datetime.utcnow()
+                db.session.commit()
                 print(f"⚠️ Image already exists with hash: {existing_image.hash}")
                 return jsonify({'message': 'Image already exists'}), 200
                 

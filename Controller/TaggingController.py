@@ -63,12 +63,12 @@ class TaggingController:
 #         "1": {
 #             "name": "Aliya",
 #             "gender": "F",
-#             "cropped_face_path": "cropped/aliya.jpg"
+#             "path": "cropped/aliya.jpg"
 #         },
 #         "2": {
 #             "name": "Ali",
 #             "gender": "M",
-#             "cropped_face_path": "cropped/ali.jpg"
+#             "path": "cropped/ali.jpg"
 #         }
 #     },
 #     "event": "Convocation",
@@ -76,6 +76,43 @@ class TaggingController:
 #    "event_date": "2023-10-01"
 # }
  
+    # @staticmethod
+    # def tagImage(file, tags):
+    #   try:
+    #     image = Image.open(BytesIO(file.read()))
+    #     if image.mode == 'RGBA':
+    #         image = image.convert('RGB')
+
+    #     # Serialize metadata with UTF-16 encoding (EXIF standard)
+    #     metadata_json = json.dumps(tags, ensure_ascii=False)
+    #     user_comment = piexif.helper.UserComment.dump(
+    #         metadata_json,
+    #         encoding="unicode"  # EXIF-compliant UTF-16 encoding
+    #     )
+
+    #     exif_dict = {
+    #         "Exif": {
+    #             piexif.ExifIFD.UserComment: user_comment
+    #         }
+    #     }
+
+    #     exif_bytes = piexif.dump(exif_dict)
+        
+    #     img_io = BytesIO()
+    #     image.save(img_io, format="JPEG", exif=exif_bytes)
+    #     img_io.seek(0)
+
+    #     return send_file(
+    #         img_io,
+    #         mimetype='image/jpeg',
+    #         download_name='tagged_image.jpg'
+    #     )
+
+    #   except Exception as e:
+    #     print(f"Tagging error: {str(e)}")
+    #     return jsonify({"error": str(e)}), 500
+
+
     @staticmethod
     def tagImage(file, tags):
       try:
@@ -87,7 +124,7 @@ class TaggingController:
         metadata_json = json.dumps(tags, ensure_ascii=False)
         user_comment = piexif.helper.UserComment.dump(
             metadata_json,
-            encoding="unicode"  # EXIF-compliant UTF-16 encoding
+            encoding="unicode"
         )
 
         exif_dict = {
@@ -97,20 +134,18 @@ class TaggingController:
         }
 
         exif_bytes = piexif.dump(exif_dict)
-        
+
         img_io = BytesIO()
         image.save(img_io, format="JPEG", exif=exif_bytes)
         img_io.seek(0)
 
-        return send_file(
-            img_io,
-            mimetype='image/jpeg',
-            download_name='tagged_image.jpg'
-        )
+        # Return raw image bytes for internal use
+        return img_io
 
       except Exception as e:
         print(f"Tagging error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        return None
+
       
 
 # http://127.0.0.1:5000//extractImageTags
