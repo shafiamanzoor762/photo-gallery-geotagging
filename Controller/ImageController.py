@@ -1,4 +1,5 @@
 import os,cv2,uuid,json,face_recognition
+from io import BytesIO
 
 from flask import jsonify, request
 import numpy as np
@@ -8,6 +9,7 @@ from collections import defaultdict
 
 from Controller.LocationController import LocationController
 from Controller.PersonController import PersonController
+from Controller.TaggingController import TaggingController
 
 from Model.Person import Person
 from Model.Image import Image
@@ -175,6 +177,11 @@ class ImageController:
 
         print(location_data)
 
+        # Update location
+        location_name = None
+        latitude = None
+        longitude = None
+
         # Update location if provided
         if location_data:
             # location_name = location_data[0]
@@ -239,10 +246,47 @@ class ImageController:
         # Save changes to the database
         try:
             db.session.commit()
-            return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
+            # return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
         except SQLAlchemyError as e:
             db.session.rollback()
             return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+        try:
+            image_path = image.path  # Full path to original image
+            print(f"Tagging image at: {image_path}")
+
+        # Reconstruct the tag JSON structure
+            tag_data = {
+                "persons": {
+                    str(p.get("id")): {
+                        "name": p.get("name"),
+                        "gender": p.get("gender"),
+                        "path": p.get("cropped_face_path", "")
+                    }
+                    for p in persons
+                } if persons else {},
+                "event": event_names[0] if event_names else "",
+                "location": location_name if location_name else "",
+                "event_date": event_date if event_date else ""
+            }
+
+             # Read image file as binary to pass to TaggingController.tagImage
+            with open(image_path, "rb") as img_file:
+                img_bytes = BytesIO(img_file.read())
+                tagged_response = TaggingController.tagImage(img_bytes, tag_data)
+
+                if isinstance(tagged_response.response, list):
+                    # Save the returned tagged image to original file path
+                    tagged_image_data = b"".join(tagged_response.response)
+                    with open(image_path, "wb") as output:
+                        output.write(tagged_image_data)
+                else:
+                    return jsonify({"error": "Invalid response from tagImage"}), 500
+
+        except Exception as e:
+            print(f"Error tagging and saving image: {str(e)}")
+            return jsonify({"error": "EXIF metadata embedding failed."}), 500
+
 
 
        
@@ -534,8 +578,7 @@ class ImageController:
                 print(f"⚠️ Image already exists with hash: {existing_image.hash}")
                 return jsonify({'message': 'Image already exists'}), 200
                 
-                
-
+            
             # 2. Insert new image record
             image = Image(
                 path=data['path'],
