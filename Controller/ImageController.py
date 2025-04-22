@@ -664,52 +664,59 @@ class ImageController:
 
 
 
-     # Replace with your actual database module
-
-
+        # Replace with your actual database module
     @staticmethod
     def delete_metadata(image_id):
         try:
-            # Save metadata to the history tables before deletion
+            # Save metadata to ImageHistory before clearing
             db.session.execute(text("""
-                INSERT INTO ImageHistory (id, path, is_sync, capture_date, event_date, last_modified, location_id, version_no)
-                SELECT id, path, is_sync, capture_date, event_date, last_modified, location_id, 1
+                INSERT INTO ImageHistory (
+                    id, path, is_sync, capture_date, event_date, last_modified,
+                    location_id, hash, version_no
+                )
+                SELECT 
+                    id, path, is_sync, capture_date, event_date, last_modified,
+                    location_id, hash,
+                    COALESCE((SELECT MAX(version_no) FROM ImageHistory WHERE id = :image_id), 0) + 1
                 FROM Image
                 WHERE id = :image_id
             """), {'image_id': image_id})
 
+            # Save Image-Person relationships to history
             db.session.execute(text("""
                 INSERT INTO ImagePersonHistory (image_id, person_id, version_no)
-                SELECT image_id, person_id, 1
+                SELECT image_id, person_id,
+                    COALESCE((SELECT MAX(version_no) FROM ImagePersonHistory WHERE image_id = :image_id), 0) + 1
                 FROM ImagePerson
                 WHERE image_id = :image_id
             """), {'image_id': image_id})
 
+            # Save Image-Event relationships to history
             db.session.execute(text("""
                 INSERT INTO ImageEventHistory (image_id, event_id, version_no)
-                SELECT image_id, event_id, 1
+                SELECT image_id, event_id,
+                    COALESCE((SELECT MAX(version_no) FROM ImageEventHistory WHERE image_id = :image_id), 0) + 1
                 FROM ImageEvent
                 WHERE image_id = :image_id
             """), {'image_id': image_id})
 
-            # Clear metadata fields from the Image table (set to NULL)
+            # Clear metadata fields from the Image table
             db.session.execute(text("""
                 UPDATE Image 
-                SET location_id = NULL, event_date = NULL, last_modified = NULL 
+                SET location_id = NULL, event_date = NULL 
                 WHERE id = :image_id
             """), {'image_id': image_id})
 
-            # Delete associated data from relational tables
+            # Delete associated records from relational tables
             db.session.execute(text("DELETE FROM ImagePerson WHERE image_id = :image_id"), {'image_id': image_id})
             db.session.execute(text("DELETE FROM ImageEvent WHERE image_id = :image_id"), {'image_id': image_id})
 
             db.session.commit()
             return jsonify({'message': 'Metadata cleared and saved to history successfully'}), 200
+
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
-
-
 
     @staticmethod
     def delete_image(image_id):
