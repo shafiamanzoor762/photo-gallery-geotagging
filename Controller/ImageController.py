@@ -1,4 +1,5 @@
 import os,cv2,uuid,json,face_recognition
+from io import BytesIO
 
 from flask import jsonify, request
 import numpy as np
@@ -8,6 +9,8 @@ from collections import defaultdict
 
 from Controller.LocationController import LocationController
 from Controller.PersonController import PersonController
+from Controller.TaggingController import TaggingController
+
 
 from Model.Person import Person
 from Model.Image import Image
@@ -175,6 +178,11 @@ class ImageController:
 
         print(location_data)
 
+        # Update location
+        location_name = None
+        latitude = None
+        longitude = None
+
         # Update location if provided
         if location_data:
             # location_name = location_data[0]
@@ -214,15 +222,6 @@ class ImageController:
                 db.session.add(new_location)
                 db.session.flush()  # Get the new location ID before committing
                 image.location_id = new_location.id
-            if existing_location:
-                image.location_id = existing_location.id  # Associate existing location
-            else:
-                # Create new location
-                print("yes am here")
-                new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
-                db.session.add(new_location)
-                db.session.flush()  # Get the new location ID before committing
-                image.location_id = new_location.id
 
 # ///////
         # Update persons if provided
@@ -238,6 +237,7 @@ class ImageController:
                         if person_name and gender:
                             person.name = person_name
                             person.gender  =gender
+                            person_data['path'] = person.path # saving this for tagging
                         else:
                             return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
                     else:
@@ -248,10 +248,46 @@ class ImageController:
         # Save changes to the database
         try:
             db.session.commit()
-            return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
+            # return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
         except SQLAlchemyError as e:
             db.session.rollback()
             return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+        try:
+            image_path = image.path  # Full path to original image
+            print(persons)
+        # Reconstruct the tag JSON structure
+            tag_data = {
+                "persons": {
+                    str(p.get("id")): {
+                        "name": p.get("name"),
+                        "gender": p.get("gender"),
+                        "path": p.get("path", "")
+                    }
+                    for p in persons
+                } if persons else {},
+                "event": event_names[0] if event_names else "",
+                "location": location_name if location_name else "",
+                "event_date": event_date if event_date else ""
+            }
+
+             # Read image file as binary to pass to TaggingController.tagImage
+            with open(image_path, "rb") as img_file:
+                img_bytes = BytesIO(img_file.read())
+                tagged_img_io = TaggingController.tagImage(img_bytes, tag_data)
+
+                if tagged_img_io:
+
+                    with open(image_path, "wb") as output:
+                        output.write(tagged_img_io.read())
+                        return jsonify({f"Image saved with EXIF data at:": "{image_path}"}), 200
+                else:
+                    return jsonify({"error": "Tagging failed."}), 500
+
+        except Exception as e:
+            print(f"Error tagging and saving image: {str(e)}")
+            return jsonify({"error": "EXIF metadata embedding failed."}), 500
+
 
 
        
@@ -540,11 +576,13 @@ class ImageController:
             # 1. Check if image already exists based on HASH
             existing_image = Image.query.filter_by(hash=data['hash']).first()
             if existing_image:
+                existing_image.is_deleted = 0  # Mark as not deleted
+                existing_image.last_modified = datetime.utcnow()
+                db.session.commit()
                 print(f"⚠️ Image already exists with hash: {existing_image.hash}")
                 return jsonify({'message': 'Image already exists'}), 200
                 
-                
-
+            
             # 2. Insert new image record
             image = Image(
                 path=data['path'],
@@ -579,7 +617,17 @@ class ImageController:
                 db_face_path = f"face_images/{face_filename}"
 
                 # Check if this face already exists based on path
-                matched_person = Person.query.filter_by(path=db_face_path).first()
+                # matched_person = Person.query.filter_by(path=db_face_path).first()
+
+                match_data = PersonController.recognize_person(f"./stored-faces/{face_filename}") #db_face_path.path.replace('face_images','./stored-faces')
+                
+                if match_data:
+                    result = match_data["results"][0]
+                    file_path = result["file"]  # e.g. "stored-faces\\3ec88a981d204ab8b0501cc4da150bf5.jpg"
+                    normalized_path = file_path.replace("\\", "/")
+                    face_path_1 = normalized_path.replace('stored-faces', 'face_images')
+                    matched_person = Person.query.filter_by(path=face_path_1).first()
+
 
                 # 5. If not found, create a new person
                 if not matched_person:
@@ -593,7 +641,14 @@ class ImageController:
                     print(f"✅ New person added: {new_person.path}")
                     matched_person = new_person
                 else:
-                    print(f"🔹 Matched with existing person: {matched_person.name}")
+                    new_person = Person(
+                        name=matched_person.name,
+                        path=db_face_path,
+                        gender=matched_person.gender  # Unknown gender
+                    )
+                    db.session.add(new_person)
+                    db.session.commit()
+                    matched_person = new_person
 
                 # 6. Link the image and the person
                 image_person = ImagePerson(image_id=image.id, person_id=matched_person.id)
