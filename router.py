@@ -1,4 +1,7 @@
 from datetime import datetime
+import io
+import json
+import uuid
 from flask import Flask, request, jsonify, send_file,make_response, send_from_directory
 from PIL import Image
 from io import BytesIO
@@ -9,6 +12,9 @@ from config import db,app
 import os, uuid, base64, json, piexif, io
 
 from werkzeug.utils import secure_filename
+from config import db,app
+import os
+import base64
 
 from Controller.PersonController import PersonController
 from Controller.EventController import EventController
@@ -287,9 +293,23 @@ def get_image_complete_details(image_id):
     return ImageController.get_image_complete_details(image_id)
 
 # Delete an Image (Delete)
+# @app.route('/images/<int:image_id>', methods=['DELETE'])
+# def delete_image(image_id):
+#     return ImageController.delete_image(image_id)
+
+
+@app.route('/delete_metadata/<int:image_id>', methods=['DELETE'])
+def delete_metadata(image_id):
+    try:
+        # Call the delete_metadata method from ImageController
+        return ImageController.delete_metadata(image_id)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 @app.route('/images/<int:image_id>', methods=['DELETE'])
 def delete_image(image_id):
     return ImageController.delete_image(image_id)
+
 
 # --------------------------EVENT---------------------------------
 #done
@@ -367,29 +387,29 @@ def addLocation():
 def group_by_location():
     return LocationController.group_by_location() 
     
-    ######remove Metadata####################
-@app.route('/remove_metadata', methods=['POST'])
-def remove_metadata():
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'File not attached'}), 400
+#     ######remove Metadata####################
+# @app.route('/remove_metadata', methods=['POST'])
+# def remove_metadata():
+#     try:
+#         if 'file' not in request.files:
+#             return jsonify({'error': 'File not attached'}), 400
 
-        file = request.files['file']
+#         file = request.files['file']
         
-        # Open the image file
-        image = Image.open(io.BytesIO(file.read()))
+#         # Open the image file
+#         image = Image.open(io.BytesIO(file.read()))
 
-        # Create a new image to strip metadata
-        img_io = io.BytesIO()
+#         # Create a new image to strip metadata
+#         img_io = io.BytesIO()
 
-        # Strip metadata by saving without Exif (using 'quality' argument for JPG)
-        image.save(img_io, format="JPEG", quality=95)  # JPEG without metadata
-        img_io.seek(0)
+#         # Strip metadata by saving without Exif (using 'quality' argument for JPG)
+#         image.save(img_io, format="JPEG", quality=95)  # JPEG without metadata
+#         img_io.seek(0)
 
-        return send_file(img_io, mimetype='image/jpeg', download_name='image_without_metadata.jpg')
+#         return send_file(img_io, mimetype='image/jpeg', download_name='image_without_metadata.jpg')
 
-    except Exception as e:
-        return jsonify({'error': f'Error processing image: {str(e)}'}), 500
+#     except Exception as e:
+#         return jsonify({'error': f'Error processing image: {str(e)}'}), 500
 
 #=====================dummy method after sync -------------------------
 
@@ -490,6 +510,8 @@ def get_face_image(filename):
 # only accept localhost
 if __name__ == '__main__':
     app.run(debug=True)
+    # app.run(host='0.0.0.0', port=5000,debug=True)
+
 
 
 

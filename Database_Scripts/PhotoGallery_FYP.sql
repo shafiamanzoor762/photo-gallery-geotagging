@@ -11,11 +11,11 @@ CREATE TABLE Person (
     id INT PRIMARY KEY IDENTITY(1,1),  -- Auto-increment primary key
     name VARCHAR(255),
     path VARCHAR(255),
-	gender CHAR(1) CHECK (Gender IN ('M', 'F'))
+	gender CHAR(1) CHECK (Gender IN ('M', 'F','U'))
 );
 
-ALTER TABLE Person 
-ADD CONSTRAINT CK_Person_Genderr CHECK (gender IN ('M', 'F', 'U'));
+-- ALTER TABLE Person 
+-- ADD CONSTRAINT CK_Person_Genderr CHECK (gender IN ('M', 'F', 'U'));
 -- if above not working, use below
 -- ALTER TABLE Person 
 -- drop CK_Person_Genderr
@@ -82,9 +82,12 @@ Create TABLE Link(
 
 --------------is_active column
 delete from ImageHistory
+delete from ImageEventHistory
 delete from ImagePersonHistory
 delete from personhistory
-
+delete from linkHistory
+delete from LocationHistory
+delete from EventHistory
 
 
 
