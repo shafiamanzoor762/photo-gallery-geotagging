@@ -100,15 +100,33 @@ def extract_face():
 
 @app.route('/recognize_person', methods=['GET'])
 def recognize_person():
-    # Get query parameters from the GET request
-    image_path = request.args.get('image_path')
-    person_name = request.args.get('name', None)
 
-    if not image_path:
-        return make_response(jsonify({'error': 'Missing required parameters'}), 400)
+    try:
 
-    # Call the method from the PictureController class
-    return PersonController.recognize_person(image_path, person_name)
+        # Get query parameters from the GET request
+        image_path = request.args.get('image_path')
+        person_name = request.args.get('name', None)
+
+        if image_path:
+            print(image_path)
+           # Call the method from the PictureController class
+            return PersonController.recognize_person(image_path, person_name)
+
+        if 'file' in request.files:
+        
+            file = request.files['file']
+            if file.filename == '':
+                return jsonify({'error':'filename is empty'}), 404
+        
+            image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
+            print(image_path)
+            image = Image.open(io.BytesIO(file.read()))
+            image.save(image_path)
+
+            return PersonController.recognize_person(image_path, person_name)
+
+    except Exception as exp:
+        return jsonify({'error':str(exp)}), 500
 
 
 @app.route('/group_by_person', methods=['GET'])
