@@ -528,7 +528,7 @@ def health_check():
 # if __name__ == '__main__':
 #     app.run(debug=True)
 
-
+# Run on all addresses (0.0.0.0)
 if __name__ == '__main__':
     # if not os.path.exists("temp"):
     #     os.makedirs("temp")
