@@ -518,10 +518,16 @@ def get_face_image(filename):
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
 
+
+@app.route('/health')
+def health_check():
+     return jsonify({"status": "healthy"}), 200
+
+
 # only accept localhost
 if __name__ == '__main__':
     app.run(debug=True)
-    # app.run(host='0.0.0.0', port=5000,debug=True)
+    app.run(host='0.0.0.0', port=5000,debug=True)
 
 
 
