@@ -5,7 +5,7 @@ import uuid
 from flask import Flask, request, jsonify, send_file,make_response, send_from_directory
 from PIL import Image
 from io import BytesIO
-
+import tempfile
 import urllib
 from config import db,app
 
@@ -94,45 +94,38 @@ def extract_face():
         if file.filename == '':
             return jsonify({'error':'filename is empty'}), 404
         
-        image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
-        print(image_path)
+        # image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
+        # print(image_path)
         image = Image.open(io.BytesIO(file.read()))
-        image.save(image_path)
-        
-        return PersonController.extract_face(image_path)
+        # image.save(image_path)
+        temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+        image.save(temp, format="JPEG")
+        temp_path = temp.name
+        temp.close()  # Close file so OpenCV can access it
+
+        # Call your processing logic
+        result = PersonController.extract_face(temp_path)
+
+        # Clean up manually
+        os.unlink(temp_path)
+
+        return result
+        #return PersonController.extract_face(image_path)
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
 
 
 @app.route('/recognize_person', methods=['GET'])
 def recognize_person():
+    # Get query parameters from the GET request
+    image_path = request.args.get('image_path')
+    person_name = request.args.get('name', None)
 
-    try:
+    if not image_path:
+        return make_response(jsonify({'error': 'Missing required parameters'}), 400)
 
-        # Get query parameters from the GET request
-        image_path = request.args.get('image_path')
-        person_name = request.args.get('name', None)
-
-        if image_path:
-            print(image_path)
-           # Call the method from the PictureController class
-            return PersonController.recognize_person(image_path, person_name)
-
-        if 'file' in request.files:
-        
-            file = request.files['file']
-            if file.filename == '':
-                return jsonify({'error':'filename is empty'}), 404
-        
-            image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
-            print(image_path)
-            image = Image.open(io.BytesIO(file.read()))
-            image.save(image_path)
-
-            return PersonController.recognize_person(image_path, person_name)
-
-    except Exception as exp:
-        return jsonify({'error':str(exp)}), 500
+    # Call the method from the PictureController class
+    return PersonController.recognize_person(image_path, person_name)
 
 
 @app.route('/group_by_person', methods=['GET'])
@@ -524,17 +517,11 @@ def get_face_image(filename):
         return send_from_directory(FACES_FOLDER, filename)
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
-    
-
-@app.route('/health')
-def health_check():
-    return jsonify({"status": "healthy"}), 200
-
 
 # only accept localhost
 if __name__ == '__main__':
     app.run(debug=True)
-    app.run(host='0.0.0.0', port=5000,debug=True)
+    # app.run(host='0.0.0.0', port=5000,debug=True)
 
 
 
