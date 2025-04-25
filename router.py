@@ -110,7 +110,7 @@ def extract_face():
         return jsonify({'error':str(exp)}), 500
 
 
-@app.route('/recognize_person', methods=['GET'])
+@app.route('/recognize_person', methods=['POST'])
 def recognize_person():
      
      try:
