@@ -11,7 +11,6 @@ from Controller.LocationController import LocationController
 from Controller.PersonController import PersonController
 from Controller.TaggingController import TaggingController
 
-
 from Model.Person import Person
 from Model.Image import Image
 from Model.Location import Location
@@ -939,9 +938,3 @@ class ImageController:
         
         # Convert result to list of dictionaries
             return [{"id": p.id, "name": p.name, "path": p.path, "gender": p.gender} for p in persons]
-
-
-    
-
-
-
