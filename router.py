@@ -535,6 +535,13 @@ def get_face_image(filename):
         return send_from_directory(FACES_FOLDER, filename)
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
+    
+
+
+@app.route('/health')
+def health_check():
+     return jsonify({"status": "healthy"}), 200
+
 #Aimen's mobile side code requests 
 
 @app.route('/image_processing', methods=['POST'])
@@ -569,11 +576,6 @@ def image_processing():
 
 
 
-
-
-@app.route('/health')
-def health_check():
-     return jsonify({"status": "healthy"}), 200
 
 
 # only accept localhost
