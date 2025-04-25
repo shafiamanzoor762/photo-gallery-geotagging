@@ -93,6 +93,7 @@ def extract_face():
         # print(image_path)
         image = Image.open(io.BytesIO(file.read()))
         # image.save(image_path)
+        # image.save(image_path)
         temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
         image.save(temp, format="JPEG")
         temp_path = temp.name
@@ -105,12 +106,12 @@ def extract_face():
         os.unlink(temp_path)
 
         return result
-        #return PersonController.extract_face(image_path)
+        #
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
 
 
-@app.route('/recognize_person', methods=['GET'])
+@app.route('/recognize_person', methods=['POST'])
 def recognize_person():
      
      try:
@@ -534,14 +535,48 @@ def get_face_image(filename):
         return send_from_directory(FACES_FOLDER, filename)
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
+    
+
+#Aimen's mobile side code requests 
+
+@app.route('/image_processing', methods=['POST'])
+def image_processing():
+     try:
+        if 'file' not in request.files:
+            return jsonify({'error':'file not attatched'}), 404
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error':'filename is empty'}), 404
+        
+        # image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
+        # print(image_path)
+        image = Image.open(io.BytesIO(file.read()))
+        # image.save(image_path)
+        temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+        image.save(temp, format="JPEG")
+        temp_path = temp.name
+        temp.close()  # Close file so OpenCV can access it
+
+        # Call your processing logic
+        result = ImageController.mobile_img_processing(temp_path)
+
+        # Clean up manually
+        os.unlink(temp_path)
+
+        return result
+        #return PersonController.extract_face(image_path)
+     except Exception as exp:
+        return jsonify({'error':str(exp)}), 500
 
 
-@app.route('/health')
-def health_check():
-     return jsonify({"status": "healthy"}), 200
+
 
 
 # only accept localhost
+
+
+
 # if __name__ == '__main__':
 #     app.run(debug=True)
 
