@@ -24,10 +24,6 @@ from Controller.LinkController import LinkController
 from Controller.DirectoryController import DirectoryController
 from Controller.TaggingController import TaggingController
 
-# from dotenv import load_dotenv
-# load_dotenv('directory.env')
-# IMAGE_ROOT_DIR = os.getenv('ROOT_DIR1')
-
 
 # ✅ Set this dynamically on startup using your helper
 IMAGE_ROOT_DIR = DirectoryController.get_latest_directory()
@@ -35,7 +31,6 @@ print(IMAGE_ROOT_DIR)
 if not IMAGE_ROOT_DIR:
     raise RuntimeError("No ROOT_DIR found in directory.env")
 
-ASSETS_FOLDER = 'Assets'
 
 FACES_FOLDER = 'stored-faces'  
 if not os.path.exists(FACES_FOLDER):
@@ -117,15 +112,37 @@ def extract_face():
 
 @app.route('/recognize_person', methods=['GET'])
 def recognize_person():
-    # Get query parameters from the GET request
-    image_path = request.args.get('image_path')
-    person_name = request.args.get('name', None)
-
-    if not image_path:
-        return make_response(jsonify({'error': 'Missing required parameters'}), 400)
-
-    # Call the method from the PictureController class
-    return PersonController.recognize_person(image_path, person_name)
+     
+     try:
+ 
+         # Get query parameters from the GET request
+         image_path = request.args.get('image_path')
+         person_name = request.args.get('name', None)
+ 
+         if image_path:
+             print(image_path)
+            # Call the method from the PictureController class
+             return PersonController.recognize_person(image_path, person_name)
+ 
+         if 'file' in request.files:
+         
+             file = request.files['file']
+             if file.filename == '':
+                 return jsonify({'error':'filename is empty'}), 404
+         
+            #  image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
+            #  print(image_path)
+             image = Image.open(io.BytesIO(file.read()))
+                # image.save(image_path)
+             temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+             image.save(temp, format="JPEG")
+             image_path = temp.name
+             temp.close()
+ 
+             return PersonController.recognize_person(image_path, person_name)
+ 
+     except Exception as exp:
+         return jsonify({'error':str(exp)}), 500
 
 
 @app.route('/group_by_person', methods=['GET'])
@@ -188,7 +205,7 @@ def get_unedited_images_route():
     return ImageController.get_unedited_images()
 
 # -----------------------------------------------------------
-# --- ROUTE TO HANDLE IMAGE UPLOAD ---
+
 # --- ROUTE TO HANDLE IMAGE UPLOAD ---
 @app.route('/add_image', methods=['POST'])
 def add_image():
