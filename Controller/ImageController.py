@@ -12,7 +12,6 @@ from Controller.LocationController import LocationController
 from Controller.PersonController import PersonController
 from Controller.TaggingController import TaggingController
 
-
 from Model.Person import Person
 from Model.Image import Image
 from Model.Location import Location
@@ -663,6 +662,7 @@ class ImageController:
             print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
 
+    
     
     
 
