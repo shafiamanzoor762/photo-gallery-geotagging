@@ -12,7 +12,6 @@ from Controller.LocationController import LocationController
 from Controller.PersonController import PersonController
 from Controller.TaggingController import TaggingController
 
-
 from Model.Person import Person
 from Model.Image import Image
 from Model.Location import Location
@@ -664,6 +663,8 @@ class ImageController:
             return jsonify({'error': str(e)}), 500
 
     
+    
+    
 
     @staticmethod
     def get_image_details(image_id):
@@ -1014,8 +1015,73 @@ class ImageController:
         # Convert result to list of dictionaries
             return [{"id": p.id, "name": p.name, "path": p.path, "gender": p.gender} for p in persons]
 
-
+#Aimen's mobile app code 
+    @staticmethod
+    def mobile_img_processing(image_path):
+        try:
+            # Extract faces from the image
+            extracted_faces = PersonController.extract_face(image_path)
+            if not extracted_faces:
+                return jsonify({'message': 'No faces found'}), 200
     
+            response_data = []
+    
+            for face_data in extracted_faces:
+                face_path = face_data["face_path"]
+                face_filename = os.path.basename(face_path)
+                db_face_path = f"face_images/{face_filename}"
+    
+                matched_person = None
+                match_data = PersonController.recognize_person(f"./stored-faces/{face_filename}")
+                
+                if match_data:
+                    result = match_data["results"][0]
+                    file_path = result["file"]
+                    normalized_path = file_path.replace("\\", "/")
+                    face_path_1 = normalized_path.replace('stored-faces', 'face_images')
+                    matched_person = Person.query.filter_by(path=face_path_1).first()
+    
+                if not matched_person:
+                    new_person = Person(
+                        name="unknown",
+                        path=db_face_path,
+                        gender="U"
+                    )
+                     # Get ID without committing
+                    print(f"✅ New person added: {new_person.path}")
+                    matched_person = new_person
+                    response_data.append({
+                        "status": "new_person_detected",
+                        "name": new_person.name,
+                        "path": new_person.path,
+                        "gender": new_person.gender
+                    })
+                else:
+                    new_person = Person(
+                        name=matched_person.name,
+                        path=db_face_path,
+                        gender=matched_person.gender
+                    )
+                    
+                    matched_person = new_person
+                    response_data.append({
+                        "status": "known_person_instance_detected",
+                        "name": new_person.name,
+                        "path": new_person.path,
+                        "gender": new_person.gender
+                    })
+    
+                # Optionally link person to image here if image object is available
+                # image_person = ImagePerson(image_id=image.id, person_id=matched_person.id)
+                # db.session.add(image_person)
+    
+            
+            return jsonify(response_data), 201
+    
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ Error: {e}")
+            return jsonify({'error': str(e)}), 500
 
 
 
