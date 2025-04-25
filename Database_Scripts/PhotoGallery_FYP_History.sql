@@ -16,7 +16,7 @@ CREATE TABLE PersonHistory (
     id INT,
     name VARCHAR(255),
     path VARCHAR(255),
-	gender CHAR(1) CHECK (Gender IN ('M', 'F')),
+	gender CHAR(1) CHECK (Gender IN ('M', 'F','U')),
 	version_no INT,
 );
 ALTER TABLE PersonHistory

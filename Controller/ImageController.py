@@ -4,8 +4,9 @@ from io import BytesIO
 from flask import jsonify, request
 import numpy as np
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import func
+from sqlalchemy import func, text
 from collections import defaultdict
+import json
 
 from Controller.LocationController import LocationController
 from Controller.PersonController import PersonController
@@ -711,21 +712,94 @@ class ImageController:
     
         return jsonify(image_data)
 
+    # @staticmethod
+    # def delete_image(image_id):
+    #         image = Image.query.get(image_id)
+    #         if not image:
+    #             return jsonify({'error': 'Image not found'}), 404
+            
+    #         try:
+    #             db.session.delete(image)
+    #             db.session.commit()
+    #             return jsonify({'message': 'Image deleted successfully'}), 200
+    #         except Exception as e:
+    #             db.session.rollback()
+    #             return jsonify({'error': str(e)}), 500
+            ######delete metaddta
+   
+
+
+
+
+        # Replace with your actual database module
+    @staticmethod
+    def delete_metadata(image_id):
+        try:
+            # Save metadata to ImageHistory before clearing
+            db.session.execute(text("""
+                INSERT INTO ImageHistory (
+                    id, path, is_sync, capture_date, event_date, last_modified,
+                    location_id, hash, version_no
+                )
+                SELECT 
+                    id, path, is_sync, capture_date, event_date, last_modified,
+                    location_id, hash,
+                    COALESCE((SELECT MAX(version_no) FROM ImageHistory WHERE id = :image_id), 0) + 1
+                FROM Image
+                WHERE id = :image_id
+            """), {'image_id': image_id})
+
+            # Save Image-Person relationships to history
+            db.session.execute(text("""
+                INSERT INTO ImagePersonHistory (image_id, person_id, version_no)
+                SELECT image_id, person_id,
+                    COALESCE((SELECT MAX(version_no) FROM ImagePersonHistory WHERE image_id = :image_id), 0) + 1
+                FROM ImagePerson
+                WHERE image_id = :image_id
+            """), {'image_id': image_id})
+
+            # Save Image-Event relationships to history
+            db.session.execute(text("""
+                INSERT INTO ImageEventHistory (image_id, event_id, version_no)
+                SELECT image_id, event_id,
+                    COALESCE((SELECT MAX(version_no) FROM ImageEventHistory WHERE image_id = :image_id), 0) + 1
+                FROM ImageEvent
+                WHERE image_id = :image_id
+            """), {'image_id': image_id})
+
+            # Clear metadata fields from the Image table
+            db.session.execute(text("""
+                UPDATE Image 
+                SET location_id = NULL, event_date = NULL 
+                WHERE id = :image_id
+            """), {'image_id': image_id})
+
+            # Delete associated records from relational tables
+            db.session.execute(text("DELETE FROM ImagePerson WHERE image_id = :image_id"), {'image_id': image_id})
+            db.session.execute(text("DELETE FROM ImageEvent WHERE image_id = :image_id"), {'image_id': image_id})
+
+            db.session.commit()
+            return jsonify({'message': 'Metadata cleared and saved to history successfully'}), 200
+
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
     @staticmethod
     def delete_image(image_id):
-            image = Image.query.get(image_id)
-            if not image:
-                return jsonify({'error': 'Image not found'}), 404
+        image = Image.query.get(image_id)  # Fetch image from the database by ID
+        
+        if not image:
+            return jsonify({'error': 'Image not found'}), 404  # Return error if image not found
+        
+        try:
+            image.is_deleted = True  # Mark the image as deleted (soft delete)
+            db.session.commit()  # Commit the change to the database
             
-            try:
-                db.session.delete(image)
-                db.session.commit()
-                return jsonify({'message': 'Image deleted successfully'}), 200
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({'error': str(e)}), 500
-            
-
+            return jsonify({'message': 'Image marked as deleted successfully'}), 200  # Success response
+        except Exception as e:
+            db.session.rollback()  # Rollback any changes in case of error
+            return jsonify({'error': str(e)}), 500    
     
     @staticmethod
     def group_by_date():

@@ -1,14 +1,20 @@
 from datetime import datetime
+import io
+import json
+import uuid
 from flask import Flask, request, jsonify, send_file,make_response, send_from_directory
 from PIL import Image
 from io import BytesIO
-
+import tempfile
 import urllib
 from config import db,app
 
 import os, uuid, base64, json, piexif, io
 
 from werkzeug.utils import secure_filename
+from config import db,app
+import os
+import base64
 
 from Controller.PersonController import PersonController
 from Controller.EventController import EventController
@@ -18,10 +24,6 @@ from Controller.LinkController import LinkController
 from Controller.DirectoryController import DirectoryController
 from Controller.TaggingController import TaggingController
 
-# from dotenv import load_dotenv
-# load_dotenv('directory.env')
-# IMAGE_ROOT_DIR = os.getenv('ROOT_DIR1')
-
 
 # ✅ Set this dynamically on startup using your helper
 IMAGE_ROOT_DIR = DirectoryController.get_latest_directory()
@@ -29,7 +31,6 @@ print(IMAGE_ROOT_DIR)
 if not IMAGE_ROOT_DIR:
     raise RuntimeError("No ROOT_DIR found in directory.env")
 
-ASSETS_FOLDER = 'Assets'
 
 FACES_FOLDER = 'stored-faces'  
 if not os.path.exists(FACES_FOLDER):
@@ -88,27 +89,60 @@ def extract_face():
         if file.filename == '':
             return jsonify({'error':'filename is empty'}), 404
         
-        image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
-        print(image_path)
+        # image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
+        # print(image_path)
         image = Image.open(io.BytesIO(file.read()))
-        image.save(image_path)
-        
-        return PersonController.extract_face(image_path)
+        # image.save(image_path)
+        temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+        image.save(temp, format="JPEG")
+        temp_path = temp.name
+        temp.close()  # Close file so OpenCV can access it
+
+        # Call your processing logic
+        result = PersonController.extract_face(temp_path)
+
+        # Clean up manually
+        os.unlink(temp_path)
+
+        return result
+        #return PersonController.extract_face(image_path)
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
 
 
 @app.route('/recognize_person', methods=['GET'])
 def recognize_person():
-    # Get query parameters from the GET request
-    image_path = request.args.get('image_path')
-    person_name = request.args.get('name', None)
-
-    if not image_path:
-        return make_response(jsonify({'error': 'Missing required parameters'}), 400)
-
-    # Call the method from the PictureController class
-    return PersonController.recognize_person(image_path, person_name)
+     
+     try:
+ 
+         # Get query parameters from the GET request
+         image_path = request.args.get('image_path')
+         person_name = request.args.get('name', None)
+ 
+         if image_path:
+             print(image_path)
+            # Call the method from the PictureController class
+             return PersonController.recognize_person(image_path, person_name)
+ 
+         if 'file' in request.files:
+         
+             file = request.files['file']
+             if file.filename == '':
+                 return jsonify({'error':'filename is empty'}), 404
+         
+            #  image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
+            #  print(image_path)
+             image = Image.open(io.BytesIO(file.read()))
+                # image.save(image_path)
+             temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+             image.save(temp, format="JPEG")
+             image_path = temp.name
+             temp.close()
+ 
+             return PersonController.recognize_person(image_path, person_name)
+ 
+     except Exception as exp:
+         return jsonify({'error':str(exp)}), 500
 
 
 @app.route('/group_by_person', methods=['GET'])
@@ -171,7 +205,7 @@ def get_unedited_images_route():
     return ImageController.get_unedited_images()
 
 # -----------------------------------------------------------
-# --- ROUTE TO HANDLE IMAGE UPLOAD ---
+
 # --- ROUTE TO HANDLE IMAGE UPLOAD ---
 @app.route('/add_image', methods=['POST'])
 def add_image():
@@ -287,9 +321,23 @@ def get_image_complete_details(image_id):
     return ImageController.get_image_complete_details(image_id)
 
 # Delete an Image (Delete)
+# @app.route('/images/<int:image_id>', methods=['DELETE'])
+# def delete_image(image_id):
+#     return ImageController.delete_image(image_id)
+
+
+@app.route('/delete_metadata/<int:image_id>', methods=['DELETE'])
+def delete_metadata(image_id):
+    try:
+        # Call the delete_metadata method from ImageController
+        return ImageController.delete_metadata(image_id)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 @app.route('/images/<int:image_id>', methods=['DELETE'])
 def delete_image(image_id):
     return ImageController.delete_image(image_id)
+
 
 # --------------------------EVENT---------------------------------
 #done
@@ -367,29 +415,29 @@ def addLocation():
 def group_by_location():
     return LocationController.group_by_location() 
     
-    ######remove Metadata####################
-@app.route('/remove_metadata', methods=['POST'])
-def remove_metadata():
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'File not attached'}), 400
+#     ######remove Metadata####################
+# @app.route('/remove_metadata', methods=['POST'])
+# def remove_metadata():
+#     try:
+#         if 'file' not in request.files:
+#             return jsonify({'error': 'File not attached'}), 400
 
-        file = request.files['file']
+#         file = request.files['file']
         
-        # Open the image file
-        image = Image.open(io.BytesIO(file.read()))
+#         # Open the image file
+#         image = Image.open(io.BytesIO(file.read()))
 
-        # Create a new image to strip metadata
-        img_io = io.BytesIO()
+#         # Create a new image to strip metadata
+#         img_io = io.BytesIO()
 
-        # Strip metadata by saving without Exif (using 'quality' argument for JPG)
-        image.save(img_io, format="JPEG", quality=95)  # JPEG without metadata
-        img_io.seek(0)
+#         # Strip metadata by saving without Exif (using 'quality' argument for JPG)
+#         image.save(img_io, format="JPEG", quality=95)  # JPEG without metadata
+#         img_io.seek(0)
 
-        return send_file(img_io, mimetype='image/jpeg', download_name='image_without_metadata.jpg')
+#         return send_file(img_io, mimetype='image/jpeg', download_name='image_without_metadata.jpg')
 
-    except Exception as e:
-        return jsonify({'error': f'Error processing image: {str(e)}'}), 500
+#     except Exception as e:
+#         return jsonify({'error': f'Error processing image: {str(e)}'}), 500
 
 #=====================dummy method after sync -------------------------
 
@@ -487,13 +535,18 @@ def get_face_image(filename):
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
 
+
+@app.route('/health')
+def health_check():
+     return jsonify({"status": "healthy"}), 200
+
+
 # only accept localhost
-if __name__ == '__main__':
-    app.run(debug=True)
-
-
-
 # if __name__ == '__main__':
-#     if not os.path.exists("temp"):
-#         os.makedirs("temp")
-#     app.run(host='0.0.0.0', port=5000, debug=True)
+#     app.run(debug=True)
+
+# Run on all addresses (0.0.0.0)
+if __name__ == '__main__':
+    # if not os.path.exists("temp"):
+    #     os.makedirs("temp")
+    app.run(host='0.0.0.0', port=5000, debug=True)
