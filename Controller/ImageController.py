@@ -1034,7 +1034,8 @@ class ImageController:
                 matched_person = None
                 match_data = PersonController.recognize_person(f"./stored-faces/{face_filename}")
                 
-                if match_data:
+                if match_data and "results" in match_data and match_data["results"]:
+
                     result = match_data["results"][0]
                     file_path = result["file"]
                     normalized_path = file_path.replace("\\", "/")
