@@ -559,6 +559,9 @@ def image_processing():
         # image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
         # print(image_path)
         image = Image.open(io.BytesIO(file.read()))
+        if image.mode == "RGBA":
+            image = image.convert("RGB")
+
         # image.save(image_path)
         temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
         image.save(temp, format="JPEG")
