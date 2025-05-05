@@ -19,15 +19,18 @@ class LinkController():
         if name1 != name2:
             if name1 != "unknown" and name2 == "unknown":
                 person2.name = person1.name
+                person2.gender = person1.gender
             elif name2 != "unknown" and name1 == "unknown":
                 person1.name = person2.name
+                person1.gender = person2.gender
             # If both are non-unknown and different, pick a policy (keep person1's name for now)
             elif name1 != "unknown" and name2 != "unknown":
                 person2.name = person1.name
+                person2.gender = person1.gender
     
         # Handle gender (simpler logic for now, but you can expand similarly)
-        if person1.gender != person2.gender:
-            person2.gender = person1.gender
+        # if person1.gender != person2.gender:
+            
     
         db.session.commit()
     
