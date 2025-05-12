@@ -33,7 +33,7 @@ class ImageController:
 #       {"id": 1, "name": "Ali","gender": "M"},
 #       {"id": 2, "name": "Amna","gender": "F"}
 #     ],
-#     "event_name": "iNDEPENDENCE DAY",
+#     "event_name": ["iNDEPENDENCE DAY"],
 #     "event_date": "2025-01-17",
 #     "location": ["New yORK", "33.1234", "73.5678"]
 #   }
