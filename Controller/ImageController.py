@@ -899,7 +899,7 @@ class ImageController:
 
               # Fetch the image groups that include this person
 
-         groups = PersonController.get_person_image_groups()
+         groups = PersonController.get_person_groups()
          print("Returned groups:", groups)  # DEBUG
 
          for group in groups:

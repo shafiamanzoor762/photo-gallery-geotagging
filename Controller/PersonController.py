@@ -4,6 +4,7 @@ import json
 import json
 from collections import defaultdict, deque
 from sqlalchemy.orm import joinedload
+from sqlalchemy import and_
 # from flask import jsonify
 # from models import Person, Image, ImagePerson, Link  # adjust based on your structure
 from config import db
@@ -416,179 +417,278 @@ class PersonController():
 
 # ----------------- GROUP BY PERSONS -----------------
 
-    @staticmethod
-    def get_person_image_groups():
-     try:
-        # Step 1: Load JSON data
-        with open('./stored-faces/person_group.json', 'r') as f:
-            json_data = json.load(f)
+    # @staticmethod
+    # def get_person_image_groups():
+    #  try:
+    #     # Step 1: Load JSON data
+    #     with open('./stored-faces/person_group.json', 'r') as f:
+    #         json_data = json.load(f)
 
-        # Step 2: Build image hash → image & person lookup
-        image_map = {}
-        person_to_images = defaultdict(list)
-        image_hash_to_id = {}
-        image_id_to_person = {}
+    #     # Step 2: Build image hash → image & person lookup
+    #     image_map = {}
+    #     person_to_images = defaultdict(list)
+    #     image_hash_to_id = {}
+    #     image_id_to_person = {}
         
-        images = db.session.query(Image).options(joinedload(Image.persons)).filter(Image.is_deleted == False).all()
-        for img in images:
-            image_hash_to_id[img.hash] = img.id
-            for person in img.persons:
-                image_map[img.hash] = img
-                person_to_images[person.id].append(img)
-                image_id_to_person[img.id] = person.id
+    #     images = db.session.query(Image).options(joinedload(Image.persons)).filter(Image.is_deleted == False).all()
+    #     for img in images:
+    #         image_hash_to_id[img.hash] = img.id
+    #         for person in img.persons:
+    #             image_map[img.hash] = img
+    #             person_to_images[person.id].append(img)
+    #             image_id_to_person[img.id] = person.id
 
-        # Step 3: Build Union-Find for linked persons
-        class DSU:
-            def __init__(self):
-                self.parent = {}
+    #     # Step 3: Build Union-Find for linked persons
+    #     class DSU:
+    #         def __init__(self):
+    #             self.parent = {}
 
-            def find(self, x):
-                if self.parent.setdefault(x, x) != x:
-                    self.parent[x] = self.find(self.parent[x])
-                return self.parent[x]
+    #         def find(self, x):
+    #             if self.parent.setdefault(x, x) != x:
+    #                 self.parent[x] = self.find(self.parent[x])
+    #             return self.parent[x]
 
-            def union(self, x, y):
-                self.parent[self.find(x)] = self.find(y)
+    #         def union(self, x, y):
+    #             self.parent[self.find(x)] = self.find(y)
 
-            def groups(self):
-                roots = defaultdict(list)
-                for node in self.parent:
-                    roots[self.find(node)].append(node)
-                return roots.values()
+    #         def groups(self):
+    #             roots = defaultdict(list)
+    #             for node in self.parent:
+    #                 roots[self.find(node)].append(node)
+    #             return roots.values()
 
-        dsu = DSU()
+    #     dsu = DSU()
+    #     links = db.session.query(Link).all()
+    #     for link in links:
+    #         dsu.union(link.person1_id, link.person2_id)
+
+    #     link_groups = list(dsu.groups())  # list of sets of person IDs
+
+    #     # Step 4: Add JSON-based image linkage
+    #     # (images that appear together should be in the same group)
+    #     image_groups = []
+    #     visited_images = set()
+
+    #     for key_img, linked_imgs in json_data.items():
+    #         group = set()
+    #         if key_img in image_hash_to_id:
+    #             group.add(image_hash_to_id[key_img])
+    #         for img_hash in linked_imgs:
+    #             if img_hash in image_hash_to_id:
+    #                 group.add(image_hash_to_id[img_hash])
+    #         if group:
+    #             if not group.issubset(visited_images):
+    #                 image_groups.append(group)
+    #                 visited_images.update(group)
+
+    #     # Step 5: Combine all person groups with their images
+    #     grouped_data = []
+
+    #     seen_person_ids = set()
+    #     seen_image_ids = set()
+
+    #     for person_group in link_groups:
+    #         group_entry = None
+    #         for person_id in person_group:
+    #             person = db.session.query(Person).filter_by(id=person_id).first()
+    #             if not person:
+    #                 continue
+
+    #             person_images = [
+    #                 img for img in person_to_images.get(person_id, [])
+    #                 if img.id not in seen_image_ids
+    #             ]
+
+    #             if not person_images:
+    #                 continue
+
+    #             if not group_entry:
+    #                 group_entry = {
+    #                     "Person": {
+    #                         "id": person.id,
+    #                         "name": person.name,
+    #                         "path": person.path,
+    #                         "gender": person.gender
+    #                     },
+    #                     "Images": []
+    #                 }
+
+    #             for image in person_images:
+    #                 seen_image_ids.add(image.id)
+    #                 group_entry["Images"].append(image.to_dict())
+
+    #             seen_person_ids.add(person.id)
+
+    #         if group_entry:
+    #             grouped_data.append(group_entry)
+
+    #     # Step 6: Add groups from image-based JSON that are not already seen
+    #     for image_group in image_groups:
+    #         group_entry = None
+    #         for image_id in image_group:
+    #             image = db.session.query(Image).filter_by(id=image_id, is_deleted=False).first()
+    #             if not image or image.id in seen_image_ids:
+    #                 continue
+
+    #             person_id = image_id_to_person.get(image_id)
+    #             if not person_id or person_id in seen_person_ids:
+    #                 continue
+
+    #             person = db.session.query(Person).filter_by(id=person_id).first()
+    #             if not person:
+    #                 continue
+
+    #             if not group_entry:
+    #                 group_entry = {
+    #                     "Person": {
+    #                         "id": person.id,
+    #                         "name": person.name,
+    #                         "path": person.path,
+    #                         "gender": person.gender
+    #                     },
+    #                     "Images": []
+    #                 }
+
+    #             group_entry["Images"].append(image.to_dict())
+    #             seen_image_ids.add(image.id)
+    #             seen_person_ids.add(person_id)
+
+    #         if group_entry:
+    #             grouped_data.append(group_entry)
+
+    #     # Step 7: Add any remaining persons with valid images not yet added
+    #     remaining = db.session.query(Person).all()
+    #     for person in remaining:
+    #         if person.id in seen_person_ids:
+    #             continue
+
+    #         images = [
+    #             img for img in person_to_images.get(person.id, [])
+    #             if img.id not in seen_image_ids
+    #         ]
+
+    #         if not images:
+    #             continue
+
+    #         group_entry = {
+    #             "Person": {
+    #                 "id": person.id,
+    #                 "name": person.name,
+    #                 "path": person.path,
+    #                 "gender": person.gender
+    #             },
+    #             "Images": [img.to_dict() for img in images]
+    #         }
+
+    #         for img in images:
+    #             seen_image_ids.add(img.id)
+
+    #         grouped_data.append(group_entry)
+
+    #     return grouped_data
+
+    #  except Exception as e:
+    #     print(f"Error: {e}")
+    #     return {"error": str(e)}, 500
+    
+
+
+    @staticmethod
+    def get_person_groups():
+     try:
+        # Load JSON file
+        with open('./stored-faces/person_group.json', 'r') as f:
+            path_groups = json.load(f)
+
+        # Create map of path → person.id from DB
+        all_persons = db.session.query(Person).all()
+        path_to_person = {os.path.basename(p.path): p.id for p in all_persons if p.path}
+
+        # === 1. Build union-find structure for person linking ===
+        parent = {}
+
+        def find(x):
+            if parent[x] != x:
+                parent[x] = find(parent[x])
+            return parent[x]
+
+        def union(x, y):
+            x_root = find(x)
+            y_root = find(y)
+            if x_root != y_root:
+                parent[y_root] = x_root
+
+        # Initialize parent pointers for each person
+        for person in all_persons:
+            parent[person.id] = person.id
+
+        # Apply union operations for links
         links = db.session.query(Link).all()
         for link in links:
-            dsu.union(link.person1_id, link.person2_id)
+            union(link.person1_id, link.person2_id)
 
-        link_groups = list(dsu.groups())  # list of sets of person IDs
+        # === 2. Add unions from JSON path groups ===
+        for key_path, path_list in path_groups.items():
+            if key_path not in path_to_person:
+                continue
+            root_person = path_to_person[key_path]
+            for related_path in path_list:
+                if related_path in path_to_person:
+                    union(root_person, path_to_person[related_path])
 
-        # Step 4: Add JSON-based image linkage
-        # (images that appear together should be in the same group)
-        image_groups = []
-        visited_images = set()
+        # === 3. Group persons by their root id ===
+        groups = defaultdict(set)
+        for person_id in parent:
+            root = find(person_id)
+            groups[root].add(person_id)
 
-        for key_img, linked_imgs in json_data.items():
-            group = set()
-            if key_img in image_hash_to_id:
-                group.add(image_hash_to_id[key_img])
-            for img_hash in linked_imgs:
-                if img_hash in image_hash_to_id:
-                    group.add(image_hash_to_id[img_hash])
-            if group:
-                if not group.issubset(visited_images):
-                    image_groups.append(group)
-                    visited_images.update(group)
+        # === 4. Prepare the final grouped output ===
+        grouped_data = {}
 
-        # Step 5: Combine all person groups with their images
-        grouped_data = []
-
-        seen_person_ids = set()
-        seen_image_ids = set()
-
-        for person_group in link_groups:
-            group_entry = None
-            for person_id in person_group:
+        for group_root, person_ids in groups.items():
+            for person_id in person_ids:
                 person = db.session.query(Person).filter_by(id=person_id).first()
                 if not person:
                     continue
 
-                person_images = [
-                    img for img in person_to_images.get(person_id, [])
-                    if img.id not in seen_image_ids
-                ]
+                # Fetch all non-deleted images for this person
+                image_records = db.session.query(ImagePerson).filter_by(person_id=person_id).all()
+                for record in image_records:
+                    image = db.session.query(Image).filter_by(id=record.image_id, is_deleted=False).first()
+                    if not image:
+                        continue
 
-                if not person_images:
-                    continue
+                    if group_root not in grouped_data:
+                        grouped_data[group_root] = {
+                            "Person": {
+                                "id": person.id,
+                                "name": person.name,
+                                "path": person.path,
+                                "gender": person.gender
+                            },
+                            "Images": []
+                        }
 
-                if not group_entry:
-                    group_entry = {
-                        "Person": {
-                            "id": person.id,
-                            "name": person.name,
-                            "path": person.path,
-                            "gender": person.gender
-                        },
-                        "Images": []
-                    }
+                    grouped_data[group_root]["Images"].append({
+                        "id": image.id,
+                        "path": image.path,
+                        "is_sync": image.is_sync,
+                        "capture_date": image.capture_date.strftime('%Y-%m-%d') if image.capture_date else None,
+                        "event_date": image.event_date.strftime('%Y-%m-%d') if image.event_date else None,
+                        "last_modified": image.last_modified.strftime('%Y-%m-%d %H:%M:%S') if image.last_modified else None,
+                        "location_id": image.location_id,
+                        "is_deleted": image.is_deleted
+                    })
 
-                for image in person_images:
-                    seen_image_ids.add(image.id)
-                    group_entry["Images"].append(image.to_dict())
-
-                seen_person_ids.add(person.id)
-
-            if group_entry:
-                grouped_data.append(group_entry)
-
-        # Step 6: Add groups from image-based JSON that are not already seen
-        for image_group in image_groups:
-            group_entry = None
-            for image_id in image_group:
-                image = db.session.query(Image).filter_by(id=image_id, is_deleted=False).first()
-                if not image or image.id in seen_image_ids:
-                    continue
-
-                person_id = image_id_to_person.get(image_id)
-                if not person_id or person_id in seen_person_ids:
-                    continue
-
-                person = db.session.query(Person).filter_by(id=person_id).first()
-                if not person:
-                    continue
-
-                if not group_entry:
-                    group_entry = {
-                        "Person": {
-                            "id": person.id,
-                            "name": person.name,
-                            "path": person.path,
-                            "gender": person.gender
-                        },
-                        "Images": []
-                    }
-
-                group_entry["Images"].append(image.to_dict())
-                seen_image_ids.add(image.id)
-                seen_person_ids.add(person_id)
-
-            if group_entry:
-                grouped_data.append(group_entry)
-
-        # Step 7: Add any remaining persons with valid images not yet added
-        remaining = db.session.query(Person).all()
-        for person in remaining:
-            if person.id in seen_person_ids:
-                continue
-
-            images = [
-                img for img in person_to_images.get(person.id, [])
-                if img.id not in seen_image_ids
-            ]
-
-            if not images:
-                continue
-
-            group_entry = {
-                "Person": {
-                    "id": person.id,
-                    "name": person.name,
-                    "path": person.path,
-                    "gender": person.gender
-                },
-                "Images": [img.to_dict() for img in images]
-            }
-
-            for img in images:
-                seen_image_ids.add(img.id)
-
-            grouped_data.append(group_entry)
-
-        return grouped_data
+        # Convert dictionary to list of group objects
+        result = list(grouped_data.values())
+        return result
 
      except Exception as e:
         print(f"Error: {e}")
         return {"error": str(e)}, 500
+
+
 
         
 

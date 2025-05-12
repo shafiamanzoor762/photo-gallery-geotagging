@@ -149,7 +149,7 @@ def recognize_person():
 @app.route('/group_by_person', methods=['GET'])
 def group_by_person():
     # return PersonController.group_by_person()
-    return jsonify(PersonController.get_person_image_groups())
+    return jsonify(PersonController.get_person_groups())
 
 @app.route('/get_all_person', methods=['GET'])
 def get_all_person():
