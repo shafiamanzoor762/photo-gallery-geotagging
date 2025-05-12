@@ -584,11 +584,11 @@ class PersonController():
 
             grouped_data.append(group_entry)
 
-        return jsonify(grouped_data)
+        return grouped_data
 
      except Exception as e:
         print(f"Error: {e}")
-        return jsonify({"error": str(e)}), 500
+        return {"error": str(e)}, 500
 
         
 

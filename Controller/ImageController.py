@@ -854,37 +854,65 @@ class ImageController:
         capture_date = data.get("capture_date")  # Expecting a single date
         location_name = data.get("location")  # Expecting a single location name
         
-        image_ids = set()  # Using set to avoid duplicates
+        # image_ids = set()  # Using set to avoid duplicates
     
-        # 🔹 Filter by Person ID
-        # 🔹 Filter by Person ID and include linked persons via the Link table
+        # # 🔹 Filter by Person ID
+        # # 🔹 Filter by Person ID and include linked persons via the Link table
+        # if person_id:
+        #     person = Person.query.filter_by(id=person_id).first()
+        
+        #     if person:
+        #         # Get all linked person IDs (bidirectional lookup)
+        #         linked_ids = (
+        #             db.session.query(Link.person2_id)
+        #             .filter(Link.person1_id == person_id)
+        #             .union(
+        #                 db.session.query(Link.person1_id)
+        #                 .filter(Link.person2_id == person_id)
+        #             )
+        #             .all()
+        #         )
+        
+        #         # Flatten and combine all linked person IDs with the original person_id
+        #         linked_person_ids = {person_id} | {id for (id,) in linked_ids}
+        
+        #         # Get all image IDs associated with those persons
+        #         person_images = (
+        #             db.session.query(Image.id)
+        #             .join(ImagePerson, ImagePerson.image_id == Image.id)
+        #             .filter(ImagePerson.person_id.in_(linked_person_ids))
+        #             .all()
+        #         )
+        
+        #         image_ids.update([image.id for image in person_images])
+
+
+        image_ids = set()
+
         if person_id:
-            person = Person.query.filter_by(id=person_id).first()
-        
-            if person:
-                # Get all linked person IDs (bidirectional lookup)
-                linked_ids = (
-                    db.session.query(Link.person2_id)
-                    .filter(Link.person1_id == person_id)
-                    .union(
-                        db.session.query(Link.person1_id)
-                        .filter(Link.person2_id == person_id)
-                    )
-                    .all()
-                )
-        
-                # Flatten and combine all linked person IDs with the original person_id
-                linked_person_ids = {person_id} | {id for (id,) in linked_ids}
-        
-                # Get all image IDs associated with those persons
-                person_images = (
-                    db.session.query(Image.id)
-                    .join(ImagePerson, ImagePerson.image_id == Image.id)
-                    .filter(ImagePerson.person_id.in_(linked_person_ids))
-                    .all()
-                )
-        
-                image_ids.update([image.id for image in person_images])
+        #  print(person_id)
+         # Fetch person and their directly linked images
+        #  person = Person.query.filter_by(id=person_id).first()
+        #  if person:
+        #       person_images = person.images  # Assuming there's a relationship set up
+        #       image_ids.update([image.id for image in person_images])
+
+              # Fetch the image groups that include this person
+
+         groups = PersonController.get_person_image_groups()
+         print("Returned groups:", groups)  # DEBUG
+
+         for group in groups:
+             print("Group Person ID:", group.get("Person", {}).get("id"))
+             if int(group.get("Person", {}).get("id")) == int(person_id):
+                 print("Group Person ID:", group.get("Person", {}).get("id"), type(group.get("Person", {}).get("id")))
+                 print("Given Person ID:", person_id, type(person_id))
+
+                 for img in group.get("Images", []):
+                     print("-----------------------------",img)
+                     image_ids.add(img["id"])  # Ensure all group images are added
+                     print("-----------------------------------",image_ids)
+
         
             
         # 🔹 Filter by Event Name
