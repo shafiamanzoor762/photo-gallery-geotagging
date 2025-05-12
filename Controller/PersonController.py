@@ -1,7 +1,14 @@
 import base64, cv2, face_recognition, os, uuid, traceback
 import numpy as np
+import json
+import json
+from collections import defaultdict, deque
+from sqlalchemy.orm import joinedload
+# from flask import jsonify
+# from models import Person, Image, ImagePerson, Link  # adjust based on your structure
+from config import db
 
-from collections import defaultdict
+# from collections import defaultdict
 from flask import jsonify,make_response
 
 
@@ -154,6 +161,7 @@ class PersonController():
             storage_dir = "stored-faces"
             os.makedirs(storage_dir, exist_ok=True)
             encodings_file = os.path.join(storage_dir, "person.txt")
+            json_file = os.path.join(storage_dir, "person_group.json")
 
             # 6. Load existing encodings with memory protection
             stored_encodings = []
@@ -233,6 +241,7 @@ class PersonController():
                             with open(encodings_file, 'a') as f:
                                 encoding_str = ",".join([str(num) for num in current_encoding])
                                 f.write(f"unknown;{encoding_str};{face_path}\n")
+                                PersonController.update_face_paths_json(json_file, os.path.basename(face_path))
                         except Exception as e:
                             print(f"failed to save encoding at {i}: {e}")
 
@@ -355,6 +364,8 @@ class PersonController():
                 root2 = find_root(link.person2_id)
                 if root1 != root2:
                     merged_persons[root2] = root1
+
+            print("merged_persons", merged_persons)
     
             grouped_data = {}
     
@@ -401,7 +412,186 @@ class PersonController():
         except Exception as e:
             print(f"Error: {e}")
             return jsonify({"error": str(e)}), 500
-    
+
+
+# ----------------- GROUP BY PERSONS -----------------
+
+    @staticmethod
+    def get_person_image_groups():
+     try:
+        # Step 1: Load JSON data
+        with open('./stored-faces/person_group.json', 'r') as f:
+            json_data = json.load(f)
+
+        # Step 2: Build image hash → image & person lookup
+        image_map = {}
+        person_to_images = defaultdict(list)
+        image_hash_to_id = {}
+        image_id_to_person = {}
+        
+        images = db.session.query(Image).options(joinedload(Image.persons)).filter(Image.is_deleted == False).all()
+        for img in images:
+            image_hash_to_id[img.hash] = img.id
+            for person in img.persons:
+                image_map[img.hash] = img
+                person_to_images[person.id].append(img)
+                image_id_to_person[img.id] = person.id
+
+        # Step 3: Build Union-Find for linked persons
+        class DSU:
+            def __init__(self):
+                self.parent = {}
+
+            def find(self, x):
+                if self.parent.setdefault(x, x) != x:
+                    self.parent[x] = self.find(self.parent[x])
+                return self.parent[x]
+
+            def union(self, x, y):
+                self.parent[self.find(x)] = self.find(y)
+
+            def groups(self):
+                roots = defaultdict(list)
+                for node in self.parent:
+                    roots[self.find(node)].append(node)
+                return roots.values()
+
+        dsu = DSU()
+        links = db.session.query(Link).all()
+        for link in links:
+            dsu.union(link.person1_id, link.person2_id)
+
+        link_groups = list(dsu.groups())  # list of sets of person IDs
+
+        # Step 4: Add JSON-based image linkage
+        # (images that appear together should be in the same group)
+        image_groups = []
+        visited_images = set()
+
+        for key_img, linked_imgs in json_data.items():
+            group = set()
+            if key_img in image_hash_to_id:
+                group.add(image_hash_to_id[key_img])
+            for img_hash in linked_imgs:
+                if img_hash in image_hash_to_id:
+                    group.add(image_hash_to_id[img_hash])
+            if group:
+                if not group.issubset(visited_images):
+                    image_groups.append(group)
+                    visited_images.update(group)
+
+        # Step 5: Combine all person groups with their images
+        grouped_data = []
+
+        seen_person_ids = set()
+        seen_image_ids = set()
+
+        for person_group in link_groups:
+            group_entry = None
+            for person_id in person_group:
+                person = db.session.query(Person).filter_by(id=person_id).first()
+                if not person:
+                    continue
+
+                person_images = [
+                    img for img in person_to_images.get(person_id, [])
+                    if img.id not in seen_image_ids
+                ]
+
+                if not person_images:
+                    continue
+
+                if not group_entry:
+                    group_entry = {
+                        "Person": {
+                            "id": person.id,
+                            "name": person.name,
+                            "path": person.path,
+                            "gender": person.gender
+                        },
+                        "Images": []
+                    }
+
+                for image in person_images:
+                    seen_image_ids.add(image.id)
+                    group_entry["Images"].append(image.to_dict())
+
+                seen_person_ids.add(person.id)
+
+            if group_entry:
+                grouped_data.append(group_entry)
+
+        # Step 6: Add groups from image-based JSON that are not already seen
+        for image_group in image_groups:
+            group_entry = None
+            for image_id in image_group:
+                image = db.session.query(Image).filter_by(id=image_id, is_deleted=False).first()
+                if not image or image.id in seen_image_ids:
+                    continue
+
+                person_id = image_id_to_person.get(image_id)
+                if not person_id or person_id in seen_person_ids:
+                    continue
+
+                person = db.session.query(Person).filter_by(id=person_id).first()
+                if not person:
+                    continue
+
+                if not group_entry:
+                    group_entry = {
+                        "Person": {
+                            "id": person.id,
+                            "name": person.name,
+                            "path": person.path,
+                            "gender": person.gender
+                        },
+                        "Images": []
+                    }
+
+                group_entry["Images"].append(image.to_dict())
+                seen_image_ids.add(image.id)
+                seen_person_ids.add(person_id)
+
+            if group_entry:
+                grouped_data.append(group_entry)
+
+        # Step 7: Add any remaining persons with valid images not yet added
+        remaining = db.session.query(Person).all()
+        for person in remaining:
+            if person.id in seen_person_ids:
+                continue
+
+            images = [
+                img for img in person_to_images.get(person.id, [])
+                if img.id not in seen_image_ids
+            ]
+
+            if not images:
+                continue
+
+            group_entry = {
+                "Person": {
+                    "id": person.id,
+                    "name": person.name,
+                    "path": person.path,
+                    "gender": person.gender
+                },
+                "Images": [img.to_dict() for img in images]
+            }
+
+            for img in images:
+                seen_image_ids.add(img.id)
+
+            grouped_data.append(group_entry)
+
+        return jsonify(grouped_data)
+
+     except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+        
+
 #------------------ GET ALL TRANING IMAGES OF A PERSON ----------------
 
     @staticmethod
@@ -436,7 +626,69 @@ class PersonController():
 
         return jsonify(person_list), 200
     
-        
+    #------------------ GET ALL TRANING IMAGES OF A PERSON ----------------
+
+    @staticmethod
+    def get_person_and_linked_as_list(person_id):
+    # Get the main person
+        main_person = Person.query.get(person_id)
+        if not main_person:
+            return jsonify({"personList": []}), 404
+
+        # Get linked IDs (bidirectionally)
+        linked_ids = db.session.query(Link.person2_id).filter(Link.person1_id == person_id).all()
+        linked_ids += db.session.query(Link.person1_id).filter(Link.person2_id == person_id).all()
+    
+        # Flatten and remove duplicates and self
+        linked_ids = set(pid for tup in linked_ids for pid in tup if pid != person_id)
+
+        # Query linked persons
+        linked_persons = Person.query.filter(Person.id.in_(linked_ids)).all()
+
+        # Build the complete list
+        all_persons = [main_person] + linked_persons
+
+        # Format JSON
+        person_list = [
+            {
+                "id": p.id,
+                "name": p.name,
+                "path": p.path,
+                "gender": p.gender
+            } for p in all_persons
+        ]
+
+        return jsonify(person_list), 200
+    
+
+    def update_face_paths_json(json_file, path, matchedPath=None):
+        # Ensure the JSON file exists; if not, initialize an empty dict
+        if os.path.exists(json_file):
+            with open(json_file, 'r') as f:
+                data = json.load(f)
+        else:
+            data = {}
+
+        # If matchedPath is given, write under that key
+        if matchedPath:
+            # Create the set if the key doesn't exist
+            if matchedPath not in data:
+                data[matchedPath] = []
+            # Add the path if it's not already there
+            if path not in data[matchedPath]:
+                data[matchedPath].append(path)
+        else:
+            # Treat path as a new key
+            if path not in data:
+                data[path] = []
+
+        # Write the updated data back to the file
+        with open(json_file, 'w') as f:
+            json.dump(data, f, indent=4)
+
+# # Example usage:
+# update_face_paths_json("faces.json", "face1.jpg")
+# update_face_paths_json("faces.json", "face2.jpg", matchedPath="face1.jpg")
             
             
     
