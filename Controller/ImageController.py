@@ -909,9 +909,7 @@ class ImageController:
                  print("Given Person ID:", person_id, type(person_id))
 
                  for img in group.get("Images", []):
-                     print("-----------------------------",img)
                      image_ids.add(img["id"])  # Ensure all group images are added
-                     print("-----------------------------------",image_ids)
 
         
             
