@@ -1052,7 +1052,7 @@ class ImageController:
                     new_person = Person(
                         name="unknown",
                         path=db_face_path,
-                        gender="U"
+                        # gender="U"
                     )
                      # Get ID without committing
                     print(f"✅ New person added: {new_person.path}")
@@ -1061,13 +1061,13 @@ class ImageController:
                         "status": "new_person_detected",
                         "name": new_person.name,
                         "path": new_person.path,
-                        "gender": new_person.gender
+                        # "gender": new_person.gender
                     })
                 else:
                     new_person = Person(
                         name=matched_person.name,
                         path=db_face_path,
-                        gender=matched_person.gender
+                        # gender=matched_person.gender
                     )
                     
                     matched_person = new_person
@@ -1075,7 +1075,7 @@ class ImageController:
                         "status": "known_person_instance_detected",
                         "name": new_person.name,
                         "path": new_person.path,
-                        "gender": new_person.gender
+                        # "gender": new_person.gender
                     })
     
                 # Optionally link person to image here if image object is available
