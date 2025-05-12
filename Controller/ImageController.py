@@ -628,6 +628,12 @@ class ImageController:
                     face_path_1 = normalized_path.replace('stored-faces', 'face_images')
                     matched_person = Person.query.filter_by(path=face_path_1).first()
 
+                    for res in  match_data["results"]:
+                        resembeled_path = os.path.basename(res["file"])
+                        print(resembeled_path)
+                        if(face_filename != resembeled_path):
+                            PersonController.update_face_paths_json("./stored-faces/person_group.json", face_filename, matchedPath=resembeled_path)
+
 
                 # 5. If not found, create a new person
                 if not matched_person:
@@ -848,37 +854,63 @@ class ImageController:
         capture_date = data.get("capture_date")  # Expecting a single date
         location_name = data.get("location")  # Expecting a single location name
         
-        image_ids = set()  # Using set to avoid duplicates
+        # image_ids = set()  # Using set to avoid duplicates
     
-        # 🔹 Filter by Person ID
-        # 🔹 Filter by Person ID and include linked persons via the Link table
+        # # 🔹 Filter by Person ID
+        # # 🔹 Filter by Person ID and include linked persons via the Link table
+        # if person_id:
+        #     person = Person.query.filter_by(id=person_id).first()
+        
+        #     if person:
+        #         # Get all linked person IDs (bidirectional lookup)
+        #         linked_ids = (
+        #             db.session.query(Link.person2_id)
+        #             .filter(Link.person1_id == person_id)
+        #             .union(
+        #                 db.session.query(Link.person1_id)
+        #                 .filter(Link.person2_id == person_id)
+        #             )
+        #             .all()
+        #         )
+        
+        #         # Flatten and combine all linked person IDs with the original person_id
+        #         linked_person_ids = {person_id} | {id for (id,) in linked_ids}
+        
+        #         # Get all image IDs associated with those persons
+        #         person_images = (
+        #             db.session.query(Image.id)
+        #             .join(ImagePerson, ImagePerson.image_id == Image.id)
+        #             .filter(ImagePerson.person_id.in_(linked_person_ids))
+        #             .all()
+        #         )
+        
+        #         image_ids.update([image.id for image in person_images])
+
+
+        image_ids = set()
+
         if person_id:
-            person = Person.query.filter_by(id=person_id).first()
-        
-            if person:
-                # Get all linked person IDs (bidirectional lookup)
-                linked_ids = (
-                    db.session.query(Link.person2_id)
-                    .filter(Link.person1_id == person_id)
-                    .union(
-                        db.session.query(Link.person1_id)
-                        .filter(Link.person2_id == person_id)
-                    )
-                    .all()
-                )
-        
-                # Flatten and combine all linked person IDs with the original person_id
-                linked_person_ids = {person_id} | {id for (id,) in linked_ids}
-        
-                # Get all image IDs associated with those persons
-                person_images = (
-                    db.session.query(Image.id)
-                    .join(ImagePerson, ImagePerson.image_id == Image.id)
-                    .filter(ImagePerson.person_id.in_(linked_person_ids))
-                    .all()
-                )
-        
-                image_ids.update([image.id for image in person_images])
+        #  print(person_id)
+         # Fetch person and their directly linked images
+        #  person = Person.query.filter_by(id=person_id).first()
+        #  if person:
+        #       person_images = person.images  # Assuming there's a relationship set up
+        #       image_ids.update([image.id for image in person_images])
+
+              # Fetch the image groups that include this person
+
+         groups = PersonController.get_person_groups()
+         print("Returned groups:", groups)  # DEBUG
+
+         for group in groups:
+             print("Group Person ID:", group.get("Person", {}).get("id"))
+             if int(group.get("Person", {}).get("id")) == int(person_id):
+                 print("Group Person ID:", group.get("Person", {}).get("id"), type(group.get("Person", {}).get("id")))
+                 print("Given Person ID:", person_id, type(person_id))
+
+                 for img in group.get("Images", []):
+                     image_ids.add(img["id"])  # Ensure all group images are added
+
         
             
         # 🔹 Filter by Event Name
@@ -1034,7 +1066,8 @@ class ImageController:
                 matched_person = None
                 match_data = PersonController.recognize_person(f"./stored-faces/{face_filename}")
                 
-                if match_data:
+                if match_data and "results" in match_data and match_data["results"]:
+
                     result = match_data["results"][0]
                     file_path = result["file"]
                     normalized_path = file_path.replace("\\", "/")
@@ -1045,7 +1078,7 @@ class ImageController:
                     new_person = Person(
                         name="unknown",
                         path=db_face_path,
-                        gender="U"
+                        # gender="U"
                     )
                      # Get ID without committing
                     print(f"✅ New person added: {new_person.path}")
@@ -1054,13 +1087,13 @@ class ImageController:
                         "status": "new_person_detected",
                         "name": new_person.name,
                         "path": new_person.path,
-                        "gender": new_person.gender
+                        # "gender": new_person.gender
                     })
                 else:
                     new_person = Person(
                         name=matched_person.name,
                         path=db_face_path,
-                        gender=matched_person.gender
+                        # gender=matched_person.gender
                     )
                     
                     matched_person = new_person
@@ -1068,7 +1101,7 @@ class ImageController:
                         "status": "known_person_instance_detected",
                         "name": new_person.name,
                         "path": new_person.path,
-                        "gender": new_person.gender
+                        # "gender": new_person.gender
                     })
     
                 # Optionally link person to image here if image object is available

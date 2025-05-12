@@ -106,7 +106,7 @@ def extract_face():
         os.unlink(temp_path)
 
         return result
-        #
+
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
 
@@ -148,7 +148,8 @@ def recognize_person():
 
 @app.route('/group_by_person', methods=['GET'])
 def group_by_person():
-    return PersonController.group_by_person()
+    # return PersonController.group_by_person()
+    return jsonify(PersonController.get_person_groups())
 
 @app.route('/get_all_person', methods=['GET'])
 def get_all_person():
@@ -535,7 +536,14 @@ def get_face_image(filename):
         return send_from_directory(FACES_FOLDER, filename)
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
-    
+
+
+
+@app.route('/health')
+def health_check():
+     return jsonify({"status": "healthy"}), 200
+
+
 
 #Aimen's mobile side code requests 
 
@@ -552,6 +560,9 @@ def image_processing():
         # image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
         # print(image_path)
         image = Image.open(io.BytesIO(file.read()))
+        if image.mode == "RGBA":
+            image = image.convert("RGB")
+
         # image.save(image_path)
         temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
         image.save(temp, format="JPEG")
@@ -573,10 +584,8 @@ def image_processing():
 
 
 
+
 # only accept localhost
-
-
-
 # if __name__ == '__main__':
 #     app.run(debug=True)
 
