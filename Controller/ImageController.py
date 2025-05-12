@@ -623,6 +623,7 @@ class ImageController:
                 
                 if match_data:
                     result = match_data["results"][0]
+                    print("result in recognition",result)
                     file_path = result["file"]  # e.g. "stored-faces\\3ec88a981d204ab8b0501cc4da150bf5.jpg"
                     normalized_path = file_path.replace("\\", "/")
                     face_path_1 = normalized_path.replace('stored-faces', 'face_images')
@@ -630,7 +631,7 @@ class ImageController:
 
                     for res in  match_data["results"]:
                         resembeled_path = os.path.basename(res["file"])
-                        print(resembeled_path)
+                        print("resembeled path",resembeled_path)
                         if(face_filename != resembeled_path):
                             PersonController.update_face_paths_json("./stored-faces/person_group.json", face_filename, matchedPath=resembeled_path)
 
