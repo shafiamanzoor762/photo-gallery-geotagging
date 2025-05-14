@@ -149,7 +149,7 @@ def recognize_person():
 
 @app.route('/group_by_person', methods=['GET'])
 def group_by_person():
-    return PersonController.group_by_person()
+    return PersonController.get_person_groups()
 
 @app.route('/get_all_person', methods=['GET'])
 def get_all_person():
@@ -706,7 +706,7 @@ def group_images_api():
 
 
 
-# ===============================================================
+# =======================Shafia's Mobile side Requests========================================
 @app.route('/add_mobile_image', methods=['POST'])
 def add_mobile_image():
      try:
@@ -738,21 +738,42 @@ def add_mobile_image():
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
      
-     
+
+
 @app.route('/get_mobile_person_groups', methods=['POST'])
 def get_mobile_person_groups():
     try:
-        # Get data from request JSON
+        # Ensure we have JSON data
+        if not request.is_json:
+            return jsonify({'error': 'Missing JSON in request'}), 400
+            
         data = request.get_json()
-        persons = data.get("persons", [])               # List of person dicts
-        links = data.get("links", [])                   # List of link dicts
-        image_persons = data.get("image_persons", [])   # List of image-person mappings
-        image_ids = set(data.get("image_ids", []))      # Set of valid image IDs
-        return jsonify(MobileSideController.get_person_groups_from_data(persons, links, image_persons, image_ids))
+        if not data:
+            return jsonify({'error': 'Empty JSON data'}), 400
+            
+        # Get data with defaults
+        persons = data.get("persons", [])
+        links = data.get("links", [])
+        image_persons = data.get("image_persons", [])
+        image_ids = set(data.get("image_ids", []))
+        
+        # Debug logging
+        print(f"Received data: persons={len(persons)}, links={len(links)}, "
+              f"image_persons={len(image_persons)}, image_ids={len(image_ids)}")
+        
+        result = MobileSideController.get_person_groups_from_data(
+            persons, links, image_persons, image_ids
+        )
+        return jsonify(result)
+        
     except Exception as exp:
-        return jsonify({'error':str(exp)}), 500
-
-
+        # Log the full error
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': str(exp),
+            'traceback': traceback.format_exc()
+        }), 500
 
 # only accept localhost
 

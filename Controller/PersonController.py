@@ -336,181 +336,86 @@ class PersonController():
 
 
 # =============== group by person=============
-    @staticmethod
-    def group_by_person():
-        try:
-            # Query all data from the ImagePerson table
-            records = db.session.query(ImagePerson).all()
-    
-            # Dictionary to store merged persons
-            merged_persons = {}
-    
-            def find_root(person_id):
-                """ Find the representative person ID (root) for linked persons """
-                if person_id not in merged_persons:
-                    return person_id
-                while merged_persons[person_id] != person_id:
-                    person_id = merged_persons[person_id]
-                return person_id
-    
-            # Initialize merged persons with self-links
-            all_links = db.session.query(Link).all()
-            for link in all_links:
-                merged_persons[link.person1_id] = link.person1_id
-                merged_persons[link.person2_id] = link.person2_id
-    
-            # Union-Find to merge linked persons
-            for link in all_links:
-                root1 = find_root(link.person1_id)
-                root2 = find_root(link.person2_id)
-                if root1 != root2:
-                    merged_persons[root2] = root1
-
-            print("merged_persons", merged_persons)
-    
-            grouped_data = {}
-    
-            for record in records:
-                person_id = find_root(record.person_id)  # Get the merged person ID
-    
-                # Fetch person details
-                person = db.session.query(Person).filter_by(id=person_id).first()
-                if not person:
-                    continue
-    
-                # Fetch image details, ensuring only non-deleted images
-                image = db.session.query(Image).filter_by(id=record.image_id, is_deleted=False).first()
-                if not image:
-                    continue
-    
-                if person.id not in grouped_data:
-                    grouped_data[person.id] = {
-                        "Person": {
-                            "id": person.id,
-                            "name": person.name,
-                            "path": person.path,
-                            "gender": person.gender
-                        },
-                        "Images": []
-                    }
-    
-                # Append image details
-                grouped_data[person.id]["Images"].append({
-                    "id": image.id,
-                    "path": image.path,
-                    "is_sync": image.is_sync,
-                    "capture_date": image.capture_date,
-                    "event_date": image.event_date,
-                    "last_modified": image.last_modified,
-                    "location_id": image.location_id,
-                    "is_deleted": image.is_deleted
-                })
-    
-            # Convert dictionary to list
-            result = list(grouped_data.values())
-            return jsonify(result)
-        
-        except Exception as e:
-            print(f"Error: {e}")
-            return jsonify({"error": str(e)}), 500
-
-
-# ----------------- GROUP BY PERSONS -----------------
-
     # @staticmethod
-    # def get_person_groups():
-    #  try:
-    #     # Load JSON file
-    #     with open('./stored-faces/person_group.json', 'r') as f:
-    #         path_groups = json.load(f)
+    # def group_by_person():
+    #     try:
+    #         # Query all data from the ImagePerson table
+    #         records = db.session.query(ImagePerson).all()
+    
+    #         # Dictionary to store merged persons
+    #         merged_persons = {}
+    
+    #         def find_root(person_id):
+    #             """ Find the representative person ID (root) for linked persons """
+    #             if person_id not in merged_persons:
+    #                 return person_id
+    #             while merged_persons[person_id] != person_id:
+    #                 person_id = merged_persons[person_id]
+    #             return person_id
+    
+    #         # Initialize merged persons with self-links
+    #         all_links = db.session.query(Link).all()
+    #         for link in all_links:
+    #             merged_persons[link.person1_id] = link.person1_id
+    #             merged_persons[link.person2_id] = link.person2_id
+    
+    #         # Union-Find to merge linked persons
+    #         for link in all_links:
+    #             root1 = find_root(link.person1_id)
+    #             root2 = find_root(link.person2_id)
+    #             if root1 != root2:
+    #                 merged_persons[root2] = root1
 
-    #     # Create map of path → person.id from DB
-    #     all_persons = db.session.query(Person).all()
-    #     path_to_person = {os.path.basename(p.path): p.id for p in all_persons if p.path}
-
-    #     # === 1. Build union-find structure for person linking ===
-    #     parent = {}
-
-    #     def find(x):
-    #         if parent[x] != x:
-    #             parent[x] = find(parent[x])
-    #         return parent[x]
-
-    #     def union(x, y):
-    #         x_root = find(x)
-    #         y_root = find(y)
-    #         if x_root != y_root:
-    #             parent[y_root] = x_root
-
-    #     # Initialize parent pointers for each person
-    #     for person in all_persons:
-    #         parent[person.id] = person.id
-
-    #     # Apply union operations for links
-    #     links = db.session.query(Link).all()
-    #     for link in links:
-    #         union(link.person1_id, link.person2_id)
-
-    #     # === 2. Add unions from JSON path groups ===
-    #     for key_path, path_list in path_groups.items():
-    #         if key_path not in path_to_person:
-    #             continue
-    #         root_person = path_to_person[key_path]
-    #         for related_path in path_list:
-    #             if related_path in path_to_person:
-    #                 union(root_person, path_to_person[related_path])
-
-    #     # === 3. Group persons by their root id ===
-    #     groups = defaultdict(set)
-    #     for person_id in parent:
-    #         root = find(person_id)
-    #         groups[root].add(person_id)
-
-    #     # === 4. Prepare the final grouped output ===
-    #     grouped_data = {}
-
-    #     for group_root, person_ids in groups.items():
-    #         for person_id in person_ids:
+    #         print("merged_persons", merged_persons)
+    
+    #         grouped_data = {}
+    
+    #         for record in records:
+    #             person_id = find_root(record.person_id)  # Get the merged person ID
+    
+    #             # Fetch person details
     #             person = db.session.query(Person).filter_by(id=person_id).first()
     #             if not person:
     #                 continue
+    
+    #             # Fetch image details, ensuring only non-deleted images
+    #             image = db.session.query(Image).filter_by(id=record.image_id, is_deleted=False).first()
+    #             if not image:
+    #                 continue
+    
+    #             if person.id not in grouped_data:
+    #                 grouped_data[person.id] = {
+    #                     "Person": {
+    #                         "id": person.id,
+    #                         "name": person.name,
+    #                         "path": person.path,
+    #                         "gender": person.gender
+    #                     },
+    #                     "Images": []
+    #                 }
+    
+    #             # Append image details
+    #             grouped_data[person.id]["Images"].append({
+    #                 "id": image.id,
+    #                 "path": image.path,
+    #                 "is_sync": image.is_sync,
+    #                 "capture_date": image.capture_date,
+    #                 "event_date": image.event_date,
+    #                 "last_modified": image.last_modified,
+    #                 "location_id": image.location_id,
+    #                 "is_deleted": image.is_deleted
+    #             })
+    
+    #         # Convert dictionary to list
+    #         result = list(grouped_data.values())
+    #         return jsonify(result)
+        
+    #     except Exception as e:
+    #         print(f"Error: {e}")
+    #         return jsonify({"error": str(e)}), 500
 
-    #             # Fetch all non-deleted images for this person
-    #             image_records = db.session.query(ImagePerson).filter_by(person_id=person_id).all()
-    #             for record in image_records:
-    #                 image = db.session.query(Image).filter_by(id=record.image_id, is_deleted=False).first()
-    #                 if not image:
-    #                     continue
 
-    #                 if group_root not in grouped_data:
-    #                     grouped_data[group_root] = {
-    #                         "Person": {
-    #                             "id": person.id,
-    #                             "name": person.name,
-    #                             "path": person.path,
-    #                             "gender": person.gender
-    #                         },
-    #                         "Images": []
-    #                     }
-
-    #                 grouped_data[group_root]["Images"].append({
-    #                     "id": image.id,
-    #                     "path": image.path,
-    #                     "is_sync": image.is_sync,
-    #                     "capture_date": image.capture_date.strftime('%Y-%m-%d') if image.capture_date else None,
-    #                     "event_date": image.event_date.strftime('%Y-%m-%d') if image.event_date else None,
-    #                     "last_modified": image.last_modified.strftime('%Y-%m-%d %H:%M:%S') if image.last_modified else None,
-    #                     "location_id": image.location_id,
-    #                     "is_deleted": image.is_deleted
-    #                 })
-
-    #     # Convert dictionary to list of group objects
-    #     result = list(grouped_data.values())
-    #     return result
-
-    #  except Exception as e:
-    #     print(f"Error: {e}")
-    #     return {"error": str(e)}, 500
+# ----------------- GROUP BY PERSONS -----------------
 
     @staticmethod
     def get_person_groups():
