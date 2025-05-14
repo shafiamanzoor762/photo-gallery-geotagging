@@ -1,0 +1,171 @@
+from flask import jsonify, request
+import os, json
+from collections import defaultdict
+
+from Model.Person import Person
+
+from Controller.PersonController import PersonController
+from config import db
+
+class MobileSideController:
+
+    @staticmethod
+    def add_mobile_image(image_path):
+        try:
+            # Extract faces from the image
+            extracted_faces = PersonController.extract_face(image_path)
+            if not extracted_faces:
+                return jsonify({'message': 'No faces found'}), 200
+    
+            response_data = []
+    
+            for face_data in extracted_faces:
+                face_path = face_data["face_path"]
+                face_filename = os.path.basename(face_path)
+                db_face_path = f"face_images/{face_filename}"
+    
+                matched_person = None
+                match_data = PersonController.recognize_person(f"./stored-faces/{face_filename}")
+                
+                if match_data and "results" in match_data and match_data["results"]:
+
+                    result = match_data["results"][0]
+                    normalized_path = result["file"].replace("\\", "/")
+                    face_path_1 = normalized_path.replace('stored-faces', 'face_images')
+                    matched_person = Person.query.filter_by(path=face_path_1).first()
+                    
+                    for res in  match_data["results"]:
+                        resembeled_path = os.path.basename(res["file"])
+                        print(resembeled_path)
+                        if(face_filename != resembeled_path):
+                            PersonController.update_face_paths_json("./stored-faces/person_group.json", face_filename, matchedPath=resembeled_path)
+    
+                if not matched_person:
+                     # Get ID without committing
+                    print(f"✅ New person added: {db_face_path}")
+
+                    response_data.append({
+                        "status": "new",
+                        "name": "unknown",
+                        "path": db_face_path,
+                        "gender": "U"
+                    })
+                else:
+
+                    response_data.append({
+                        "status": "matched",
+                        "name": matched_person.name,
+                        "path": db_face_path,
+                        "gender": matched_person.gender
+                    })
+    
+            
+            return jsonify(response_data), 201
+    
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ Error: {e}")
+            return jsonify({'error': str(e)}), 500
+        
+    
+
+
+    @staticmethod
+    def get_person_groups_from_data(persons, links, image_persons, image_ids):
+     try:
+
+        # Load JSON file
+        with open('./stored-faces/person_group.json', 'r') as f:
+            json_groups = json.load(f)
+
+        # Step 1: Create path → person.id map from provided persons
+        path_to_person = {
+            os.path.basename(p["path"]): p["id"]
+            for p in persons if "path" in p
+        }
+
+        # Step 2: Build mapping from JSON group key → person IDs
+        json_group_id_to_person_ids = {}
+        for key_path, group_paths in json_groups.items():
+            group_ids = set()
+            if key_path in path_to_person:
+                group_ids.add(path_to_person[key_path])
+            for p in group_paths:
+                if p in path_to_person:
+                    group_ids.add(path_to_person[p])
+            if group_ids:
+                json_group_id_to_person_ids[key_path] = group_ids
+
+        # Step 3: Initialize union-find to merge groups
+        parent = {}
+
+        def find(x):
+            if parent[x] != x:
+                parent[x] = find(parent[x])
+            return parent[x]
+
+        def union(x, y):
+            px = find(x)
+            py = find(y)
+            if px != py:
+                parent[py] = px
+
+        json_group_keys = list(json_group_id_to_person_ids.keys())
+        group_key_to_index = {k: idx for idx, k in enumerate(json_group_keys)}
+        for idx in range(len(json_group_keys)):
+            parent[idx] = idx
+
+        person_id_to_group_index = {}
+        for key, ids in json_group_id_to_person_ids.items():
+            idx = group_key_to_index[key]
+            for pid in ids:
+                person_id_to_group_index[pid] = idx
+
+        # Step 4: Apply unions based on links
+        for link in links:
+            g1 = person_id_to_group_index.get(link["person1_id"])
+            g2 = person_id_to_group_index.get(link["person2_id"])
+            if g1 is not None and g2 is not None and g1 != g2:
+                union(g1, g2)
+
+        # Step 5: Final groupings
+        merged_groups = defaultdict(set)
+        for pid, idx in person_id_to_group_index.items():
+            root_idx = find(idx)
+            merged_groups[root_idx].add(pid)
+
+        # Step 6: Prepare grouped output
+        grouped_data = {}
+        for group_idx, person_ids in merged_groups.items():
+            for person_id in person_ids:
+                person = next((p for p in persons if p["id"] == person_id), None)
+                if not person:
+                    continue
+
+                # Find image ids for the person that are in the provided image_ids
+                person_image_ids = [
+                    ip["image_id"] for ip in image_persons
+                    if ip["person_id"] == person_id and ip["image_id"] in image_ids
+                ]
+
+                if group_idx not in grouped_data:
+                    grouped_data[group_idx] = {
+                        "Person": {
+                            "id": person["id"],
+                            "name": person.get("name"),
+                            "path": person.get("path"),
+                            "gender": person.get("gender")
+                        },
+                        "Images": []
+                    }
+
+                grouped_data[group_idx]["Images"].extend([
+                    {"id": img_id} for img_id in person_image_ids
+                ])
+
+        result = list(grouped_data.values())
+        return result
+
+     except Exception as e:
+        print(f"Error: {e}")
+        return {"error": str(e)}, 500
