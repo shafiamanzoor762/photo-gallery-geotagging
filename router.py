@@ -23,6 +23,7 @@ from Controller.LocationController import LocationController
 from Controller.LinkController import LinkController
 from Controller.DirectoryController import DirectoryController
 from Controller.TaggingController import TaggingController
+from Controller.MobileSideController import MobileSideController
 
 
 # ✅ Set this dynamically on startup using your helper
@@ -149,6 +150,7 @@ def recognize_person():
 @app.route('/group_by_person', methods=['GET'])
 def group_by_person():
     return PersonController.get_person_groups()
+    return PersonController.get_person_groups()
 
 
 # /// mobile side 
@@ -224,10 +226,60 @@ def get_unedited_images_route():
 # -----------------------------------------------------------
 
 # --- ROUTE TO HANDLE IMAGE UPLOAD ---
+# @app.route('/add_image', methods=['POST'])
+# def add_image():
+#     try:
+#         # 1. Check if file is in request
+#         if 'file' not in request.files:
+#             return jsonify({'error': 'File not attached'}), 400
+        
+#         file = request.files['file']
+        
+#         if file.filename == '':
+#             return jsonify({'error': 'Filename is empty'}), 400
+
+#         original_filename = secure_filename(file.filename)
+
+#         # 2. Read file bytes
+#         file_bytes = file.read()
+
+#         # 3. Convert to RGB if image is RGBA
+#         image_obj = Image.open(io.BytesIO(file_bytes))
+#         if image_obj.mode == 'RGBA':
+#             image_obj = image_obj.convert('RGB')
+
+#         # # 5. Save the image to Assets folder (or wherever you want)
+#         # file_save_path = os.path.join(ASSETS_FOLDER, original_filename)
+#         # with open(file_save_path, "wb") as f:
+#         #     f.write(file_bytes)
+#         path = request.form.get('path')
+
+#         # 6. Get the hash from form
+#         hash_value = request.form.get('hash')
+
+#         if not hash_value:
+#             return jsonify({'error': 'No hash provided'}), 400
+
+#         # 7. Build the metadata dictionary
+#         data = {
+#             'path': path.replace("\\", "/"),  # Use relativePath properly (make sure it's using slashes /)
+#             'hash': hash_value,
+#             'is_sync': 0,
+#             'capture_date': datetime.utcnow().isoformat(),
+#             'event_date': None
+#         }
+
+#         # 8. Call Controller to save data
+#         return ImageController.add_image(data)
+
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+
+
+
 @app.route('/add_image', methods=['POST'])
 def add_image():
     try:
-        # 1. Check if file is in request
         if 'file' not in request.files:
             return jsonify({'error': 'File not attached'}), 400
         
@@ -238,40 +290,32 @@ def add_image():
 
         original_filename = secure_filename(file.filename)
 
-        # 2. Read file bytes
-        file_bytes = file.read()
-
-        # 3. Convert to RGB if image is RGBA
-        image_obj = Image.open(io.BytesIO(file_bytes))
+        # Load the image using file.stream (more memory-efficient)
+        image_obj = Image.open(file.stream)
         if image_obj.mode == 'RGBA':
             image_obj = image_obj.convert('RGB')
 
-        # # 5. Save the image to Assets folder (or wherever you want)
-        # file_save_path = os.path.join(ASSETS_FOLDER, original_filename)
-        # with open(file_save_path, "wb") as f:
-        #     f.write(file_bytes)
         path = request.form.get('path')
-
-        # 6. Get the hash from form
         hash_value = request.form.get('hash')
 
         if not hash_value:
             return jsonify({'error': 'No hash provided'}), 400
 
-        # 7. Build the metadata dictionary
         data = {
-            'path': path.replace("\\", "/"),  # Use relativePath properly (make sure it's using slashes /)
+            'path': path.replace("\\", "/"),
             'hash': hash_value,
             'is_sync': 0,
             'capture_date': datetime.utcnow().isoformat(),
             'event_date': None
         }
 
-        # 8. Call Controller to save data
         return ImageController.add_image(data)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+
 
 # # Route to handle image uploads
 # @app.route('/add_image', methods=['POST'])
@@ -678,6 +722,75 @@ def group_images_api():
 
 
 
+
+# =======================Shafia's Mobile side Requests========================================
+@app.route('/add_mobile_image', methods=['POST'])
+def add_mobile_image():
+     try:
+        if 'file' not in request.files:
+            return jsonify({'error':'file not attatched'}), 404
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error':'filename is empty'}), 404
+        
+        # image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
+        # print(image_path)
+        image = Image.open(io.BytesIO(file.read()))
+        if image.mode == "RGBA":
+            image = image.convert("RGB")
+
+        # image.save(image_path)
+        temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+        image.save(temp, format="JPEG")
+        temp_path = temp.name
+        temp.close()  # Close file so OpenCV can access it
+
+        result = MobileSideController.add_mobile_image(temp_path)
+
+        # Clean up manually
+        os.unlink(temp_path)
+
+        return result
+     except Exception as exp:
+        return jsonify({'error':str(exp)}), 500
+     
+
+
+@app.route('/get_mobile_person_groups', methods=['POST'])
+def get_mobile_person_groups():
+    try:
+        # Ensure we have JSON data
+        if not request.is_json:
+            return jsonify({'error': 'Missing JSON in request'}), 400
+            
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Empty JSON data'}), 400
+            
+        # Get data with defaults
+        persons = data.get("persons", [])
+        links = data.get("links", [])
+        image_persons = data.get("image_persons", [])
+        image_ids = set(data.get("image_ids", []))
+        
+        # Debug logging
+        print(f"Received data: persons={len(persons)}, links={len(links)}, "
+              f"image_persons={len(image_persons)}, image_ids={len(image_ids)}")
+        
+        result = MobileSideController.get_person_groups_from_data(
+            persons, links, image_persons, image_ids
+        )
+        return jsonify(result)
+        
+    except Exception as exp:
+        # Log the full error
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': str(exp),
+            'traceback': traceback.format_exc()
+        }), 500
 
 # only accept localhost
 
