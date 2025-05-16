@@ -528,43 +528,7 @@ class PersonController():
 
 
 
-        
-
 #------------------ GET ALL TRANING IMAGES OF A PERSON ----------------
-
-    @staticmethod
-    def get_person_and_linked_as_list(person_id):
-    # Get the main person
-        main_person = Person.query.get(person_id)
-        if not main_person:
-            return jsonify({"personList": []}), 404
-
-        # Get linked IDs (bidirectionally)
-        linked_ids = db.session.query(Link.person2_id).filter(Link.person1_id == person_id).all()
-        linked_ids += db.session.query(Link.person1_id).filter(Link.person2_id == person_id).all()
-    
-        # Flatten and remove duplicates and self
-        linked_ids = set(pid for tup in linked_ids for pid in tup if pid != person_id)
-
-        # Query linked persons
-        linked_persons = Person.query.filter(Person.id.in_(linked_ids)).all()
-
-        # Build the complete list
-        all_persons = [main_person] + linked_persons
-
-        # Format JSON
-        person_list = [
-            {
-                "id": p.id,
-                "name": p.name,
-                "path": p.path,
-                "gender": p.gender
-            } for p in all_persons
-        ]
-
-        return jsonify(person_list), 200
-    
-    #------------------ GET ALL TRANING IMAGES OF A PERSON ----------------
 
     @staticmethod
     def get_person_and_linked_as_list(person_id):
