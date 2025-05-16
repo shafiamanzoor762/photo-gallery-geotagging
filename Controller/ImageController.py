@@ -1055,8 +1055,7 @@ class ImageController:
             # Extract faces from the image
             extracted_faces = PersonController.extract_face(image_path)
             if not extracted_faces:
-                return jsonify({'message': 'No faces found'}), 200
-    
+                    return jsonify([]), 200    
             response_data = []
     
             for face_data in extracted_faces:
