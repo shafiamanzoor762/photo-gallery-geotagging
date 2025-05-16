@@ -150,14 +150,13 @@ def recognize_person():
 @app.route('/group_by_person', methods=['GET'])
 def group_by_person():
     return PersonController.get_person_groups()
-    return PersonController.get_person_groups()
 
 
 # /// mobile side 
 @app.route('/get_person_groups_from_json', methods=['GET'])
 def get_person_groups_from_json():
     try:
-        json_data = request.get_json()  # JSON data client سے ملے گا
+        json_data = request.get_json()  
         if not json_data:
             return jsonify({"error": "No JSON data provided"}), 400
         
