@@ -604,6 +604,8 @@ class PersonController():
         all_persons = db.session.query(Person).all()
         path_to_person = {os.path.basename(p.path): p.id for p in all_persons if p.path}
 
+        # print(path_to_person)
+
         # === 1. Build union-find structure for person linking ===
         parent = {}
 
@@ -687,6 +689,7 @@ class PersonController():
      except Exception as e:
         print(f"Error: {e}")
         return {"error": str(e)}, 500
+
 
 
 
@@ -789,6 +792,105 @@ class PersonController():
 # # Example usage:
 # update_face_paths_json("faces.json", "face1.jpg")
 # update_face_paths_json("faces.json", "face2.jpg", matchedPath="face1.jpg")
+
+
+# ====================Mobile side Person Grouping ==================
+
+
+    @staticmethod
+    def get_person_groups_from_json(json_data):
+        try:
+            persons = json_data["persons"]
+            images = json_data["images"]
+            image_person_map = json_data["image_person_map"]
+            links = json_data.get("links", [])  # Optional, but expected
+            
+            # Load JSON file
+            with open('./stored-faces/person_group.json', 'r') as f:
+                path_groups = json.load(f)
+
+            # Create mappings
+            path_to_person = {os.path.basename(p["path"]): p["id"] for p in persons if "path" in p}
+            person_dict = {p["id"]: p for p in persons}
+            image_dict = {img["id"]: img for img in images}
+            person_to_images = defaultdict(list)
+            for ip in image_person_map:
+                person_to_images[ip["person_id"]].append(ip["image_id"])
+
+            # Union-Find Setup
+            parent = {p["id"]: p["id"] for p in persons}
+
+            def find(x):
+                if parent[x] != x:
+                    parent[x] = find(parent[x])
+                return parent[x]
+
+            def union(x, y):
+                x_root = find(x)
+                y_root = find(y)
+                if x_root != y_root:
+                    parent[y_root] = x_root
+
+            # === Step 1: Union by Links from JSON ===
+            for link in links:
+                union(link["person1_id"], link["person2_id"])
+
+            # === Step 2: Union from Path Groups ===
+            for key_path, path_list in path_groups.items():
+                if key_path not in path_to_person:
+                    continue
+                root_person = path_to_person[key_path]
+                for related_path in path_list:
+                    if related_path in path_to_person:
+                        union(root_person, path_to_person[related_path])
+
+            # === Step 3: Group persons by root ===
+            groups = defaultdict(set)
+            for person_id in parent:
+                root = find(person_id)
+                groups[root].add(person_id)
+
+            # === Step 4: Prepare output ===
+            grouped_data = {}
+
+            for group_root, person_ids in groups.items():
+                for person_id in person_ids:
+                    person = person_dict.get(person_id)
+                    if not person:
+                        continue
+
+                    if group_root not in grouped_data:
+                        grouped_data[group_root] = {
+                            "Person": {
+                                "id": person["id"],
+                                "name": person["name"],
+                                "path": person.get("path"),
+                                "gender": person.get("gender")
+                            },
+                            "Images": []
+                        }
+
+                    for image_id in person_to_images[person_id]:
+                        image = image_dict.get(image_id)
+                        if not image or image.get("is_deleted"):
+                            continue
+
+                        grouped_data[group_root]["Images"].append({
+                            "id": image["id"],
+                            "path": image["path"],
+                            "is_sync": image.get("is_sync"),
+                            "capture_date": image.get("capture_date"),
+                            "event_date": image.get("event_date"),
+                            "last_modified": image.get("last_modified"),
+                            "location_id": image.get("location_id"),
+                            "is_deleted": image.get("is_deleted")
+                        })
+
+            return list(grouped_data.values())
+
+        except Exception as e:
+            print(f"Error: {e}")
+            return {"error": str(e)}, 500
             
             
     
