@@ -153,7 +153,7 @@ def group_by_person():
 
 
 # /// mobile side 
-@app.route('/get_person_groups_from_json', methods=['GET'])
+@app.route('/get_person_groups_from_json', methods=['POST'])
 def get_person_groups_from_json():
     try:
         json_data = request.get_json()  
