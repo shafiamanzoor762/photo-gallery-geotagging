@@ -998,8 +998,60 @@ class ImageController:
 
        
             
-        
-        
+    @staticmethod
+    def get_person_images(json_data):
+        data = request.get_json()
+    
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+    
+        images = json_data["images"]  # This is a list, not a query
+        image_person_map = json_data["image_person_map"]
+        links = json_data.get("links", [])
+    
+        person_id = data.get("person_id")
+        print("Given Person ID:", person_id, type(person_id))
+        image_ids = set()
+    
+        if person_id:
+            groups = PersonController.get_single_person_groups(json_data)
+            print("Returned groups:", groups)  # DEBUG
+    
+            for group in groups:
+                person = group.get("Person", {})
+                group_person_id = person.get("id")
+                print("Group Person ID:", group_person_id)
+    
+                if group_person_id is not None and int(group_person_id) == int(person_id):
+                    for img in group.get("Images", []):
+                        image_ids.add(img["id"])  # Add image ID
+    
+        if image_ids:
+            # ✅ Filter the list using list comprehension
+            filtered_images = [img for img in images if img["id"] in image_ids]
+            image_data = []
+    
+            for img in filtered_images:
+                # Simulate DB join by filtering image_person_map list
+                persons = [
+                    {"id": item["person_id"]}
+                    for item in image_person_map
+                    if item["image_id"] == img["id"]
+                ]
+    
+                image_data.append({
+                    "id": img["id"],
+                    "path": img["path"],
+                    "persons": persons
+                })
+    
+            print("Final image data:", image_data)
+            return jsonify({"images": image_data}), 200
+    
+        return jsonify({"error": "No matching images found"}), 404
+    
+       
+            
          
         
     @staticmethod

@@ -629,7 +629,10 @@ def image_processing():
         return jsonify({'error':str(exp)}), 500
      
 
-
+@app.route('/get_person_images', methods=['POST'])
+def get_person_images():
+    json_data = request.get_json() 
+    return ImageController.get_person_images(json_data)
 
 # =======================Shafia's Mobile side Requests========================================
 @app.route('/add_mobile_image', methods=['POST'])
