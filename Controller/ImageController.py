@@ -1178,14 +1178,22 @@ class ImageController:
     def get_emb_names(emb_name):
         with open('stored-faces/person_group.json', 'r') as f:
             person_group = json.load(f)
-
-        # related = person_group.get(emb_name, [])
-        # return related
+    
+        result = {}
+    
         for key, embeddings in person_group.items():
-            if emb_name in embeddings or key == emb_name:
-                group = [key] + embeddings if emb_name != key else embeddings
-                return list(set(group))  # Remove duplicates if any
+            if key == emb_name:
+                # Ensure the key itself is included in the group list (like other cases)
+                group = set(embeddings + [key])
+                group.discard(emb_name)  # Remove emb_name from the group
+                result[key] = list(group)
+    
+            elif emb_name in embeddings:
+                group = set([key] + embeddings)
+                group.discard(emb_name)  # Remove emb_name from the group
+                result[key] = list(group)
+    
+        return result
 
-        return []  # Not found
 
        
