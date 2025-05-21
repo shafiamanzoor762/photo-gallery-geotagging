@@ -634,6 +634,10 @@ def get_person_images():
     json_data = request.get_json() 
     return ImageController.get_person_images(json_data)
 
+@app.route('/load_embeddings/<string:emb_name>', methods=['GET'])
+def get_emb_names(emb_name):
+    return ImageController.get_emb_names(emb_name)
+
 # =======================Shafia's Mobile side Requests========================================
 @app.route('/add_mobile_image', methods=['POST'])
 def add_mobile_image():

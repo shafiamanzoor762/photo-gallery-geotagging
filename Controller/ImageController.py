@@ -1174,6 +1174,18 @@ class ImageController:
             db.session.rollback()
             print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
+    @staticmethod
+    def get_emb_names(emb_name):
+        with open('stored-faces/person_group.json', 'r') as f:
+            person_group = json.load(f)
 
+        # related = person_group.get(emb_name, [])
+        # return related
+        for key, embeddings in person_group.items():
+            if emb_name in embeddings or key == emb_name:
+                group = [key] + embeddings if emb_name != key else embeddings
+                return list(set(group))  # Remove duplicates if any
 
+        return []  # Not found
 
+       
