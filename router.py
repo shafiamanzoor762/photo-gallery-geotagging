@@ -634,9 +634,14 @@ def get_person_images():
     json_data = request.get_json() 
     return ImageController.get_person_images(json_data)
 
-@app.route('/load_embeddings/<string:emb_name>', methods=['GET'])
-def get_emb_names(emb_name):
-    return ImageController.get_emb_names(emb_name)
+@app.route('/load_embeddings', methods=['POST'])
+def get_emb_names():
+    data = request.get_json()
+    persons = data.get("persons", [])
+    links = data.get("links", [])
+    emb_name = data.get("person1", [])
+    db_emb_name = data.get("db_person", [])
+    return ImageController.get_emb_names(persons,links,emb_name,db_emb_name)
 
 # =======================Shafia's Mobile side Requests========================================
 @app.route('/add_mobile_image', methods=['POST'])

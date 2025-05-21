@@ -1175,25 +1175,51 @@ class ImageController:
             print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
     @staticmethod
-    def get_emb_names(emb_name):
+    def get_emb_names(persons, links, person1, dbemb_name):
+        emb_name = person1["personPath"].split('/')[-1]
+        db_emb_name = dbemb_name["path"].split('/')[-1]
+        
+        print("emb_name:", emb_name, "db_emb_name:", db_emb_name)
+        print("links:", links)
+        print("persons:", persons)
+    
+        # Check if person1 and dbemb_name are linked
+        person1_id = person1["id"]
+        dbemb_id = dbemb_name["id"]
+        if any(
+            (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
+            (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
+            for link in links
+        ):
+            print("Person1 and db_emb_name are directly linked — skipping.")
+            return {}  # They are linked; skip the group entirely
+    
         with open('stored-faces/person_group.json', 'r') as f:
             person_group = json.load(f)
     
         result = {}
     
         for key, embeddings in person_group.items():
+            # Skip this group if db_emb_name is the key or is inside its values
+            if db_emb_name == key or db_emb_name in embeddings:
+                continue
+    
+            # Skip this group if BOTH emb_name and db_emb_name are present in it
+            if (key == emb_name or emb_name in embeddings) and (db_emb_name == key or db_emb_name in embeddings):
+                continue
+    
             if key == emb_name:
-                # Ensure the key itself is included in the group list (like other cases)
                 group = set(embeddings + [key])
-                group.discard(emb_name)  # Remove emb_name from the group
+                group.discard(emb_name)
                 result[key] = list(group)
     
             elif emb_name in embeddings:
                 group = set([key] + embeddings)
-                group.discard(emb_name)  # Remove emb_name from the group
+                group.discard(emb_name)
                 result[key] = list(group)
     
         return result
+
 
 
        
