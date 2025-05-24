@@ -1219,52 +1219,54 @@ class ImageController:
     
     @staticmethod
     def get_emb_names_for_recognition(persons, links, emb_name):
+        print('person list:', persons)
+        print('links:', links)
+        print('emb name:', emb_name)
+    
         # Load the JSON file
         with open('stored-faces/person_group.json') as f:
             emb_data = json.load(f)
     
-        # Build embedding-to-person ID and person ID-to-embedding mappings
-        emb_to_person = {
-            os.path.splitext(os.path.basename(p["path"]))[0]: p["id"] for p in persons
-        }
-        person_to_emb = {
-            p["id"]: os.path.splitext(os.path.basename(p["path"]))[0] for p in persons
-        }
+        # Helper: Get all groups (key and value matches)
+        def get_related_groups(target_emb):
+            related = set()
+            for key, values in emb_data.items():
+                if target_emb == key or target_emb in values:
+                    related.add(key)
+                    related.update(values)
+            return related
     
-        # Initialize set with the original embedding
         collected_embs = set()
-        collected_embs.add(emb_name)
     
-        # Add related embeddings from the JSON data
-        if emb_name in emb_data:
-            collected_embs.update(emb_data[emb_name])
+        # Step 1: Collect all groups where emb_name is key or in values
+        collected_embs.update(get_related_groups(emb_name))
     
-        for key, values in emb_data.items():
-            if emb_name in values:
-                collected_embs.add(key)
-                collected_embs.update(values)
+        # Step 2: Check if emb_name is in person path
+        emb_path_check = f'face_images/{emb_name}'
+        person_id = None
+        for person in persons:
+            if emb_path_check in person["path"]:
+                person_id = person["id"]
+                break
     
-        # Add embeddings of linked persons
-        person_id = emb_to_person.get(emb_name)
         if person_id:
-            linked_person_ids = set()
+            # Step 3: Find linked person IDs
+            linked_ids = set()
             for link in links:
                 if person_id in (link["person1_id"], link["person2_id"]):
-                    linked_person_ids.add(link["person1_id"])
-                    linked_person_ids.add(link["person2_id"])
-            linked_person_ids.discard(person_id)
+                    linked_ids.add(link["person1_id"])
+                    linked_ids.add(link["person2_id"])
+            linked_ids.discard(person_id)
     
-            for pid in linked_person_ids:
-                linked_emb = person_to_emb.get(pid)
-                if linked_emb:
-                    collected_embs.add(linked_emb)
-                    if linked_emb in emb_data:
-                        collected_embs.update(emb_data[linked_emb])
-                    for key, values in emb_data.items():
-                        if linked_emb in values:
-                            collected_embs.add(key)
-                            collected_embs.update(values)
+            # Step 4: For each linked ID, get embedding name and related groups
+            for pid in linked_ids:
+                for person in persons:
+                    if person["id"] == pid:
+                        path_parts = person["path"].split('/')
+                        if len(path_parts) > 1:
+                            linked_emb = path_parts[1]
+                            collected_embs.update(get_related_groups(linked_emb))
     
         return jsonify({"embeddings": list(collected_embs)})
-    
-           
+        
+               
