@@ -1175,14 +1175,10 @@ class ImageController:
             print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
     @staticmethod
-    def get_emb_names(persons, links, person1, dbemb_name):
+    def get_emb_names(links, person1, dbemb_name):
         emb_name = person1["personPath"].split('/')[-1]
         db_emb_name = dbemb_name["path"].split('/')[-1]
-        
-        print("emb_name:", emb_name, "db_emb_name:", db_emb_name)
-        print("links:", links)
-        print("persons:", persons)
-    
+     
         # Check if person1 and dbemb_name are linked
         person1_id = person1["id"]
         dbemb_id = dbemb_name["id"]
@@ -1200,26 +1196,75 @@ class ImageController:
         result = {}
     
         for key, embeddings in person_group.items():
-            # Skip this group if db_emb_name is the key or is inside its values
-            if db_emb_name == key or db_emb_name in embeddings:
+            # Skip this group if emb_name is the key or is inside its values
+            if emb_name == key or emb_name in embeddings:
                 continue
     
             # Skip this group if BOTH emb_name and db_emb_name are present in it
             if (key == emb_name or emb_name in embeddings) and (db_emb_name == key or db_emb_name in embeddings):
-                continue
+                return {}
     
-            if key == emb_name:
+            if key == db_emb_name:
                 group = set(embeddings + [key])
-                group.discard(emb_name)
+                # group.discard(emb_name)
                 result[key] = list(group)
     
-            elif emb_name in embeddings:
+            elif db_emb_name  in embeddings:
                 group = set([key] + embeddings)
-                group.discard(emb_name)
+                # group.discard(emb_name)
                 result[key] = list(group)
     
         return result
 
-
-
-       
+    
+    @staticmethod
+    def get_emb_names_for_recognition(persons, links, emb_name):
+        # Load the JSON file
+        with open('stored-faces/person_group.json') as f:
+            emb_data = json.load(f)
+    
+        # Build embedding-to-person ID and person ID-to-embedding mappings
+        emb_to_person = {
+            os.path.splitext(os.path.basename(p["path"]))[0]: p["id"] for p in persons
+        }
+        person_to_emb = {
+            p["id"]: os.path.splitext(os.path.basename(p["path"]))[0] for p in persons
+        }
+    
+        # Initialize set with the original embedding
+        collected_embs = set()
+        collected_embs.add(emb_name)
+    
+        # Add related embeddings from the JSON data
+        if emb_name in emb_data:
+            collected_embs.update(emb_data[emb_name])
+    
+        for key, values in emb_data.items():
+            if emb_name in values:
+                collected_embs.add(key)
+                collected_embs.update(values)
+    
+        # Add embeddings of linked persons
+        person_id = emb_to_person.get(emb_name)
+        if person_id:
+            linked_person_ids = set()
+            for link in links:
+                if person_id in (link["person1_id"], link["person2_id"]):
+                    linked_person_ids.add(link["person1_id"])
+                    linked_person_ids.add(link["person2_id"])
+            linked_person_ids.discard(person_id)
+    
+            for pid in linked_person_ids:
+                linked_emb = person_to_emb.get(pid)
+                if linked_emb:
+                    collected_embs.add(linked_emb)
+                    if linked_emb in emb_data:
+                        collected_embs.update(emb_data[linked_emb])
+                    for key, values in emb_data.items():
+                        if linked_emb in values:
+                            collected_embs.add(key)
+                            collected_embs.update(values)
+    
+        return jsonify({"embeddings": list(collected_embs)})
+    
+           
