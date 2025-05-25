@@ -133,5 +133,5 @@ Thanks to the developers and open-source communities behind `face_recognition`, 
   * [Aimen](https://github.com/AIMEN-10)
   * [Shafia](https://github.com/shafiamanzoor762)
   * [Iqra](https://github.com/iqraraja1)
-  * [Rafiya](https://github.com/RafiaTariq01)
+  * [Rafia](https://github.com/RafiaTariq01)
 ##### Feel free to connect with us on GitHub or reach out for collaboration!
