@@ -33,7 +33,7 @@ class ImageController:
 #       {"id": 1, "name": "Ali","gender": "M"},
 #       {"id": 2, "name": "Amna","gender": "F"}
 #     ],
-#     "event_name": "iNDEPENDENCE DAY",
+#     "event_name": ["iNDEPENDENCE DAY"],
 #     "event_date": "2025-01-17",
 #     "location": ["New yORK", "33.1234", "73.5678"]
 #   }
@@ -623,10 +623,17 @@ class ImageController:
                 
                 if match_data:
                     result = match_data["results"][0]
+                    print("result in recognition",result)
                     file_path = result["file"]  # e.g. "stored-faces\\3ec88a981d204ab8b0501cc4da150bf5.jpg"
                     normalized_path = file_path.replace("\\", "/")
                     face_path_1 = normalized_path.replace('stored-faces', 'face_images')
                     matched_person = Person.query.filter_by(path=face_path_1).first()
+
+                    for res in  match_data["results"]:
+                        resembeled_path = os.path.basename(res["file"])
+                        print("resembeled path",resembeled_path)
+                        if(face_filename != resembeled_path):
+                            PersonController.update_face_paths_json("./stored-faces/person_group.json", face_filename, matchedPath=resembeled_path)
 
 
                 # 5. If not found, create a new person
@@ -848,37 +855,63 @@ class ImageController:
         capture_date = data.get("capture_date")  # Expecting a single date
         location_name = data.get("location")  # Expecting a single location name
         
-        image_ids = set()  # Using set to avoid duplicates
+        # image_ids = set()  # Using set to avoid duplicates
     
-        # 🔹 Filter by Person ID
-        # 🔹 Filter by Person ID and include linked persons via the Link table
+        # # 🔹 Filter by Person ID
+        # # 🔹 Filter by Person ID and include linked persons via the Link table
+        # if person_id:
+        #     person = Person.query.filter_by(id=person_id).first()
+        
+        #     if person:
+        #         # Get all linked person IDs (bidirectional lookup)
+        #         linked_ids = (
+        #             db.session.query(Link.person2_id)
+        #             .filter(Link.person1_id == person_id)
+        #             .union(
+        #                 db.session.query(Link.person1_id)
+        #                 .filter(Link.person2_id == person_id)
+        #             )
+        #             .all()
+        #         )
+        
+        #         # Flatten and combine all linked person IDs with the original person_id
+        #         linked_person_ids = {person_id} | {id for (id,) in linked_ids}
+        
+        #         # Get all image IDs associated with those persons
+        #         person_images = (
+        #             db.session.query(Image.id)
+        #             .join(ImagePerson, ImagePerson.image_id == Image.id)
+        #             .filter(ImagePerson.person_id.in_(linked_person_ids))
+        #             .all()
+        #         )
+        
+        #         image_ids.update([image.id for image in person_images])
+
+
+        image_ids = set()
+
         if person_id:
-            person = Person.query.filter_by(id=person_id).first()
-        
-            if person:
-                # Get all linked person IDs (bidirectional lookup)
-                linked_ids = (
-                    db.session.query(Link.person2_id)
-                    .filter(Link.person1_id == person_id)
-                    .union(
-                        db.session.query(Link.person1_id)
-                        .filter(Link.person2_id == person_id)
-                    )
-                    .all()
-                )
-        
-                # Flatten and combine all linked person IDs with the original person_id
-                linked_person_ids = {person_id} | {id for (id,) in linked_ids}
-        
-                # Get all image IDs associated with those persons
-                person_images = (
-                    db.session.query(Image.id)
-                    .join(ImagePerson, ImagePerson.image_id == Image.id)
-                    .filter(ImagePerson.person_id.in_(linked_person_ids))
-                    .all()
-                )
-        
-                image_ids.update([image.id for image in person_images])
+        #  print(person_id)
+         # Fetch person and their directly linked images
+        #  person = Person.query.filter_by(id=person_id).first()
+        #  if person:
+        #       person_images = person.images  # Assuming there's a relationship set up
+        #       image_ids.update([image.id for image in person_images])
+
+              # Fetch the image groups that include this person
+
+         groups = PersonController.get_person_groups()
+         print("Returned groups:", groups)  # DEBUG
+
+         for group in groups:
+             print("Group Person ID:", group.get("Person", {}).get("id"))
+             if int(group.get("Person", {}).get("id")) == int(person_id):
+                 print("Group Person ID:", group.get("Person", {}).get("id"), type(group.get("Person", {}).get("id")))
+                 print("Given Person ID:", person_id, type(person_id))
+
+                 for img in group.get("Images", []):
+                     image_ids.add(img["id"])  # Ensure all group images are added
+
         
             
         # 🔹 Filter by Event Name
@@ -965,8 +998,60 @@ class ImageController:
 
        
             
-        
-        
+    @staticmethod
+    def get_person_images(json_data):
+        data = request.get_json()
+    
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+    
+        images = json_data["images"]  # This is a list, not a query
+        image_person_map = json_data["image_person_map"]
+        links = json_data.get("links", [])
+    
+        person_id = data.get("person_id")
+        print("Given Person ID:", person_id, type(person_id))
+        image_ids = set()
+    
+        if person_id:
+            groups = PersonController.get_single_person_groups(json_data)
+            print("Returned groups:", groups)  # DEBUG
+    
+            for group in groups:
+                person = group.get("Person", {})
+                group_person_id = person.get("id")
+                print("Group Person ID:", group_person_id)
+    
+                if group_person_id is not None and int(group_person_id) == int(person_id):
+                    for img in group.get("Images", []):
+                        image_ids.add(img["id"])  # Add image ID
+    
+        if image_ids:
+            # ✅ Filter the list using list comprehension
+            filtered_images = [img for img in images if img["id"] in image_ids]
+            image_data = []
+    
+            for img in filtered_images:
+                # Simulate DB join by filtering image_person_map list
+                persons = [
+                    {"id": item["person_id"]}
+                    for item in image_person_map
+                    if item["image_id"] == img["id"]
+                ]
+    
+                image_data.append({
+                    "id": img["id"],
+                    "path": img["path"],
+                    "persons": persons
+                })
+    
+            print("Final image data:", image_data)
+            return jsonify({"images": image_data}), 200
+    
+        return jsonify({"error": "No matching images found"}), 404
+    
+       
+            
          
         
     @staticmethod
@@ -1022,8 +1107,7 @@ class ImageController:
             # Extract faces from the image
             extracted_faces = PersonController.extract_face(image_path)
             if not extracted_faces:
-                return jsonify({'message': 'No faces found'}), 200
-    
+                    return jsonify([]), 200    
             response_data = []
     
             for face_data in extracted_faces:
@@ -1041,6 +1125,13 @@ class ImageController:
                     normalized_path = file_path.replace("\\", "/")
                     face_path_1 = normalized_path.replace('stored-faces', 'face_images')
                     matched_person = Person.query.filter_by(path=face_path_1).first()
+
+                    for res in  match_data["results"]:
+                        resembeled_path = os.path.basename(res["file"])
+                        print("resembeled path",resembeled_path)
+                        if(face_filename != resembeled_path):
+                            PersonController.update_face_paths_json("./stored-faces/person_group.json", face_filename, matchedPath=resembeled_path)
+
     
                 if not matched_person:
                     new_person = Person(
@@ -1083,6 +1174,52 @@ class ImageController:
             db.session.rollback()
             print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
+    @staticmethod
+    def get_emb_names(persons, links, person1, dbemb_name):
+        emb_name = person1["personPath"].split('/')[-1]
+        db_emb_name = dbemb_name["path"].split('/')[-1]
+        
+        print("emb_name:", emb_name, "db_emb_name:", db_emb_name)
+        print("links:", links)
+        print("persons:", persons)
+    
+        # Check if person1 and dbemb_name are linked
+        person1_id = person1["id"]
+        dbemb_id = dbemb_name["id"]
+        if any(
+            (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
+            (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
+            for link in links
+        ):
+            print("Person1 and db_emb_name are directly linked — skipping.")
+            return {}  # They are linked; skip the group entirely
+    
+        with open('stored-faces/person_group.json', 'r') as f:
+            person_group = json.load(f)
+    
+        result = {}
+    
+        for key, embeddings in person_group.items():
+            # Skip this group if db_emb_name is the key or is inside its values
+            if db_emb_name == key or db_emb_name in embeddings:
+                continue
+    
+            # Skip this group if BOTH emb_name and db_emb_name are present in it
+            if (key == emb_name or emb_name in embeddings) and (db_emb_name == key or db_emb_name in embeddings):
+                continue
+    
+            if key == emb_name:
+                group = set(embeddings + [key])
+                group.discard(emb_name)
+                result[key] = list(group)
+    
+            elif emb_name in embeddings:
+                group = set([key] + embeddings)
+                group.discard(emb_name)
+                result[key] = list(group)
+    
+        return result
 
 
 
+       
