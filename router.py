@@ -706,7 +706,7 @@ def get_mobile_person_groups():
         # Debug logging
         print(f"Received data: persons={len(persons)}, links={len(links)}, "
               f"image_persons={len(image_persons)}, image_ids={len(image_ids)}")
-        
+        #MobileSideController ko bj rha ha list 4
         result = MobileSideController.get_person_groups_from_data(
             persons, links, image_persons, image_ids
         )
