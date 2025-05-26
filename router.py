@@ -631,6 +631,27 @@ def image_processing():
         return jsonify({'error':str(exp)}), 500
      
 
+@app.route('/get_person_images', methods=['POST'])
+def get_person_images():
+    json_data = request.get_json() 
+    return ImageController.get_person_images(json_data)
+
+@app.route('/load_embeddings', methods=['POST'])
+def get_emb_names():
+    data = request.get_json()
+    links = data.get("links", [])
+    emb_name = data.get("person1", [])
+    db_emb_name = data.get("db_person", [])
+    return ImageController.get_emb_names(links,emb_name,db_emb_name)
+
+
+@app.route('/load_embeddings_for_recognition', methods=['POST'])
+def get_emb_names_for_recognition():
+    data = request.get_json()
+    persons = data.get("persons", [])
+    links = data.get("links", [])
+    emb_name = data.get("person1", [])
+    return ImageController.get_emb_names_for_recognition(persons,links,emb_name)
 
 
 # =======================Shafia's Mobile side Requests========================================

@@ -998,8 +998,60 @@ class ImageController:
 
        
             
-        
-        
+    @staticmethod
+    def get_person_images(json_data):
+        data = request.get_json()
+    
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+    
+        images = json_data["images"]  # This is a list, not a query
+        image_person_map = json_data["image_person_map"]
+        links = json_data.get("links", [])
+    
+        person_id = data.get("person_id")
+        print("Given Person ID:", person_id, type(person_id))
+        image_ids = set()
+    
+        if person_id:
+            groups = PersonController.get_single_person_groups(json_data)
+            print("Returned groups:", groups)  # DEBUG
+    
+            for group in groups:
+                person = group.get("Person", {})
+                group_person_id = person.get("id")
+                print("Group Person ID:", group_person_id)
+    
+                if group_person_id is not None and int(group_person_id) == int(person_id):
+                    for img in group.get("Images", []):
+                        image_ids.add(img["id"])  # Add image ID
+    
+        if image_ids:
+            # ✅ Filter the list using list comprehension
+            filtered_images = [img for img in images if img["id"] in image_ids]
+            image_data = []
+    
+            for img in filtered_images:
+                # Simulate DB join by filtering image_person_map list
+                persons = [
+                    {"id": item["person_id"]}
+                    for item in image_person_map
+                    if item["image_id"] == img["id"]
+                ]
+    
+                image_data.append({
+                    "id": img["id"],
+                    "path": img["path"],
+                    "persons": persons
+                })
+    
+            print("Final image data:", image_data)
+            return jsonify({"images": image_data}), 200
+    
+        return jsonify({"error": "No matching images found"}), 404
+    
+       
+            
          
         
     @staticmethod
@@ -1122,6 +1174,99 @@ class ImageController:
             db.session.rollback()
             print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
+    @staticmethod
+    def get_emb_names(links, person1, dbemb_name):
+        emb_name = person1["personPath"].split('/')[-1]
+        db_emb_name = dbemb_name["path"].split('/')[-1]
+     
+        # Check if person1 and dbemb_name are linked
+        person1_id = person1["id"]
+        dbemb_id = dbemb_name["id"]
+        if any(
+            (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
+            (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
+            for link in links
+        ):
+            print("Person1 and db_emb_name are directly linked — skipping.")
+            return {}  # They are linked; skip the group entirely
+    
+        with open('stored-faces/person_group.json', 'r') as f:
+            person_group = json.load(f)
+    
+        result = {}
+    
+        for key, embeddings in person_group.items():
+            # Skip this group if emb_name is the key or is inside its values
+            if emb_name == key or emb_name in embeddings:
+                continue
+    
+            # Skip this group if BOTH emb_name and db_emb_name are present in it
+            if (key == emb_name or emb_name in embeddings) and (db_emb_name == key or db_emb_name in embeddings):
+                return {}
+    
+            if key == db_emb_name:
+                group = set(embeddings + [key])
+                # group.discard(emb_name)
+                result[key] = list(group)
+    
+            elif db_emb_name  in embeddings:
+                group = set([key] + embeddings)
+                # group.discard(emb_name)
+                result[key] = list(group)
+    
+        return result
 
-
-
+    
+    @staticmethod
+    def get_emb_names_for_recognition(persons, links, emb_name):
+        print('person list:', persons)
+        print('links:', links)
+        print('emb name:', emb_name)
+    
+        # Load the JSON file
+        with open('stored-faces/person_group.json') as f:
+            emb_data = json.load(f)
+    
+        # Helper: Get all groups (key and value matches)
+        def get_related_groups(target_emb):
+            related = set()
+            for key, values in emb_data.items():
+                if target_emb == key or target_emb in values:
+                    related.add(key)
+                    related.update(values)
+            return related
+    
+        collected_embs = set()
+    
+        # Step 1: Collect all groups where emb_name is key or in values
+        collected_embs.update(get_related_groups(emb_name))
+    
+        # Step 2: Check if emb_name is in person path
+        emb_path_check = f'face_images/{emb_name}'
+        person_id = None
+        for person in persons:
+            if emb_path_check in person["path"]:
+                person_id = person["id"]
+                break
+    
+        if person_id:
+            # Step 3: Find linked person IDs
+            linked_ids = set()
+            for link in links:
+                if person_id in (link["person1_id"], link["person2_id"]):
+                    linked_ids.add(link["person1_id"])
+                    linked_ids.add(link["person2_id"])
+            linked_ids.discard(person_id)
+    
+            # Step 4: For each linked ID, get embedding name and related groups
+            for pid in linked_ids:
+                for person in persons:
+                    if person["id"] == pid:
+                        path_parts = person["path"].split('/')
+                        if len(path_parts) > 1:
+                            linked_emb = path_parts[1]
+                            collected_embs.update(get_related_groups(linked_emb))
+    
+        return jsonify({"embeddings": list(collected_embs)})
+        
+               

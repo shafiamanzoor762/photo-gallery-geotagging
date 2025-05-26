@@ -705,3 +705,118 @@ class PersonController():
         except Exception as e:
             print(f"Error: {e}")
             return {"error": str(e)}, 500
+        
+
+    @staticmethod
+    def get_single_person_groups(json_data):
+        try:
+            persons = json_data["persons"]
+            images = json_data["images"]
+            image_person_map = json_data["image_person_map"]
+            links = json_data.get("links", [])
+    
+            # Load JSON file
+            with open('./stored-faces/person_group.json', 'r') as f:
+                json_groups = json.load(f)
+    
+            # Create path → person.id map from list of dicts
+            path_to_person = {
+                os.path.basename(p['path']): p['id']
+                for p in persons if p.get('path')
+            }
+    
+            # Step 1: Build initial mapping of JSON group key to person IDs
+            json_group_id_to_person_ids = {}
+            for key_path, group_paths in json_groups.items():
+                group_ids = set()
+                if key_path in path_to_person:
+                    group_ids.add(path_to_person[key_path])
+                for p in group_paths:
+                    if p in path_to_person:
+                        group_ids.add(path_to_person[p])
+                if group_ids:
+                    json_group_id_to_person_ids[key_path] = group_ids
+    
+            # Step 2: Use Union-Find to merge JSON groups based on Links
+            parent = {}
+    
+            def find(x):
+                if parent[x] != x:
+                    parent[x] = find(parent[x])
+                return parent[x]
+    
+            def union(x, y):
+                px = find(x)
+                py = find(y)
+                if px != py:
+                    parent[py] = px
+    
+            # Initialize union-find on JSON groups
+            json_group_keys = list(json_group_id_to_person_ids.keys())
+            group_key_to_index = {k: idx for idx, k in enumerate(json_group_keys)}
+            index_to_key = {idx: k for k, idx in group_key_to_index.items()}
+            for idx in range(len(json_group_keys)):
+                parent[idx] = idx
+    
+            # Build person_id → group index map
+            person_id_to_group_index = {}
+            for key, ids in json_group_id_to_person_ids.items():
+                idx = group_key_to_index[key]
+                for pid in ids:
+                    person_id_to_group_index[pid] = idx
+    
+            # Apply unions based on Link table (merge groups if linked persons exist in different groups)
+            for link in links:
+                g1 = person_id_to_group_index.get(link['person1_id'])
+                g2 = person_id_to_group_index.get(link['person2_id'])
+                if g1 is not None and g2 is not None and g1 != g2:
+                    union(g1, g2)
+    
+            # Step 3: Final groupings by root
+            merged_groups = defaultdict(set)
+            for pid, idx in person_id_to_group_index.items():
+                root_idx = find(idx)
+                merged_groups[root_idx].add(pid)
+    
+            # Step 4: Prepare the final grouped output
+            grouped_data = {}
+            for group_idx, person_ids in merged_groups.items():
+                for person_id in person_ids:
+                    person_obj = next((p for p in persons if p['id'] == person_id), None)
+                    if not person_obj:
+                        continue
+    
+                    image_records = [ipm for ipm in image_person_map if ipm['person_id'] == person_id]
+                    for record in image_records:
+                        image = next((img for img in images if img['id'] == record['image_id'] and not img.get('is_deleted', False)), None)
+                        if not image:
+                            continue
+    
+                        if group_idx not in grouped_data:
+                            grouped_data[group_idx] = {
+                                "Person": {
+                                    "id": person_obj['id'],
+                                    "name": person_obj['name'],
+                                    "path": person_obj['path'],
+                                    "gender": person_obj['gender']
+                                },
+                                "Images": []
+                            }
+    
+                        grouped_data[group_idx]["Images"].append({
+                            "id": image['id'],
+                            "path": image['path'],
+                            # "is_sync": image.get('is_sync'),
+                            # "capture_date": image['capture_date'].strftime('%Y-%m-%d') if image.get('capture_date') else None,
+                            # "event_date": image['event_date'].strftime('%Y-%m-%d') if image.get('event_date') else None,
+                            # "last_modified": image['last_modified'].strftime('%Y-%m-%d %H:%M:%S') if image.get('last_modified') else None,
+                            # "location_id": image.get('location_id'),
+                            "is_deleted": image.get('is_deleted')
+                        })
+    
+            result = list(grouped_data.values())
+            return result
+    
+        except Exception as e:
+            print(f"Error: {e}")
+            return {"error": str(e)}, 500
