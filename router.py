@@ -157,10 +157,12 @@ def group_by_person():
 def get_person_groups_from_json():
     try:
         json_data = request.get_json()  
+        print(json_data)
         if not json_data:
             return jsonify({"error": "No JSON data provided"}), 400
         
         result = PersonController.get_person_groups_from_json(json_data)
+        print(result)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
