@@ -637,10 +637,11 @@ def get_person_images():
 @app.route('/load_embeddings', methods=['POST'])
 def get_emb_names():
     data = request.get_json()
+    persons= data.get("persons", [])
     links = data.get("links", [])
     emb_name = data.get("person1", [])
-    db_emb_name = data.get("db_person", [])
-    return ImageController.get_emb_names(links,emb_name,db_emb_name)
+    personrecords= data.get("personrecords", [])
+    return ImageController.get_emb_names(persons,links,emb_name,personrecords)
 
 
 @app.route('/load_embeddings_for_recognition', methods=['POST'])
