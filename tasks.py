@@ -1,4 +1,5 @@
 from Celery_worker import celery
+from Controller.PersonController import PersonController
 from config import db
 from Model import Image, Person, ImagePerson
 from Controller.ImageController import ImageController

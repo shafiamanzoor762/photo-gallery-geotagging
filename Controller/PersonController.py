@@ -671,9 +671,9 @@ class PersonController():
                     if not person:
                         continue
 
-                    image_records = [ip for ip in image_person_map if ip["personId"] == person_id]
+                    image_records = [ip for ip in image_person_map if ip["person_id"] == person_id]
                     for record in image_records:
-                        image = next((img for img in images if img["id"] == record["imageId"] and not img.get("is_deleted", False)), None)
+                        image = next((img for img in images if img["id"] == record["image_id"] and not img.get("is_deleted", False)), None)
                         if not image:
                             continue
 

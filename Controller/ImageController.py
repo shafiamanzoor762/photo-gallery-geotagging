@@ -1174,6 +1174,7 @@ class ImageController:
             db.session.rollback()
             print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
+    
     @staticmethod
     def get_emb_names(links, person1, dbemb_name):
         emb_name = person1["personPath"].split('/')[-1]
