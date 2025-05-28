@@ -1174,48 +1174,145 @@ class ImageController:
             db.session.rollback()
             print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
-    
+        
     @staticmethod
-    def get_emb_names(links, person1, dbemb_name):
+    def build_link_groups(links):
+        # Union-Find for grouping linked persons
+        parent = {}
+    
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+    
+        def union(x, y):
+            px, py = find(x), find(y)
+            if px != py:
+                parent[py] = px
+    
+        # Initialize parent map
+        for link in links:
+            a, b = link["person1_id"], link["person2_id"]
+            if a not in parent:
+                parent[a] = a
+            if b not in parent:
+                parent[b] = b
+            union(a, b)
+    
+        # Build groups
+        groups = {}
+        for person_id in parent:
+            root = find(person_id)
+            if root not in groups:
+                groups[root] = []
+            groups[root].append(person_id)
+    
+        return groups
+    @staticmethod
+    def are_groups_linked(group1, group2, persons, links):
+        id_by_emb = {person["path"].split("/")[-1]: person["id"] for person in persons}
+        
+        ids1 = {id_by_emb.get(name) for name in group1 if id_by_emb.get(name) is not None}
+        ids2 = {id_by_emb.get(name) for name in group2 if id_by_emb.get(name) is not None}
+    
+        for link in links:
+            if (link["person1_id"] in ids1 and link["person2_id"] in ids2) or \
+               (link["person2_id"] in ids1 and link["person1_id"] in ids2):
+                return True
+        return False
+    @staticmethod
+    def merge_linked_overlapping_groups(group_dict, persons, links):
+        groups = [set(v) for v in group_dict.values()]
+        merged = []
+    
+        while groups:
+            first, *rest = groups
+            first = set(first)
+    
+            changed = True
+            while changed:
+                changed = False
+                rest2 = []
+                for r in rest:
+                    if first & r and ImageController.are_groups_linked(first, r, persons, links):
+                        first |= r
+                        changed = True
+                    else:
+                        rest2.append(r)
+                rest = rest2
+            merged.append(first)
+            groups = rest
+
+    # Build merged dict using first item of each group as key
+        merged_dict = {}
+        for group in merged:
+            group = sorted(group)
+            merged_dict[group[0]] = group
+    
+        return merged_dict
+
+
+    @staticmethod
+    def get_emb_names(persons, links, person1,personrecords):
+        print(person1)
+        print(persons)
+        print(links)
         emb_name = person1["personPath"].split('/')[-1]
-        db_emb_name = dbemb_name["path"].split('/')[-1]
-     
-        # Check if person1 and dbemb_name are linked
         person1_id = person1["id"]
-        dbemb_id = dbemb_name["id"]
-        if any(
-            (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
-            (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
-            for link in links
-        ):
-            print("Person1 and db_emb_name are directly linked — skipping.")
-            return {}  # They are linked; skip the group entirely
+        
+        link_groups = ImageController.build_link_groups(links)
     
         with open('stored-faces/person_group.json', 'r') as f:
             person_group = json.load(f)
     
         result = {}
     
-        for key, embeddings in person_group.items():
-            # Skip this group if emb_name is the key or is inside its values
-            if emb_name == key or emb_name in embeddings:
-                continue
+        for dbemb_name in persons:
+            db_emb_name = dbemb_name["path"].split('/')[-1]
+
+            dbemb_id = dbemb_name["id"]
     
-            # Skip this group if BOTH emb_name and db_emb_name are present in it
-            if (key == emb_name or emb_name in embeddings) and (db_emb_name == key or db_emb_name in embeddings):
+            # Step 1: Check if both persons are in the same link group
+            for group in link_groups.values():
+                if person1_id in group and dbemb_id in group:
+                    print("Person1 and db_emb_name are logically linked in group — returning full group.")
+                    return {"linked_group": list(group)}  # Early return with linked group
+    
+            # Step 2: Check for direct link
+            if any(
+                (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
+                (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
+                for link in links
+            ):
+                print("Person1 and db_emb_name are directly linked — skipping.")
                 return {}
     
-            if key == db_emb_name:
-                group = set(embeddings + [key])
-                # group.discard(emb_name)
-                result[key] = list(group)
+            # Step 3: Check groupings in person_group JSON
+            for key, embeddings in person_group.items():
+                # Skip this group if emb_name is the key or in values
+                if emb_name == key or emb_name in embeddings:
+                    continue
     
-            elif db_emb_name  in embeddings:
-                group = set([key] + embeddings)
-                # group.discard(emb_name)
-                result[key] = list(group)
+                # Skip if both are in same group already
+                if (key == emb_name or emb_name in embeddings) and (db_emb_name == key or db_emb_name in embeddings):
+                    return {}
     
+                if key == db_emb_name:
+                    group = set(embeddings + [key])
+                    result[key] = list(group)
+    
+                elif db_emb_name in embeddings:
+                    group = set([key] + embeddings)
+                    result[key] = list(group)
+    
+        # Merge overlapping groups before returning
+        # Merge groups only if there's a link between them
+        result = ImageController.merge_linked_overlapping_groups(result, personrecords, links)
+
         return result
+
+
 
     
     @staticmethod
