@@ -234,6 +234,35 @@ class ImageController:
                     person = Person.query.filter(Person.id == person_id).first()
                     if person:
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
+                        persons_db = Person.query.all()
+                        person_list = [
+                           {"id": p.id, "name": p.name, "path": p.path}
+                           for p in persons_db
+                            ]
+                        links = Link.query.all()
+                        
+                        link_list = [
+                            {"person1_id": link.person1_id, "person2_id": link.person2_id}
+                            for link in links
+                        ]                        
+                        res=ImageController.get_emb_names_for_recognition(person_list,link_list,person.path.split('/')[-1])
+                        embeddings = res.get_json("embeddings", {})
+                        print("embeddings",embeddings)
+                        for path in embeddings.get("embeddings", []):
+                            pathes = f'face_images/{path}'
+                            print("Looking for person with path:", pathes)
+                        
+                            person = Person.query.filter_by(path=pathes).first()
+                            if person:
+                                person.name = person_name
+                                db.session.add(person)
+                                print("Updated:", pathes)
+                            else:
+                                print("No match found in DB for:", pathes)
+
+                                    
+
+
                         if person_name and gender:
                             person.name = person_name
                             person.gender  =gender
@@ -1258,7 +1287,11 @@ class ImageController:
         print(person1)
         print(persons)
         print(links)
-        emb_name = person1["personPath"].split('/')[-1]
+        print(personrecords)
+        try:
+           emb_name = person1["personPath"].split('/')[-1]
+        except:
+              emb_name = person1["path"].split('/')[-1]
         person1_id = person1["id"]
         
         link_groups = ImageController.build_link_groups(links)
@@ -1277,7 +1310,7 @@ class ImageController:
             for group in link_groups.values():
                 if person1_id in group and dbemb_id in group:
                     print("Person1 and db_emb_name are logically linked in group — returning full group.")
-                    return {"linked_group": list(group)}  # Early return with linked group
+                    return {}  # Early return with linked group
     
             # Step 2: Check for direct link
             if any(
@@ -1366,5 +1399,32 @@ class ImageController:
                             collected_embs.update(get_related_groups(linked_emb))
     
         return jsonify({"embeddings": list(collected_embs)})
+
+
+
+    @staticmethod
+    def get_persons(person1,name):
         
+        samenamedpersons=Person.query.filter_by(name=name).all()
+        samenamedpersons_list = [
+            {"id": p.id, "name": p.name, "path": p.path}
+            for p in samenamedpersons
+            ]
+        persons_db = Person.query.all()
+        person_list = [
+               {"id": p.id, "name": p.name, "path": p.path}
+               for p in persons_db
+                ]
+        links = Link.query.all()
+            
+        link_list = [
+                {"person1_id": link.person1_id, "person2_id": link.person2_id}
+                for link in links
+            ] 
+        print("samenamedpersons",samenamedpersons_list)
+        print("link_list",link_list)
+        print("person1",person1)
+        print("person_list",person_list)   
+        result=ImageController.get_emb_names(samenamedpersons_list, link_list, person1,person_list) 
+        return result or {} 
                
