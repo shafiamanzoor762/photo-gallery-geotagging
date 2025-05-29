@@ -1193,7 +1193,9 @@ class ImageController:
     
         # Initialize parent map
         for link in links:
-            a, b = link["person1_id"], link["person2_id"]
+            # a, b = link["person1_id"], link["person2_id"]
+            a, b = link["person1Id"], link["person2Id"]
+
             if a not in parent:
                 parent[a] = a
             if b not in parent:
@@ -1216,9 +1218,14 @@ class ImageController:
         ids1 = {id_by_emb.get(name) for name in group1 if id_by_emb.get(name) is not None}
         ids2 = {id_by_emb.get(name) for name in group2 if id_by_emb.get(name) is not None}
     
+        # for link in links:
+        #     if (link["person1_id"] in ids1 and link["person2_id"] in ids2) or \
+        #        (link["person2_id"] in ids1 and link["person1_id"] in ids2):
+        #         return True
+        # return False
         for link in links:
-            if (link["person1_id"] in ids1 and link["person2_id"] in ids2) or \
-               (link["person2_id"] in ids1 and link["person1_id"] in ids2):
+            if (link["person1Id"] in ids1 and link["person2Id"] in ids2) or \
+               (link["person2Id"] in ids1 and link["person1Id"] in ids2):
                 return True
         return False
     @staticmethod
@@ -1255,10 +1262,11 @@ class ImageController:
 
     @staticmethod
     def get_emb_names(persons, links, person1,personrecords):
-        print(person1)
-        print(persons)
-        print(links)
-        emb_name = person1["personPath"].split('/')[-1]
+        print(person1,"         ")
+        print(persons,"         ")
+        print(links,"           ")
+        # emb_name = person1["personPath"].split('/')[-1]
+        emb_name = person1["path"].split('/')[-1]
         person1_id = person1["id"]
         
         link_groups = ImageController.build_link_groups(links)
@@ -1277,14 +1285,21 @@ class ImageController:
             for group in link_groups.values():
                 if person1_id in group and dbemb_id in group:
                     print("Person1 and db_emb_name are logically linked in group — returning full group.")
-                    return {"linked_group": list(group)}  # Early return with linked group
+                    print("linked_group", list(group))
+                    return {}  # Early return with linked group
     
             # Step 2: Check for direct link
             if any(
-                (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
-                (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
+                (link["person1Id"] == person1_id and link["person2Id"] == dbemb_id) or
+                (link["person1Id"] == dbemb_id and link["person2Id"] == person1_id)
                 for link in links
             ):
+            #   if any(
+            #     (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
+            #     (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
+            #     for link in links
+            # ):
+
                 print("Person1 and db_emb_name are directly linked — skipping.")
                 return {}
     
@@ -1309,7 +1324,7 @@ class ImageController:
         # Merge overlapping groups before returning
         # Merge groups only if there's a link between them
         result = ImageController.merge_linked_overlapping_groups(result, personrecords, links)
-
+        print("RESULT",result)
         return result
 
 
