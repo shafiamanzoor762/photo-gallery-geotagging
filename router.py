@@ -598,6 +598,27 @@ def get_face_image(filename):
         return jsonify({"error": "Image not found"}), 404
     
 
+@app.route('/get_merge_data', methods=['POST'])
+def get_merge_data():
+    try:
+        data = request.get_json()
+        person1 = data.get('person1')
+        name = data.get('name')
+        return ImageController.get_persons(person1,name)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+    
+@app.route('/merge_persons', methods=['POST'])
+def merge_persons():
+    try:
+        data = request.get_json()
+        person1 = data.get('person1_id')
+        person2 = data.get('person2')
+        
+        return LinkController.merge_persons(person1, person2)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+  
 #Aimen's mobile side code requests 
 
 @app.route('/image_processing', methods=['POST'])

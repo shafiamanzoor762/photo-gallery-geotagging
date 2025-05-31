@@ -21,6 +21,7 @@ from Model.ImagePerson import ImagePerson
 from Model.Link import Link
 from datetime import datetime
 from sqlalchemy.orm import joinedload
+from sqlalchemy import or_, and_
 
 from config import db
 
@@ -234,6 +235,36 @@ class ImageController:
                     person = Person.query.filter(Person.id == person_id).first()
                     if person:
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
+                        persons_db = Person.query.all()
+                        person_list = [
+                           {"id": p.id, "name": p.name, "path": p.path}
+                           for p in persons_db
+                            ]
+                        links = Link.query.all()
+                        
+                        link_list = [
+                            {"person1_id": link.person1_id, "person2_id": link.person2_id}
+                            for link in links
+                        ]                        
+                        res=ImageController.get_emb_names_for_recognition(person_list,link_list,person.path.split('/')[-1])
+                        embeddings = res.get_json("embeddings", {})
+                        print(res)
+                        print("embeddings",embeddings)
+                        for path in embeddings.get("embeddings", []):
+                            pathes = f'face_images/{path}'
+                            print("Looking for person with path:", pathes)
+                        
+                            person = Person.query.filter_by(path=pathes).first()
+                            if person:
+                                person.name = person_name
+                                db.session.add(person)
+                                print("Updated:", pathes)
+                            else:
+                                print("No match found in DB for:", pathes)
+
+                                    
+
+
                         if person_name and gender:
                             person.name = person_name
                             person.gender  =gender
@@ -1059,19 +1090,34 @@ class ImageController:
     def get_unedited_images():
         unedited_images = (
             db.session.query(Image)
-            .outerjoin(Image.persons)  # Join with Person table
-            .outerjoin(Image.events)  # Join with Event table
+            .outerjoin(Image.persons)
+            .outerjoin(Image.events)
             .filter(
-                (Image.is_deleted != 1), 
-                (Image.event_date.is_(None)) &  # No event date
-                (Image.location_id.is_(None)) &  # No location
-                ((Person.name == "unknown") | (Person.name.is_(None))) &  # Person's name is "unknown" or NULL
-                (Person.gender.is_(None)| (Person.gender == 'U')) &  # Person's gender is NULL
-                ((Event.name == "unknown") | (Event.name.is_(None)))  # Event name is "unknown" or NULL
+                (Image.is_deleted != 1),
+                or_(
+                    Image.event_date.is_(None),
+                    Image.location_id.is_(None),
+                    ~Image.persons.any(),  # No persons at all
+                    Image.persons.any(
+                        or_(
+                            Person.name == "unknown",
+                            Person.name.is_(None),
+                            Person.gender.is_(None),
+                            Person.gender == 'U'
+                        )
+                    ),
+                    ~Image.events.any(),  # No events at all
+                    Image.events.any(
+                        or_(
+                            Event.name == "unknown",
+                            Event.name.is_(None)
+                        )
+                    )
+                )
             )
             .all()
         )
-
+    
         # Convert images to JSON format
         image_list = []
         for img in unedited_images:
@@ -1083,10 +1129,10 @@ class ImageController:
                 "event_date": img.event_date.strftime('%Y-%m-%d') if img.event_date else None,
                 "last_modified": img.last_modified.strftime('%Y-%m-%d %H:%M:%S') if img.last_modified else None,
                 "location_id": img.location_id,
-                "persons": [{"id": p.id, "name": p.name, "gender": p.gender} for p in img.persons],  # Include person details
-                "events": [{"id": e.id, "name": e.name} for e in img.events]  # Include event details
+                "persons": [{"id": p.id, "name": p.name, "gender": p.gender} for p in img.persons],
+                "events": [{"id": e.id, "name": e.name} for e in img.events]
             })
-
+    
         return jsonify({"status": "success", "unedited_images": image_list}), 200
 
 
@@ -1262,6 +1308,14 @@ class ImageController:
 
     @staticmethod
     def get_emb_names(persons, links, person1,personrecords):
+        # print(person1)
+        # print(persons)
+        # print(links)
+        # print(personrecords)
+        try:
+           emb_name = person1["personPath"].split('/')[-1]
+        except:
+              emb_name = person1["path"].split('/')[-1]
         print(person1,"         ")
         print(persons,"         ")
         print(links,"           ")
@@ -1285,8 +1339,9 @@ class ImageController:
             for group in link_groups.values():
                 if person1_id in group and dbemb_id in group:
                     print("Person1 and db_emb_name are logically linked in group — returning full group.")
-                    print("linked_group", list(group))
                     return {}  # Early return with linked group
+                    print("linked_group", list(group))
+                 
     
             # Step 2: Check for direct link
             if any(
@@ -1332,9 +1387,9 @@ class ImageController:
     
     @staticmethod
     def get_emb_names_for_recognition(persons, links, emb_name):
-        print('person list:', persons)
-        print('links:', links)
-        print('emb name:', emb_name)
+        # print('person list:', persons)
+        # print('links:', links)
+        # print('emb name:', emb_name)
     
         # Load the JSON file
         with open('stored-faces/person_group.json') as f:
@@ -1381,5 +1436,33 @@ class ImageController:
                             collected_embs.update(get_related_groups(linked_emb))
     
         return jsonify({"embeddings": list(collected_embs)})
+
+
+
+    @staticmethod
+    def get_persons(person1,name):
         
+        samenamedpersons=Person.query.filter_by(name=name).all()
+        samenamedpersons_list = [
+            {"id": p.id, "name": p.name, "path": p.path}
+            for p in samenamedpersons
+            ]
+        persons_db = Person.query.all()
+        person_list = [
+               {"id": p.id, "name": p.name, "path": p.path}
+               for p in persons_db
+                ]
+        links = Link.query.all()
+            
+        link_list = [
+                {"person1_id": link.person1_id, "person2_id": link.person2_id}
+                for link in links
+            ] 
+        # print("samenamedpersons",samenamedpersons_list)
+        # print("link_list",link_list)
+        # print("person1",person1)
+        # print("person_list",person_list)   
+        result=ImageController.get_emb_names(samenamedpersons_list, link_list, person1,person_list) 
+        print(result)
+        return result or {} 
                
