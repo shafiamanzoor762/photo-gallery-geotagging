@@ -387,7 +387,6 @@ def get_image_complete_details(image_id):
 # def delete_image(image_id):
 #     return ImageController.delete_image(image_id)
 
-
 @app.route('/delete_metadata/<int:image_id>', methods=['DELETE'])
 def delete_metadata(image_id):
     try:

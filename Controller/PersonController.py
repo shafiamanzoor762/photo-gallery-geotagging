@@ -303,10 +303,11 @@ class PersonController():
                 stored_name, encoding_str, cropped_image_path = parts[0], parts[1], parts[2].strip()
                 stored_encodings = [float(value) for value in encoding_str.split(',')]
 
-                
                 for input_encoding in input_encodings:
-                    matches = face_recognition.compare_faces([stored_encodings], input_encoding)
-                    if True in matches:
+                    distance = face_recognition.face_distance([stored_encodings], input_encoding)[0]
+                    threshold = 0.45  # Stricter than default
+
+                    if distance < threshold:
                         name = stored_name
                         if person_name:
                             new_lines.append(f'{person_name};{encoding_str};{cropped_image_path}\n')
@@ -319,9 +320,28 @@ class PersonController():
                             'name': name,
                             'status': 'Match found'
                         })
-                        break  
+                        break
                     else:
                         new_lines.append(line)
+
+                # for input_encoding in input_encodings:
+                #     matches = face_recognition.compare_faces([stored_encodings], input_encoding)
+                #     if True in matches:
+                #         name = stored_name
+                #         if person_name:
+                #             new_lines.append(f'{person_name};{encoding_str};{cropped_image_path}\n')
+                #             name = person_name
+                #         else:
+                #             new_lines.append(line)
+
+                #         recognition_results.append({
+                #             'file': cropped_image_path,
+                #             'name': name,
+                #             'status': 'Match found'
+                #         })
+                #         break  
+                #     else:
+                #         new_lines.append(line)
 
     
      if person_name and new_lines:

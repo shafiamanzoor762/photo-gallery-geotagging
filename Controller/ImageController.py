@@ -1387,9 +1387,9 @@ class ImageController:
     
     @staticmethod
     def get_emb_names_for_recognition(persons, links, emb_name):
-        # print('person list:', persons)
-        # print('links:', links)
-        # print('emb name:', emb_name)
+        print('person list:', persons)
+        print('links:', links)
+        print('emb name:', emb_name)
     
         # Load the JSON file
         with open('stored-faces/person_group.json') as f:
@@ -1421,9 +1421,12 @@ class ImageController:
             # Step 3: Find linked person IDs
             linked_ids = set()
             for link in links:
-                if person_id in (link["person1_id"], link["person2_id"]):
-                    linked_ids.add(link["person1_id"])
-                    linked_ids.add(link["person2_id"])
+                if person_id in (link["person1Id"], link["person2Id"]):
+                    linked_ids.add(link["person1Id"])
+                    linked_ids.add(link["person2Id"])
+                # if person_id in (link["person1_id"], link["person2_id"]):
+                #     linked_ids.add(link["person1_id"])
+                #     linked_ids.add(link["person2_id"])
             linked_ids.discard(person_id)
     
             # Step 4: For each linked ID, get embedding name and related groups
@@ -1434,7 +1437,7 @@ class ImageController:
                         if len(path_parts) > 1:
                             linked_emb = path_parts[1]
                             collected_embs.update(get_related_groups(linked_emb))
-    
+        print(list(collected_embs))
         return jsonify({"embeddings": list(collected_embs)})
 
 
