@@ -1,5 +1,7 @@
-import os,cv2,uuid,json,face_recognition
+import os,cv2,uuid,json,base64,face_recognition
 from io import BytesIO
+
+from datetime import datetime
 
 from flask import jsonify, request
 import numpy as np
@@ -719,7 +721,7 @@ class ImageController:
         "events": events
         }
     
-        return jsonify(image_data)
+        return image_data
 
     # @staticmethod
     # def delete_image(image_id):
@@ -1116,5 +1118,47 @@ class ImageController:
             print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
 
+
+    def save_unsync_image_with_metadata(data):
+        try:
+         for idx, item in enumerate(data):
+            print(f"\n🔹 Processing Image {idx + 1}:")
+
+            image_data_b64 = item.get('image_data')
+            capture_date = item.get('capture_date')
+            event_date = item.get('event_date','')
+            last_modified = item.get('last_modified')
+            location = item.get('location','')
+            events = item.get('events', [])
+            persons = item.get('persons', [])
+
+            # Image bytes base64 (assuming you renamed "path" to "image_data")
+            
+            # if image_data_b64:
+            #     image_bytes = base64.b64decode(image_data_b64)
+            #     filename = f"{uuid.uuid4().hex}.jpg"
+            #     filepath = os.path.join(FOLDER_NAME, filename)
+
+            #     with open(filepath, 'wb') as f:
+            #         f.write(image_bytes)
+
+            #     print(f"✅ Saved image to: {filepath}")
+            # else:
+            #     print("⚠️ No image data provided")
+
+            print(f"📅 Capture Date: {capture_date}")
+            print(f"📅 Event Date: {event_date}")
+            print(f"🕓 Last Modified: {last_modified}")
+            print(f"📍 Location: {location}")
+            print(f"🎭 Events: {events}")
+
+            for person in persons:
+                print(f"   👤 Person: {person.get('name')} | Gender: {person.get('gender')} | Path: {person.get('path')}")
+
+         return jsonify({'status': 'success', 'message': 'All images processed successfully'}), 200
+
+        except Exception as e:
+            print(f"❌ Error: {e}")
+            return jsonify({'error': str(e)}), 500
 
 

@@ -120,7 +120,7 @@ def recognize_person():
          # Get query parameters from the GET request
          image_path = request.args.get('image_path')
          person_name = request.args.get('name', None)
- 
+
          if image_path:
              print(image_path)
             # Call the method from the PictureController class
@@ -131,7 +131,10 @@ def recognize_person():
              file = request.files['file']
              if file.filename == '':
                  return jsonify({'error':'filename is empty'}), 404
-         
+             
+             person_name = request.form.get('name', person_name)
+             print(person_name)
+
             #  image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
             #  print(image_path)
              image = Image.open(io.BytesIO(file.read()))
@@ -378,7 +381,7 @@ def get_image_details(image_id):
 
 @app.route('/image_complete_details/<int:image_id>', methods=['GET'])
 def get_image_complete_details(image_id):
-    return ImageController.get_image_complete_details(image_id)
+    return jsonify(ImageController.get_image_complete_details(image_id))
 
 # Delete an Image (Delete)
 # @app.route('/images/<int:image_id>', methods=['DELETE'])
@@ -791,12 +794,64 @@ def get_mobile_person_groups():
             'traceback': traceback.format_exc()
         }), 500
 
+
+@app.route('/get_unlinked_persons_by_id', methods=['POST'])
+def get_unlinked_persons_by_id():
+    try:
+        # Ensure we have JSON data
+        if not request.is_json:
+            return jsonify({'error': 'Missing JSON in request'}), 400
+            
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Empty JSON data'}), 400
+            
+        # Get data with defaults
+        personId = data.get("personId", None)
+        persons = data.get("persons", [])
+        links = data.get("links", [])
+        
+        # Debug logging
+        print(f"Received data: personId={personId} persons={len(persons)}, links={len(links)}")
+        
+        result = MobileSideController.get_unlinked_persons_by_id(
+            personId, persons, links
+        )
+        return jsonify(result)
+        
+    except Exception as exp:
+        # Log the full error
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': str(exp),
+            'traceback': traceback.format_exc()
+        }), 500
+    
+
+@app.route('/get_unsync_images', methods=['POST'])
+def get_unsync_images():
+
+    # Ensure we have JSON data
+    if not request.is_json:
+        return jsonify({'error': 'Missing JSON in request'}), 400
+            
+    data = request.get_json()
+    if not isinstance(data, list):
+        return jsonify({'error': 'Expected a list of image objects'}), 400
+    ImageController.save_unsync_image_with_metadata(data)    
+    return jsonify(MobileSideController.get_unsync_images())
+
+
+
+@app.route('/health')
+def health_check():
+     return jsonify({"status": "healthy"}), 200
+
 # only accept localhost
-
-
-
 # if __name__ == '__main__':
 #     app.run(debug=True)
+
 
 # # Run on all addresses (0.0.0.0)
 if __name__ == '__main__':
