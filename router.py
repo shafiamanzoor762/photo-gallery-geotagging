@@ -160,10 +160,12 @@ def group_by_person():
 def get_person_groups_from_json():
     try:
         json_data = request.get_json()  
+        print(json_data)
         if not json_data:
             return jsonify({"error": "No JSON data provided"}), 400
         
         result = PersonController.get_person_groups_from_json(json_data)
+        print(result)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -388,7 +390,6 @@ def get_image_complete_details(image_id):
 # def delete_image(image_id):
 #     return ImageController.delete_image(image_id)
 
-
 @app.route('/delete_metadata/<int:image_id>', methods=['DELETE'])
 def delete_metadata(image_id):
     try:
@@ -599,6 +600,27 @@ def get_face_image(filename):
         return jsonify({"error": "Image not found"}), 404
     
 
+@app.route('/get_merge_data', methods=['POST'])
+def get_merge_data():
+    try:
+        data = request.get_json()
+        person1 = data.get('person1')
+        name = data.get('name')
+        return ImageController.get_persons(person1,name)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+    
+@app.route('/merge_persons', methods=['POST'])
+def merge_persons():
+    try:
+        data = request.get_json()
+        person1 = data.get('person1_id')
+        person2 = data.get('person2')
+        
+        return LinkController.merge_persons(person1, person2)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+  
 #Aimen's mobile side code requests 
 
 @app.route('/image_processing', methods=['POST'])
@@ -632,97 +654,28 @@ def image_processing():
         return jsonify({'error':str(exp)}), 500
      
 
+@app.route('/get_person_images', methods=['POST'])
+def get_person_images():
+    json_data = request.get_json() 
+    return ImageController.get_person_images(json_data)
 
-# ====================
-
-
-
-# {
-#   "records": [
-#     {"person_id": 1, "image_id": 101},
-#     {"person_id": 2, "image_id": 102}
-#   ],
-#   "links": [
-#     {"person1_id": 1, "person2_id": 2}
-#   ],
-#   "persons": [
-#     {"id": 1, "name": "Ali", "path": "/ali", "gender": "Male"},
-#     {"id": 2, "name": "Ahmed", "path": "/ahmed", "gender": "Male"}
-#   ],
-#   "images": [
-#     {"id": 101, "path": "/img1.jpg", "is_sync": true, "capture_date": "2024-01-01", "event_date": "2024-01-01", "last_modified": "2024-01-02", "location_id": 10, "is_deleted": false},
-#     {"id": 102, "path": "/img2.jpg", "is_sync": true, "capture_date": "2024-01-01", "event_date": "2024-01-01", "last_modified": "2024-01-02", "location_id": 10, "is_deleted": false}
-#   ]
-# }
+@app.route('/load_embeddings', methods=['POST'])
+def get_emb_names():
+    data = request.get_json()
+    persons= data.get("persons", [])
+    links = data.get("links", [])
+    emb_name = data.get("person1", [])
+    personrecords= data.get("personrecords", [])
+    return ImageController.get_emb_names(persons,links,emb_name,personrecords)
 
 
-@app.route('/groupByPersons', methods=['GET'])
-def group_images_api():
-    try:
-        data = request.get_json()
-
-        records = data['records']
-        links = data['links']
-        persons = data['persons']
-        images = data['images']
-
-        # Initialize merged_persons dictionary
-        merged_persons = {}
-
-        def find_root(person_id):
-            if person_id not in merged_persons:
-                return person_id
-            while merged_persons[person_id] != person_id:
-                person_id = merged_persons[person_id]
-            return person_id
-
-        # Initialize each person as its own group
-        for link in links:
-            merged_persons[link['person1_id']] = link['person1_id']
-            merged_persons[link['person2_id']] = link['person2_id']
-
-        # Merge linked persons
-        for link in links:
-            root1 = find_root(link['person1_id'])
-            root2 = find_root(link['person2_id'])
-            if root1 != root2:
-                merged_persons[root2] = root1
-
-        grouped_data = {}
-
-        for record in records:
-            person_id = find_root(record['person_id'])
-
-            # Find matching person
-            person = next((p for p in persons if p['id'] == person_id), None)
-            if not person:
-                continue
-
-            # Find matching image and make sure it's not deleted
-            image = next((i for i in images if i['id'] == record['image_id'] and not i.get('is_deleted', False)), None)
-            if not image:
-                continue
-
-            if person['id'] not in grouped_data:
-                grouped_data[person['id']] = {
-                    "Person": {
-                        "id": person['id'],
-                        "name": person['name'],
-                        "path": person['path'],
-                        "gender": person['gender']
-                    },
-                    "Images": []
-                }
-
-            grouped_data[person['id']]["Images"].append(image)
-
-        result = list(grouped_data.values())
-        return jsonify(result)
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
+@app.route('/load_embeddings_for_recognition', methods=['POST'])
+def get_emb_names_for_recognition():
+    data = request.get_json()
+    persons = data.get("persons", [])
+    links = data.get("links", [])
+    emb_name = data.get("person1", [])
+    return ImageController.get_emb_names_for_recognition(persons,links,emb_name)
 
 
 # =======================Shafia's Mobile side Requests========================================
@@ -779,7 +732,7 @@ def get_mobile_person_groups():
         # Debug logging
         print(f"Received data: persons={len(persons)}, links={len(links)}, "
               f"image_persons={len(image_persons)}, image_ids={len(image_ids)}")
-        
+        #MobileSideController ko bj rha ha list 4
         result = MobileSideController.get_person_groups_from_data(
             persons, links, image_persons, image_ids
         )
