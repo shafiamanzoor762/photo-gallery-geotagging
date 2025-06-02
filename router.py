@@ -120,6 +120,8 @@ def recognize_person():
          # Get query parameters from the GET request
          image_path = request.args.get('image_path')
          person_name = request.args.get('name', None)
+         print(f"Received image_path: {image_path}")
+         print(f"Received person_name: {person_name}")
  
          if image_path:
              print(image_path)

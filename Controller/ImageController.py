@@ -1181,6 +1181,7 @@ class ImageController:
      
         # Check if person1 and dbemb_name are linked
         person1_id = person1["id"]
+        print(f"Embeddings being added for: {person1_id} - {person1_name}")
         dbemb_id = dbemb_name["id"]
         if any(
             (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
