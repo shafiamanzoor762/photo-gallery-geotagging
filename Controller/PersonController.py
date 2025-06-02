@@ -286,6 +286,7 @@ class PersonController():
     
      input_image = face_recognition.load_image_file(image_path)
      input_encodings = face_recognition.face_encodings(input_image)
+     print("------------------------"+person_name)
 
      if len(input_encodings) == 0:
         return {'error': 'No faces found in the image', 'status_code': 400}
@@ -312,6 +313,7 @@ class PersonController():
                         if person_name:
                             new_lines.append(f'{person_name};{encoding_str};{cropped_image_path}\n')
                             name = person_name
+                            # print("----------SAVED to text file--------------"+person_name)
                         else:
                             new_lines.append(line)
 
