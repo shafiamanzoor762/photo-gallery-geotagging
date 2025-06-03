@@ -1,16 +1,12 @@
 import base64, cv2, face_recognition, os, uuid, traceback
 import numpy as np
 import json
-<<<<<<< HEAD
-=======
-import json
 from collections import defaultdict, deque
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
 # from flask import jsonify
 # from models import Person, Image, ImagePerson, Link  # adjust based on your structure
 from config import db
->>>>>>> dd1614e33eb40de46bf7284d0c5a914721a2dbc2
 
 # from collections import defaultdict
 from flask import jsonify,make_response
@@ -165,11 +161,7 @@ class PersonController():
             storage_dir = "stored-faces"
             os.makedirs(storage_dir, exist_ok=True)
             encodings_file = os.path.join(storage_dir, "person.txt")
-<<<<<<< HEAD
-            json_file = os.path.join(storage_dir, "recognize_person.json")
-=======
             json_file = os.path.join(storage_dir, "person_group.json")
->>>>>>> dd1614e33eb40de46bf7284d0c5a914721a2dbc2
 
             # 6. Load existing encodings with memory protection
             stored_encodings = []
@@ -249,11 +241,7 @@ class PersonController():
                             with open(encodings_file, 'a') as f:
                                 encoding_str = ",".join([str(num) for num in current_encoding])
                                 f.write(f"unknown;{encoding_str};{face_path}\n")
-<<<<<<< HEAD
-                                PersonController.update_face_paths_json(json_file, face_path)
-=======
                                 PersonController.update_face_paths_json(json_file, os.path.basename(face_path))
->>>>>>> dd1614e33eb40de46bf7284d0c5a914721a2dbc2
                         except Exception as e:
                             print(f"failed to save encoding at {i}: {e}")
 
@@ -625,11 +613,6 @@ class PersonController():
 # # Example usage:
 # update_face_paths_json("faces.json", "face1.jpg")
 # update_face_paths_json("faces.json", "face2.jpg", matchedPath="face1.jpg")
-<<<<<<< HEAD
-     
-            
-            
-=======
 
 
 # ====================Mobile side Person Grouping ==================
@@ -756,7 +739,6 @@ class PersonController():
             images = json_data["images"]
             image_person_map = json_data["image_person_map"]
             links = json_data.get("links", [])
->>>>>>> dd1614e33eb40de46bf7284d0c5a914721a2dbc2
     
             # Load JSON file
             with open('./stored-faces/person_group.json', 'r') as f:
