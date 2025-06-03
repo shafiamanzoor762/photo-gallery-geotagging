@@ -1387,9 +1387,9 @@ class ImageController:
     
     @staticmethod
     def get_emb_names_for_recognition(persons, links, emb_name):
-        print('person list:', persons)
-        print('links:', links)
-        print('emb name:', emb_name)
+        # print('person list:', persons)
+        # print('links:', links)
+        # print('emb name:', emb_name)
     
         # Load the JSON file
         with open('stored-faces/person_group.json') as f:

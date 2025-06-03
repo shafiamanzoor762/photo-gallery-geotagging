@@ -302,6 +302,8 @@ class PersonController():
             if len(parts) == 3:
                 stored_name, encoding_str, cropped_image_path = parts[0], parts[1], parts[2].strip()
                 stored_encodings = [float(value) for value in encoding_str.split(',')]
+                print("Input encodings received:", len(input_encodings))
+
 
                 for input_encoding in input_encodings:
                     distance = face_recognition.face_distance([stored_encodings], input_encoding)[0]
