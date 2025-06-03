@@ -286,6 +286,7 @@ class PersonController():
     
      input_image = face_recognition.load_image_file(image_path)
      input_encodings = face_recognition.face_encodings(input_image)
+     print("------------------------"+person_name)
 
      if len(input_encodings) == 0:
         return {'error': 'No faces found in the image', 'status_code': 400}
@@ -314,6 +315,7 @@ class PersonController():
                         if person_name:
                             new_lines.append(f'{person_name};{encoding_str};{cropped_image_path}\n')
                             name = person_name
+                            # print("----------SAVED to text file--------------"+person_name)
                         else:
                             new_lines.append(line)
 
@@ -674,10 +676,10 @@ class PersonController():
 
             # Apply unions based on links
             for link in links:
-                # g1 = person_id_to_group_index.get(link["person1_id"])
-                # g2 = person_id_to_group_index.get(link["person2_id"])
-                g1 = person_id_to_group_index.get(link["person1Id"])
-                g2 = person_id_to_group_index.get(link["person2Id"])
+                g1 = person_id_to_group_index.get(link["person1_id"])
+                g2 = person_id_to_group_index.get(link["person2_id"])
+                # g1 = person_id_to_group_index.get(link["person1Id"])
+                # g2 = person_id_to_group_index.get(link["person2Id"])
 
                 if g1 is not None and g2 is not None and g1 != g2:
                     union(g1, g2)
@@ -696,9 +698,9 @@ class PersonController():
                     if not person:
                         continue
 
-                    image_records = [ip for ip in image_person_map if ip["personId"] == person_id]
+                    image_records = [ip for ip in image_person_map if ip["person_id"] == person_id]
                     for record in image_records:
-                        image = next((img for img in images if img["id"] == record["imageId"] and not img.get("is_deleted", False)), None)
+                        image = next((img for img in images if img["id"] == record["image_id"] and not img.get("is_deleted", False)), None)
                         if not image:
                             continue
 

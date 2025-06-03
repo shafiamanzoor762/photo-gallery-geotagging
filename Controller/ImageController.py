@@ -1,5 +1,7 @@
-import os,cv2,uuid,json,face_recognition
+import os,cv2,uuid,json,base64,face_recognition
 from io import BytesIO
+
+from datetime import datetime
 
 from flask import jsonify, request
 import numpy as np
@@ -750,7 +752,7 @@ class ImageController:
         "events": events
         }
     
-        return jsonify(image_data)
+        return image_data
 
     # @staticmethod
     # def delete_image(image_id):
@@ -1239,8 +1241,8 @@ class ImageController:
     
         # Initialize parent map
         for link in links:
-            # a, b = link["person1_id"], link["person2_id"]
-            a, b = link["person1Id"], link["person2Id"]
+            a, b = link["person1_id"], link["person2_id"]
+            # a, b = link["person1Id"], link["person2Id"]
 
             if a not in parent:
                 parent[a] = a
@@ -1264,16 +1266,16 @@ class ImageController:
         ids1 = {id_by_emb.get(name) for name in group1 if id_by_emb.get(name) is not None}
         ids2 = {id_by_emb.get(name) for name in group2 if id_by_emb.get(name) is not None}
     
-        # for link in links:
-        #     if (link["person1_id"] in ids1 and link["person2_id"] in ids2) or \
-        #        (link["person2_id"] in ids1 and link["person1_id"] in ids2):
-        #         return True
-        # return False
         for link in links:
-            if (link["person1Id"] in ids1 and link["person2Id"] in ids2) or \
-               (link["person2Id"] in ids1 and link["person1Id"] in ids2):
+            if (link["person1_id"] in ids1 and link["person2_id"] in ids2) or \
+               (link["person2_id"] in ids1 and link["person1_id"] in ids2):
                 return True
         return False
+        # for link in links:
+        #     if (link["person1Id"] in ids1 and link["person2Id"] in ids2) or \
+        #        (link["person2Id"] in ids1 and link["person1Id"] in ids2):
+        #         return True
+        # return False
     @staticmethod
     def merge_linked_overlapping_groups(group_dict, persons, links):
         groups = [set(v) for v in group_dict.values()]
@@ -1316,11 +1318,11 @@ class ImageController:
            emb_name = person1["personPath"].split('/')[-1]
         except:
               emb_name = person1["path"].split('/')[-1]
-        print(person1,"         ")
-        print(persons,"         ")
-        print(links,"           ")
-        # emb_name = person1["personPath"].split('/')[-1]
-        emb_name = person1["path"].split('/')[-1]
+        # print(person1,"         ")
+        # print(persons,"         ")
+        # print(links,"           ")
+        emb_name = person1["personPath"].split('/')[-1]
+        # emb_name = person1["path"].split('/')[-1]
         person1_id = person1["id"]
         
         link_groups = ImageController.build_link_groups(links)
@@ -1344,16 +1346,16 @@ class ImageController:
                  
     
             # Step 2: Check for direct link
-            if any(
-                (link["person1Id"] == person1_id and link["person2Id"] == dbemb_id) or
-                (link["person1Id"] == dbemb_id and link["person2Id"] == person1_id)
-                for link in links
-            ):
-            #   if any(
-            #     (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
-            #     (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
+            # if any(
+            #     (link["person1Id"] == person1_id and link["person2Id"] == dbemb_id) or
+            #     (link["person1Id"] == dbemb_id and link["person2Id"] == person1_id)
             #     for link in links
             # ):
+            if any(
+                (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
+                (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
+                for link in links
+            ):
 
                 print("Person1 and db_emb_name are directly linked — skipping.")
                 return {}
@@ -1382,6 +1384,48 @@ class ImageController:
         print("RESULT",result)
         return result
 
+
+    def save_unsync_image_with_metadata(data):
+        try:
+         for idx, item in enumerate(data):
+            print(f"\n🔹 Processing Image {idx + 1}:")
+
+            image_data_b64 = item.get('image_data')
+            capture_date = item.get('capture_date')
+            event_date = item.get('event_date','')
+            last_modified = item.get('last_modified')
+            location = item.get('location','')
+            events = item.get('events', [])
+            persons = item.get('persons', [])
+
+            # Image bytes base64 (assuming you renamed "path" to "image_data")
+            
+            # if image_data_b64:
+            #     image_bytes = base64.b64decode(image_data_b64)
+            #     filename = f"{uuid.uuid4().hex}.jpg"
+            #     filepath = os.path.join(FOLDER_NAME, filename)
+
+            #     with open(filepath, 'wb') as f:
+            #         f.write(image_bytes)
+
+            #     print(f"✅ Saved image to: {filepath}")
+            # else:
+            #     print("⚠️ No image data provided")
+
+            print(f"📅 Capture Date: {capture_date}")
+            print(f"📅 Event Date: {event_date}")
+            print(f"🕓 Last Modified: {last_modified}")
+            print(f"📍 Location: {location}")
+            print(f"🎭 Events: {events}")
+
+            for person in persons:
+                print(f"   👤 Person: {person.get('name')} | Gender: {person.get('gender')} | Path: {person.get('path')}")
+
+         return jsonify({'status': 'success', 'message': 'All images processed successfully'}), 200
+
+        except Exception as e:
+            print(f"❌ Error: {e}")
+            return jsonify({'error': str(e)}), 500
 
 
     
@@ -1421,12 +1465,12 @@ class ImageController:
             # Step 3: Find linked person IDs
             linked_ids = set()
             for link in links:
-                if person_id in (link["person1Id"], link["person2Id"]):
-                    linked_ids.add(link["person1Id"])
-                    linked_ids.add(link["person2Id"])
-                # if person_id in (link["person1_id"], link["person2_id"]):
-                #     linked_ids.add(link["person1_id"])
-                #     linked_ids.add(link["person2_id"])
+                # if person_id in (link["person1Id"], link["person2Id"]):
+                #     linked_ids.add(link["person1Id"])
+                #     linked_ids.add(link["person2Id"])
+                if person_id in (link["person1_id"], link["person2_id"]):
+                    linked_ids.add(link["person1_id"])
+                    linked_ids.add(link["person2_id"])
             linked_ids.discard(person_id)
     
             # Step 4: For each linked ID, get embedding name and related groups
