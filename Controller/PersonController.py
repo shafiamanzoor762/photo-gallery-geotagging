@@ -1,5 +1,6 @@
 import base64, cv2, face_recognition, os, uuid, traceback
 import numpy as np
+import json
 
 from collections import defaultdict
 from flask import jsonify,make_response
@@ -154,6 +155,7 @@ class PersonController():
             storage_dir = "stored-faces"
             os.makedirs(storage_dir, exist_ok=True)
             encodings_file = os.path.join(storage_dir, "person.txt")
+            json_file = os.path.join(storage_dir, "recognize_person.json")
 
             # 6. Load existing encodings with memory protection
             stored_encodings = []
@@ -233,6 +235,7 @@ class PersonController():
                             with open(encodings_file, 'a') as f:
                                 encoding_str = ",".join([str(num) for num in current_encoding])
                                 f.write(f"unknown;{encoding_str};{face_path}\n")
+                                PersonController.update_face_paths_json(json_file, face_path)
                         except Exception as e:
                             print(f"failed to save encoding at {i}: {e}")
 
@@ -403,7 +406,6 @@ class PersonController():
             return jsonify({"error": str(e)}), 500
     
 #------------------ GET ALL TRANING IMAGES OF A PERSON ----------------
-
     @staticmethod
     def get_person_and_linked_as_list(person_id):
     # Get the main person
@@ -436,7 +438,36 @@ class PersonController():
 
         return jsonify(person_list), 200
     
-        
+
+    def update_face_paths_json(json_file, path, matchedPath=None):
+        # Ensure the JSON file exists; if not, initialize an empty dict
+        if os.path.exists(json_file):
+            with open(json_file, 'r') as f:
+                data = json.load(f)
+        else:
+            data = {}
+
+        # If matchedPath is given, write under that key
+        if matchedPath:
+            # Create the set if the key doesn't exist
+            if matchedPath not in data:
+                data[matchedPath] = []
+            # Add the path if it's not already there
+            if path not in data[matchedPath]:
+                data[matchedPath].append(path)
+        else:
+            # Treat path as a new key
+            if path not in data:
+                data[path] = []
+
+        # Write the updated data back to the file
+        with open(json_file, 'w') as f:
+            json.dump(data, f, indent=4)
+
+# # Example usage:
+# update_face_paths_json("faces.json", "face1.jpg")
+# update_face_paths_json("faces.json", "face2.jpg", matchedPath="face1.jpg")
+     
             
             
     

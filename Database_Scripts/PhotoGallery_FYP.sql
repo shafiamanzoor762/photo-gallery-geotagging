@@ -81,13 +81,22 @@ Create TABLE Link(
 
 
 --------------is_active column
-delete from ImageHistory
 delete from ImageEventHistory
 delete from ImagePersonHistory
-delete from personhistory
 delete from linkHistory
 delete from LocationHistory
 delete from EventHistory
+delete from ImageHistory
+delete from Personhistory
+
+
+delete from ImageEvent
+delete from ImagePerson
+delete from link
+delete from Location
+delete from Event
+delete from Person
+delete from Image
 
 
 
