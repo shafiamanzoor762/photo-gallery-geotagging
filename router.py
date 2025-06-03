@@ -23,6 +23,7 @@ from Controller.LocationController import LocationController
 from Controller.LinkController import LinkController
 from Controller.DirectoryController import DirectoryController
 from Controller.TaggingController import TaggingController
+from Controller.MobileSideController import MobileSideController
 
 
 # ✅ Set this dynamically on startup using your helper
@@ -106,7 +107,7 @@ def extract_face():
         os.unlink(temp_path)
 
         return result
-
+        #
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
 
@@ -119,7 +120,7 @@ def recognize_person():
          # Get query parameters from the GET request
          image_path = request.args.get('image_path')
          person_name = request.args.get('name', None)
- 
+
          if image_path:
              print(image_path)
             # Call the method from the PictureController class
@@ -130,7 +131,10 @@ def recognize_person():
              file = request.files['file']
              if file.filename == '':
                  return jsonify({'error':'filename is empty'}), 404
-         
+             
+             person_name = request.form.get('name', person_name)
+             print(person_name)
+
             #  image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
             #  print(image_path)
              image = Image.open(io.BytesIO(file.read()))
@@ -148,7 +152,25 @@ def recognize_person():
 
 @app.route('/group_by_person', methods=['GET'])
 def group_by_person():
-    return PersonController.group_by_person()
+    return PersonController.get_person_groups()
+
+
+# /// mobile side 
+@app.route('/get_person_groups_from_json', methods=['POST'])
+def get_person_groups_from_json():
+    try:
+        json_data = request.get_json()  
+        print(json_data)
+        if not json_data:
+            return jsonify({"error": "No JSON data provided"}), 400
+        
+        result = PersonController.get_person_groups_from_json(json_data)
+        print(result)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 @app.route('/get_all_person', methods=['GET'])
 def get_all_person():
@@ -208,10 +230,60 @@ def get_unedited_images_route():
 # -----------------------------------------------------------
 
 # --- ROUTE TO HANDLE IMAGE UPLOAD ---
+# @app.route('/add_image', methods=['POST'])
+# def add_image():
+#     try:
+#         # 1. Check if file is in request
+#         if 'file' not in request.files:
+#             return jsonify({'error': 'File not attached'}), 400
+        
+#         file = request.files['file']
+        
+#         if file.filename == '':
+#             return jsonify({'error': 'Filename is empty'}), 400
+
+#         original_filename = secure_filename(file.filename)
+
+#         # 2. Read file bytes
+#         file_bytes = file.read()
+
+#         # 3. Convert to RGB if image is RGBA
+#         image_obj = Image.open(io.BytesIO(file_bytes))
+#         if image_obj.mode == 'RGBA':
+#             image_obj = image_obj.convert('RGB')
+
+#         # # 5. Save the image to Assets folder (or wherever you want)
+#         # file_save_path = os.path.join(ASSETS_FOLDER, original_filename)
+#         # with open(file_save_path, "wb") as f:
+#         #     f.write(file_bytes)
+#         path = request.form.get('path')
+
+#         # 6. Get the hash from form
+#         hash_value = request.form.get('hash')
+
+#         if not hash_value:
+#             return jsonify({'error': 'No hash provided'}), 400
+
+#         # 7. Build the metadata dictionary
+#         data = {
+#             'path': path.replace("\\", "/"),  # Use relativePath properly (make sure it's using slashes /)
+#             'hash': hash_value,
+#             'is_sync': 0,
+#             'capture_date': datetime.utcnow().isoformat(),
+#             'event_date': None
+#         }
+
+#         # 8. Call Controller to save data
+#         return ImageController.add_image(data)
+
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+
+
+
 @app.route('/add_image', methods=['POST'])
 def add_image():
     try:
-        # 1. Check if file is in request
         if 'file' not in request.files:
             return jsonify({'error': 'File not attached'}), 400
         
@@ -222,40 +294,32 @@ def add_image():
 
         original_filename = secure_filename(file.filename)
 
-        # 2. Read file bytes
-        file_bytes = file.read()
-
-        # 3. Convert to RGB if image is RGBA
-        image_obj = Image.open(io.BytesIO(file_bytes))
+        # Load the image using file.stream (more memory-efficient)
+        image_obj = Image.open(file.stream)
         if image_obj.mode == 'RGBA':
             image_obj = image_obj.convert('RGB')
 
-        # # 5. Save the image to Assets folder (or wherever you want)
-        # file_save_path = os.path.join(ASSETS_FOLDER, original_filename)
-        # with open(file_save_path, "wb") as f:
-        #     f.write(file_bytes)
         path = request.form.get('path')
-
-        # 6. Get the hash from form
         hash_value = request.form.get('hash')
 
         if not hash_value:
             return jsonify({'error': 'No hash provided'}), 400
 
-        # 7. Build the metadata dictionary
         data = {
-            'path': path.replace("\\", "/"),  # Use relativePath properly (make sure it's using slashes /)
+            'path': path.replace("\\", "/"),
             'hash': hash_value,
             'is_sync': 0,
             'capture_date': datetime.utcnow().isoformat(),
             'event_date': None
         }
 
-        # 8. Call Controller to save data
         return ImageController.add_image(data)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+
 
 # # Route to handle image uploads
 # @app.route('/add_image', methods=['POST'])
@@ -319,13 +383,12 @@ def get_image_details(image_id):
 
 @app.route('/image_complete_details/<int:image_id>', methods=['GET'])
 def get_image_complete_details(image_id):
-    return ImageController.get_image_complete_details(image_id)
+    return jsonify(ImageController.get_image_complete_details(image_id))
 
 # Delete an Image (Delete)
 # @app.route('/images/<int:image_id>', methods=['DELETE'])
 # def delete_image(image_id):
 #     return ImageController.delete_image(image_id)
-
 
 @app.route('/delete_metadata/<int:image_id>', methods=['DELETE'])
 def delete_metadata(image_id):
@@ -535,19 +598,89 @@ def get_face_image(filename):
         return send_from_directory(FACES_FOLDER, filename)
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
+    
 
-
-
-@app.route('/health')
-def health_check():
-     return jsonify({"status": "healthy"}), 200
-
-
-
+@app.route('/get_merge_data', methods=['POST'])
+def get_merge_data():
+    try:
+        data = request.get_json()
+        person1 = data.get('person1')
+        name = data.get('name')
+        return ImageController.get_persons(person1,name)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+    
+@app.route('/merge_persons', methods=['POST'])
+def merge_persons():
+    try:
+        data = request.get_json()
+        person1 = data.get('person1_id')
+        person2 = data.get('person2')
+        
+        return LinkController.merge_persons(person1, person2)
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+  
 #Aimen's mobile side code requests 
 
 @app.route('/image_processing', methods=['POST'])
 def image_processing():
+     try:
+        if 'file' not in request.files:
+            return jsonify({'error':'file not attatched'}), 404
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error':'filename is empty'}), 404
+        
+        # image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
+        # print(image_path)
+        image = Image.open(io.BytesIO(file.read()))
+        # image.save(image_path)
+        temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+        image.save(temp, format="JPEG")
+        temp_path = temp.name
+        temp.close()  # Close file so OpenCV can access it
+
+        # Call your processing logic
+        result = ImageController.mobile_img_processing(temp_path)
+
+        # Clean up manually
+        os.unlink(temp_path)
+
+        return result
+        #return PersonController.extract_face(image_path)
+     except Exception as exp:
+        return jsonify({'error':str(exp)}), 500
+     
+
+@app.route('/get_person_images', methods=['POST'])
+def get_person_images():
+    json_data = request.get_json() 
+    return ImageController.get_person_images(json_data)
+
+@app.route('/load_embeddings', methods=['POST'])
+def get_emb_names():
+    data = request.get_json()
+    persons= data.get("persons", [])
+    links = data.get("links", [])
+    emb_name = data.get("person1", [])
+    personrecords= data.get("personrecords", [])
+    return ImageController.get_emb_names(persons,links,emb_name,personrecords)
+
+
+@app.route('/load_embeddings_for_recognition', methods=['POST'])
+def get_emb_names_for_recognition():
+    data = request.get_json()
+    persons = data.get("persons", [])
+    links = data.get("links", [])
+    emb_name = data.get("person1", [])
+    return ImageController.get_emb_names_for_recognition(persons,links,emb_name)
+
+
+# =======================Shafia's Mobile side Requests========================================
+@app.route('/add_mobile_image', methods=['POST'])
+def add_mobile_image():
      try:
         if 'file' not in request.files:
             return jsonify({'error':'file not attatched'}), 404
@@ -568,27 +701,112 @@ def image_processing():
         temp_path = temp.name
         temp.close()  # Close file so OpenCV can access it
 
-        # Call your processing logic
-        result = ImageController.mobile_img_processing(temp_path)
+        result = MobileSideController.add_mobile_image(temp_path)
 
         # Clean up manually
         os.unlink(temp_path)
 
         return result
-        #return PersonController.extract_face(image_path)
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
+     
+
+
+@app.route('/get_mobile_person_groups', methods=['POST'])
+def get_mobile_person_groups():
+    try:
+        # Ensure we have JSON data
+        if not request.is_json:
+            return jsonify({'error': 'Missing JSON in request'}), 400
+            
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Empty JSON data'}), 400
+            
+        # Get data with defaults
+        persons = data.get("persons", [])
+        links = data.get("links", [])
+        image_persons = data.get("image_persons", [])
+        image_ids = set(data.get("image_ids", []))
+        
+        # Debug logging
+        print(f"Received data: persons={len(persons)}, links={len(links)}, "
+              f"image_persons={len(image_persons)}, image_ids={len(image_ids)}")
+        #MobileSideController ko bj rha ha list 4
+        result = MobileSideController.get_person_groups_from_data(
+            persons, links, image_persons, image_ids
+        )
+        return jsonify(result)
+        
+    except Exception as exp:
+        # Log the full error
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': str(exp),
+            'traceback': traceback.format_exc()
+        }), 500
+
+
+@app.route('/get_unlinked_persons_by_id', methods=['POST'])
+def get_unlinked_persons_by_id():
+    try:
+        # Ensure we have JSON data
+        if not request.is_json:
+            return jsonify({'error': 'Missing JSON in request'}), 400
+            
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Empty JSON data'}), 400
+            
+        # Get data with defaults
+        personId = data.get("personId", None)
+        persons = data.get("persons", [])
+        links = data.get("links", [])
+        
+        # Debug logging
+        print(f"Received data: personId={personId} persons={len(persons)}, links={len(links)}")
+        
+        result = MobileSideController.get_unlinked_persons_by_id(
+            personId, persons, links
+        )
+        return jsonify(result)
+        
+    except Exception as exp:
+        # Log the full error
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': str(exp),
+            'traceback': traceback.format_exc()
+        }), 500
+    
+
+@app.route('/get_unsync_images', methods=['POST'])
+def get_unsync_images():
+
+    # Ensure we have JSON data
+    if not request.is_json:
+        return jsonify({'error': 'Missing JSON in request'}), 400
+            
+    data = request.get_json()
+    if not isinstance(data, list):
+        return jsonify({'error': 'Expected a list of image objects'}), 400
+    ImageController.save_unsync_image_with_metadata(data)    
+    return jsonify(MobileSideController.get_unsync_images())
 
 
 
-
-
+@app.route('/health')
+def health_check():
+     return jsonify({"status": "healthy"}), 200
 
 # only accept localhost
 # if __name__ == '__main__':
 #     app.run(debug=True)
 
-# Run on all addresses (0.0.0.0)
+
+# # Run on all addresses (0.0.0.0)
 if __name__ == '__main__':
     # if not os.path.exists("temp"):
     #     os.makedirs("temp")
