@@ -209,7 +209,8 @@ def check_link():
 
 @app.route('/edit_image', methods=['POST'])
 def edit_Image():
-    return ImageController.edit_image_data()
+    data = request.get_json(force=True, silent=True)  # Get JSON data from the request
+    return ImageController.edit_image_data(data)
 
 @app.route('/searching_on_image', methods=['POST'])
 def searching():
