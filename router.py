@@ -1,20 +1,13 @@
 from datetime import datetime
-import io
-import json
-import uuid
 from flask import Flask, request, jsonify, send_file,make_response, send_from_directory
 from PIL import Image
 from io import BytesIO
-import tempfile
-import urllib
 from config import db,app
 
-import os, uuid, base64, json, piexif, io
+import os, uuid, base64, json, piexif, io, tempfile, urllib
 
 from werkzeug.utils import secure_filename
 from config import db,app
-import os
-import base64
 
 from Controller.PersonController import PersonController
 from Controller.EventController import EventController
