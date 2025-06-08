@@ -1,7 +1,6 @@
 import base64, cv2, face_recognition, os, uuid, traceback
 import numpy as np
 import json
-import json
 from collections import defaultdict, deque
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
@@ -303,6 +302,8 @@ class PersonController():
             if len(parts) == 3:
                 stored_name, encoding_str, cropped_image_path = parts[0], parts[1], parts[2].strip()
                 stored_encodings = [float(value) for value in encoding_str.split(',')]
+                print("Input encodings received:", len(input_encodings))
+
 
                 for input_encoding in input_encodings:
                     distance = face_recognition.face_distance([stored_encodings], input_encoding)[0]
@@ -551,7 +552,6 @@ class PersonController():
 
 
 #------------------ GET ALL TRANING IMAGES OF A PERSON ----------------
-
     @staticmethod
     def get_person_and_linked_as_list(person_id):
     # Get the main person
@@ -674,10 +674,10 @@ class PersonController():
 
             # Apply unions based on links
             for link in links:
-                # g1 = person_id_to_group_index.get(link["person1_id"])
-                # g2 = person_id_to_group_index.get(link["person2_id"])
-                g1 = person_id_to_group_index.get(link["person1Id"])
-                g2 = person_id_to_group_index.get(link["person2Id"])
+                g1 = person_id_to_group_index.get(link["person1_id"])
+                g2 = person_id_to_group_index.get(link["person2_id"])
+                # g1 = person_id_to_group_index.get(link["person1Id"])
+                # g2 = person_id_to_group_index.get(link["person2Id"])
 
                 if g1 is not None and g2 is not None and g1 != g2:
                     union(g1, g2)
@@ -696,9 +696,9 @@ class PersonController():
                     if not person:
                         continue
 
-                    image_records = [ip for ip in image_person_map if ip["personId"] == person_id]
+                    image_records = [ip for ip in image_person_map if ip["person_id"] == person_id]
                     for record in image_records:
-                        image = next((img for img in images if img["id"] == record["imageId"] and not img.get("is_deleted", False)), None)
+                        image = next((img for img in images if img["id"] == record["image_id"] and not img.get("is_deleted", False)), None)
                         if not image:
                             continue
 
