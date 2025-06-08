@@ -42,92 +42,9 @@ class ImageController:
 #   }
 # }
 
-    # @staticmethod
-    # def edit_image_data():
-    #     data = request.get_json()  
-
-    #     if not data:
-    #         return jsonify({"error": "No data provided"}), 400
-
-    #     if len(data) != 1:
-    #         return jsonify({"error": "Invalid data format. Expecting a single numeric image_id as the key."}), 400
-
-    #     try:
-    #         image_id = int(next(iter(data.keys())))  
-    #     except ValueError:
-    #         return jsonify({"error": "image_id must be a numeric value"}), 400
-
-    #     image_data = data.get(str(image_id))  
-    #     if not image_data:
-    #         return jsonify({"error": "image_id data is required"}), 400
-
-       
-    #     persons = image_data.get('persons_id')  
-    #     event_name = image_data.get('event_name')
-    #     event_date = image_data.get('event_date')
-    #     locations = image_data.get('location')
-
-        
-    #     image = Image.query.filter(Image.id == image_id).first()
-    #     print(image)
-    #     if not image:
-    #         return jsonify({"error": "Image not found"}), 404
-
-        
-    #     if event_date:
-    #         image.event_date = event_date
-    #     if event_name:
-            
-    #         for event in image.events:
-    #             event.name = event_name
-
-       
-    #     if locations:
-    #         loc_id = image.location_id
-    #         if not loc_id:
-    #             return jsonify({"error": "No location associated with this image"}), 404
-
-    #         location =  Location.query.filter(Location.id == loc_id).first()
-    #         if location:
-    #             location.name = locations[0] if len(locations) > 0 else location.name
-    #             location.latitude = locations[2] if len(locations) > 2 else location.latitude
-    #             location.longitude = locations[3] if len(locations) > 3 else location.longitude
-    #         else:
-    #             return jsonify({"error": "Location record not found"}), 404
-
-        
-    #     if persons:
-    #         for person_data in persons:
-    #             person_id = person_data.get('id')
-    #             person_name = person_data.get('name')
-    #             gender = person_data.get('gender')
-    #             if person_id:
-    #                 person = Person.query.filter(Person.id == person_id).first()
-    #                 if person:
-    #                     if person_name and gender:
-    #                         person.name = person_name
-    #                         person.gender  =gender
-    #                     else:
-    #                         return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
-    #                 else:
-    #                     return jsonify({"error": f"Person with id {person_id} not found"}), 404
-    #             else:
-    #                 return jsonify({"error": "Person id is required"}), 400
-
-    #     try:
-    #         db.session.commit()
-    #         return jsonify({"message": "Image, location, and persons updated successfully"}), 200
-    #     except Exception as e:
-    #         db.session.rollback()
-    #         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-
-
-    # =================================
-
-
     @staticmethod
-    def edit_image_data():
-        data = request.get_json(force=True, silent=True)  # Get JSON data from the request
+    def edit_image_data(data):
+        
         
         print("Parsed JSON:", data)
 
@@ -148,7 +65,6 @@ class ImageController:
         if not image_data:
             return jsonify({"error": "image_id data is required"}), 400
 
-        # Extract necessary fields
         persons = image_data.get('persons_id')  # Corrected key name to 'persons_id'
         event_names = image_data.get('event_names')
         event_date = image_data.get('event_date')
@@ -539,68 +455,6 @@ class ImageController:
 
     #     return jsonify({"paths": image_paths}), 200
     
-    #  ===================================
-
-    # @staticmethod
-    # def add_image(data):
-    #     try:
-    #          # 1. Check if image path already exists
-    #         existing_image = Image.query.filter_by(path=data['path']).first()
-    #         if existing_image:
-    #             print(f"\u26a0\ufe0f Image already exists: {existing_image.path}")
-    #             return jsonify({'message': 'Image already exists'}), 200
-
-    #         # 2. Insert image record into the Image table.
-    #         image = Image(
-    #             path=data['path'],
-    #             is_sync=data.get('is_sync', 0),
-    #             capture_date=data.get('capture_date', datetime.utcnow()),
-    #             event_date=data.get('event_date', None),
-    #             last_modified=datetime.utcnow()
-    #         )
-    #         db.session.add(image)
-    #         db.session.commit()
-    #         print(f"\u2705 Image saved: {image.path}")
-
-    #         # 3. Extract faces from the added image.
-    #         extracted_faces = PictureController.extract_face(image.path.replace('images', 'Assets'))
-    #         if not extracted_faces:
-    #             return jsonify({'message': 'No faces found'}), 200
-
-    #         # 4. For each extracted face, check if a matching Person exists based on path.
-    #         for face_data in extracted_faces:
-    #             face_path = face_data["face_path"]
-    #             face_filename = os.path.basename(face_path)
-    #             db_face_path = f"face_images/{face_filename}"
-
-    #             # Check if face already exists in Person table based on path
-    #             matched_person = Person.query.filter_by(path=db_face_path).first()
-
-    #             # 5. If no matching person is found, create a new Person record.
-    #             if not matched_person:
-    #                 new_person = Person(
-    #                     name="unknown",
-    #                     path=db_face_path,  # Use the constructed face path.
-    #                     gender="U"       # Use a valid value according to your constraint.
-    #                 )
-    #                 db.session.add(new_person)
-    #                 db.session.commit()
-    #                 print(f"\u2705 New person added: {new_person.path}")
-    #                 matched_person = new_person
-    #             else:
-    #                 print(f"\ud83d\udd39 Matched with existing person: {matched_person.name}")
-
-    #             # 6. Link the Person with the Image in the ImagePerson table.
-    #             image_person = ImagePerson(image_id=image.id, person_id=matched_person.id)
-    #             db.session.add(image_person)
-
-    #         db.session.commit()
-    #         return jsonify({'message': 'Image and faces saved successfully'}), 201
-
-    #     except Exception as e:
-    #         db.session.rollback()
-    #         return jsonify({'error': str(e)}), 500
-
 
 
     @staticmethod
@@ -1391,33 +1245,48 @@ class ImageController:
          for idx, item in enumerate(data):
             print(f"\n🔹 Processing Image {idx + 1}:")
 
-            image_data_b64 = item.get('image_data')
+            # image_data_b64 = item.get('image_data')
             capture_date = item.get('capture_date')
             event_date = item.get('event_date','')
-            last_modified = item.get('last_modified')
+            last_modified_str = item.get('last_modified')
+            hash_val = item.get('hash','')
             location = item.get('location','')
             events = item.get('events', [])
             persons = item.get('persons', [])
 
-            # Image bytes base64 (assuming you renamed "path" to "image_data")
-            
-            # if image_data_b64:
-            #     image_bytes = base64.b64decode(image_data_b64)
-            #     filename = f"{uuid.uuid4().hex}.jpg"
-            #     filepath = os.path.join(FOLDER_NAME, filename)
-
-            #     with open(filepath, 'wb') as f:
-            #         f.write(image_bytes)
-
-            #     print(f"✅ Saved image to: {filepath}")
-            # else:
-            #     print("⚠️ No image data provided")
-
             print(f"📅 Capture Date: {capture_date}")
             print(f"📅 Event Date: {event_date}")
-            print(f"🕓 Last Modified: {last_modified}")
+            print(f"🕓 Last Modified: {last_modified_str}")
             print(f"📍 Location: {location}")
             print(f"🎭 Events: {events}")
+
+            if not hash_val or not last_modified_str:
+                print("❌ Missing hash or last_modified. Skipping...")
+                continue
+
+            # Convert string to date
+            try:
+                last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d").date()
+            except ValueError:
+                print("❌ Invalid date format. Skipping...")
+                continue
+
+            # Check if image with hash exists
+            existing_image = Image.query.filter_by(hash=hash_val).first()
+
+            if existing_image:
+                print(f"✅ Image with hash {hash_val} found with ID {existing_image.id}")
+
+                if last_modified_date > existing_image.last_modified:
+                    edit_payload = {
+                        str(existing_image): {
+                            "persons_id": persons,
+                            "event_names": events,
+                            "event_date": event_date,
+                            "location": location
+                        }
+    }
+                    ImageController.edit_image_data(edit_payload)
 
             for person in persons:
                 print(f"   👤 Person: {person.get('name')} | Gender: {person.get('gender')} | Path: {person.get('path')}")
