@@ -1321,8 +1321,7 @@ class ImageController:
         # print(person1,"         ")
         # print(persons,"         ")
         # print(links,"           ")
-        emb_name = person1["personPath"].split('/')[-1]
-        # emb_name = person1["path"].split('/')[-1]
+        
         person1_id = person1["id"]
         
         link_groups = ImageController.build_link_groups(links)
