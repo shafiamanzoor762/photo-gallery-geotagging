@@ -1,20 +1,13 @@
 from datetime import datetime
-import io
-import json
-import uuid
 from flask import Flask, request, jsonify, send_file,make_response, send_from_directory
 from PIL import Image
 from io import BytesIO
-import tempfile
-import urllib
 from config import db,app
 
-import os, uuid, base64, json, piexif, io
+import os, uuid, base64, json, piexif, io, tempfile, urllib
 
 from werkzeug.utils import secure_filename
 from config import db,app
-import os
-import base64
 
 from Controller.PersonController import PersonController
 from Controller.EventController import EventController
@@ -209,7 +202,8 @@ def check_link():
 
 @app.route('/edit_image', methods=['POST'])
 def edit_Image():
-    return ImageController.edit_image_data()
+    data = request.get_json(force=True, silent=True)  # Get JSON data from the request
+    return ImageController.edit_image_data(data)
 
 @app.route('/searching_on_image', methods=['POST'])
 def searching():
@@ -792,7 +786,7 @@ def get_unsync_images():
     data = request.get_json()
     if not isinstance(data, list):
         return jsonify({'error': 'Expected a list of image objects'}), 400
-    ImageController.save_unsync_image_with_metadata(data)    
+    ImageController.save_unsync_image_with_metadata(data)   
     return jsonify(MobileSideController.get_unsync_images())
 
 
