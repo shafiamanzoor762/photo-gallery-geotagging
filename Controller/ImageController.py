@@ -1254,12 +1254,6 @@ class ImageController:
             events = item.get('events', [])
             persons = item.get('persons', [])
 
-            print(f"📅 Capture Date: {capture_date}")
-            print(f"📅 Event Date: {event_date}")
-            print(f"🕓 Last Modified: {last_modified_str}")
-            print(f"📍 Location: {location}")
-            print(f"🎭 Events: {events}")
-
             if not hash_val or not last_modified_str:
                 print("❌ Missing hash or last_modified. Skipping...")
                 continue
@@ -1278,18 +1272,24 @@ class ImageController:
                 print(f"✅ Image with hash {hash_val} found with ID {existing_image.id}")
 
                 if last_modified_date > existing_image.last_modified:
-                    edit_payload = {
-                        str(existing_image): {
-                            "persons_id": persons,
-                            "event_names": events,
-                            "event_date": event_date,
-                            "location": location
-                        }
-    }
+                    for person in persons:
+                        per = Person.query.filter_by(path = person.get('path')).first()
+                    
+                        persons_data = [
+                            {"id": per.id, "name": p.get('path'), "gender": p.get('gender')}
+                            for p in persons
+                                ]
+                        
+                    if persons_data:
+                        edit_payload = {
+                                str(existing_image): {
+                                "persons_id": persons_data,
+                                "event_names": events,
+                                "event_date": event_date,
+                                "location": location
+                                }
+                            }
                     ImageController.edit_image_data(edit_payload)
-
-            for person in persons:
-                print(f"   👤 Person: {person.get('name')} | Gender: {person.get('gender')} | Path: {person.get('path')}")
 
          return jsonify({'status': 'success', 'message': 'All images processed successfully'}), 200
 
