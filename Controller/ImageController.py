@@ -602,6 +602,7 @@ class ImageController:
         "capture_date": image.capture_date.strftime('%Y-%m-%d') if image.capture_date else None,
         "event_date": image.event_date.strftime('%Y-%m-%d') if image.event_date else None,
         "last_modified": image.last_modified.strftime('%Y-%m-%d %H:%M:%S') if image.last_modified else None,
+        "hash":image.hash,
         "location": location_data,
         "persons": persons,
         "events": events

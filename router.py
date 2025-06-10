@@ -786,7 +786,7 @@ def get_unsync_images():
     data = request.get_json()
     if not isinstance(data, list):
         return jsonify({'error': 'Expected a list of image objects'}), 400
-    ImageController.save_unsync_image_with_metadata(data)    
+    ImageController.save_unsync_image_with_metadata(data)   
     return jsonify(MobileSideController.get_unsync_images())
 
 
