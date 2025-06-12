@@ -1241,8 +1241,8 @@ class ImageController:
     
         # Initialize parent map
         for link in links:
-            a, b = link["person1_id"], link["person2_id"]
-            # a, b = link["person1Id"], link["person2Id"]
+            # a, b = link["person1_id"], link["person2_id"]
+            a, b = link["person1Id"], link["person2Id"]
 
             if a not in parent:
                 parent[a] = a
@@ -1266,16 +1266,16 @@ class ImageController:
         ids1 = {id_by_emb.get(name) for name in group1 if id_by_emb.get(name) is not None}
         ids2 = {id_by_emb.get(name) for name in group2 if id_by_emb.get(name) is not None}
     
-        for link in links:
-            if (link["person1_id"] in ids1 and link["person2_id"] in ids2) or \
-               (link["person2_id"] in ids1 and link["person1_id"] in ids2):
-                return True
-        return False
         # for link in links:
-        #     if (link["person1Id"] in ids1 and link["person2Id"] in ids2) or \
-        #        (link["person2Id"] in ids1 and link["person1Id"] in ids2):
+        #     if (link["person1_id"] in ids1 and link["person2_id"] in ids2) or \
+        #        (link["person2_id"] in ids1 and link["person1_id"] in ids2):
         #         return True
         # return False
+        for link in links:
+            if (link["person1Id"] in ids1 and link["person2Id"] in ids2) or \
+               (link["person2Id"] in ids1 and link["person1Id"] in ids2):
+                return True
+        return False
     @staticmethod
     def merge_linked_overlapping_groups(group_dict, persons, links):
         groups = [set(v) for v in group_dict.values()]
@@ -1321,7 +1321,7 @@ class ImageController:
         # print(person1,"         ")
         # print(persons,"         ")
         # print(links,"           ")
-        emb_name = person1["personPath"].split('/')[-1]
+        # emb_name = person1["personPath"].split('/')[-1]
         # emb_name = person1["path"].split('/')[-1]
         person1_id = person1["id"]
         
@@ -1346,16 +1346,16 @@ class ImageController:
                  
     
             # Step 2: Check for direct link
-            # if any(
-            #     (link["person1Id"] == person1_id and link["person2Id"] == dbemb_id) or
-            #     (link["person1Id"] == dbemb_id and link["person2Id"] == person1_id)
-            #     for link in links
-            # ):
             if any(
-                (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
-                (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
+                (link["person1Id"] == person1_id and link["person2Id"] == dbemb_id) or
+                (link["person1Id"] == dbemb_id and link["person2Id"] == person1_id)
                 for link in links
             ):
+            # if any(
+            #     (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
+            #     (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
+            #     for link in links
+            # ):
 
                 print("Person1 and db_emb_name are directly linked — skipping.")
                 return {}
@@ -1465,12 +1465,12 @@ class ImageController:
             # Step 3: Find linked person IDs
             linked_ids = set()
             for link in links:
-                # if person_id in (link["person1Id"], link["person2Id"]):
-                #     linked_ids.add(link["person1Id"])
-                #     linked_ids.add(link["person2Id"])
-                if person_id in (link["person1_id"], link["person2_id"]):
-                    linked_ids.add(link["person1_id"])
-                    linked_ids.add(link["person2_id"])
+                if person_id in (link["person1Id"], link["person2Id"]):
+                    linked_ids.add(link["person1Id"])
+                    linked_ids.add(link["person2Id"])
+                # if person_id in (link["person1_id"], link["person2_id"]):
+                #     linked_ids.add(link["person1_id"])
+                #     linked_ids.add(link["person2_id"])
             linked_ids.discard(person_id)
     
             # Step 4: For each linked ID, get embedding name and related groups
