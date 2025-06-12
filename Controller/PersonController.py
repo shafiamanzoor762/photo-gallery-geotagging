@@ -1,7 +1,6 @@
 import base64, cv2, face_recognition, os, uuid, traceback
 import numpy as np
 import json
-import json
 from collections import defaultdict, deque
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
@@ -553,7 +552,6 @@ class PersonController():
 
 
 #------------------ GET ALL TRANING IMAGES OF A PERSON ----------------
-
     @staticmethod
     def get_person_and_linked_as_list(person_id):
     # Get the main person
