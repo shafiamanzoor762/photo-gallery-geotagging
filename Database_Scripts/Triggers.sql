@@ -42,15 +42,15 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO PersonHistory (id, name,path,gender,version_no)
+    INSERT INTO PersonHistory (id, name,path,gender,version_no,is_Active)
     SELECT 
         d.id,
 		d.name,
         d.path,
 		d.gender,
         
-        ISNULL(MAX(h.version_no), 0) + 1
-		
+        ISNULL(MAX(h.version_no), 0) + 1,
+		0
 		
     FROM 
         Deleted d

@@ -33,7 +33,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
 app.config['SQLALCHEMY_DATABASE_URI'] = (
     'mssql+pyodbc://sa:123@DESKTOP-R50Q2I1\\SQLEXPRESS/FYP2PhotoGallery'
-    '?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=no&autocommit=True'
+    '?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=no'
 )
 
 
