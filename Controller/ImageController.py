@@ -1097,14 +1097,22 @@ class ImageController:
     
         # Initialize parent map
         for link in links:
-            # a, b = link["person1_id"], link["person2_id"]
-            a, b = link["person1Id"], link["person2Id"]
-
+    # Dynamically detect key style
+            if "person1Id" in link and "person2Id" in link:
+                a, b = link["person1Id"], link["person2Id"]
+            elif "person1_id" in link and "person2_id" in link:
+                a, b = link["person1_id"], link["person2_id"]
+            else:
+                continue  # Skip if keys are missing or inconsistent
+        
+            # Initialize union-find parent structure
             if a not in parent:
                 parent[a] = a
             if b not in parent:
                 parent[b] = b
+        
             union(a, b)
+
     
         # Build groups
         groups = {}
@@ -1117,19 +1125,24 @@ class ImageController:
         return groups
     @staticmethod
     def are_groups_linked(group1, group2, persons, links):
+        
         id_by_emb = {person["path"].split("/")[-1]: person["id"] for person in persons}
         
         ids1 = {id_by_emb.get(name) for name in group1 if id_by_emb.get(name) is not None}
         ids2 = {id_by_emb.get(name) for name in group2 if id_by_emb.get(name) is not None}
     
-        # for link in links:
-        #     if (link["person1_id"] in ids1 and link["person2_id"] in ids2) or \
-        #        (link["person2_id"] in ids1 and link["person1_id"] in ids2):
-        #         return True
-        # return False
         for link in links:
-            if (link["person1Id"] in ids1 and link["person2Id"] in ids2) or \
-               (link["person2Id"] in ids1 and link["person1Id"] in ids2):
+        # Dynamically detect the keys
+            if "person1Id" in link and "person2Id" in link:
+                p1 = link["person1Id"]
+                p2 = link["person2Id"]
+            elif "person1_id" in link and "person2_id" in link:
+                p1 = link["person1_id"]
+                p2 = link["person2_id"]
+            else:
+                continue  # Skip if neither key pattern is present
+    
+            if (p1 in ids1 and p2 in ids2) or (p2 in ids1 and p1 in ids2):
                 return True
         return False
     @staticmethod
@@ -1170,10 +1183,11 @@ class ImageController:
         # print(persons)
         # print(links)
         # print(personrecords)
-        try:
+        
+        if "personPath" in person1:
            emb_name = person1["personPath"].split('/')[-1]
-        except:
-              emb_name = person1["path"].split('/')[-1]
+        elif "path" in person1:
+            emb_name = person1["path"].split('/')[-1]
         # print(person1,"         ")
         # print(persons,"         ")
         # print(links,"           ")
@@ -1203,10 +1217,20 @@ class ImageController:
     
             # Step 2: Check for direct link
             if any(
-                (link["person1Id"] == person1_id and link["person2Id"] == dbemb_id) or
-                (link["person1Id"] == dbemb_id and link["person2Id"] == person1_id)
-                for link in links
-            ):
+    (
+        (
+            ("person1Id" in link and "person2Id" in link and
+             ((link["person1Id"] == person1_id and link["person2Id"] == dbemb_id) or
+              (link["person1Id"] == dbemb_id and link["person2Id"] == person1_id)))
+            or
+            ("person1_id" in link and "person2_id" in link and
+             ((link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
+              (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)))
+        )
+    )
+    for link in links
+):
+
             # if any(
             #     (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
             #     (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
@@ -1336,9 +1360,18 @@ class ImageController:
             # Step 3: Find linked person IDs
             linked_ids = set()
             for link in links:
-                if person_id in (link["person1Id"], link["person2Id"]):
-                    linked_ids.add(link["person1Id"])
-                    linked_ids.add(link["person2Id"])
+                # Dynamically get the correct keys
+                if "person1Id" in link and "person2Id" in link:
+                    a, b = link["person1Id"], link["person2Id"]
+                elif "person1_id" in link and "person2_id" in link:
+                    a, b = link["person1_id"], link["person2_id"]
+                else:
+                    continue  # Skip malformed entries
+            
+                if person_id in (a, b):
+                    linked_ids.add(a)
+                    linked_ids.add(b)
+
                 # if person_id in (link["person1_id"], link["person2_id"]):
                 #     linked_ids.add(link["person1_id"])
                 #     linked_ids.add(link["person2_id"])
