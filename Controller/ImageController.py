@@ -130,7 +130,7 @@ class ImageController:
 
 # ///////
             # Check if the location exists
-            existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
+            existing_location = Location.query.filter_by(name=location_name).first()
 
             if existing_location:
                 image.location_id = existing_location.id  # Associate existing location
