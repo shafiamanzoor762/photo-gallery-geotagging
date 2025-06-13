@@ -103,7 +103,8 @@ class ImageController:
         longitude = None
 
         # Update location if provided
-        if location_data:
+        if location_data and isinstance(location_data[0], str) and location_data[0].strip():
+
             # location_name = location_data[0]
             # location_list = json.loads(location_name)
             # location_name = ", ".join(location_list)
