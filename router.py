@@ -17,7 +17,7 @@ from Controller.LinkController import LinkController
 from Controller.DirectoryController import DirectoryController
 from Controller.TaggingController import TaggingController
 from Controller.MobileSideController import MobileSideController
-
+from Controller.ImageHistoryController import ImageHistoryController
 
 # ✅ Set this dynamically on startup using your helper
 IMAGE_ROOT_DIR = DirectoryController.get_latest_directory()
@@ -615,6 +615,15 @@ def merge_persons():
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
   
+
+@app.route('/get_undo_data', methods=['GET'])
+def get_undo_data():
+    try:
+        
+        return ImageHistoryController.get_latest_inactive_non_deleted_images()
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+ 
 #Aimen's mobile side code requests 
 
 @app.route('/image_processing', methods=['POST'])
