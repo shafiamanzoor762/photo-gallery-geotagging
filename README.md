@@ -67,7 +67,8 @@ cd photo-gallery-geotagging
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+venv\Scripts\activate.bat   # In cmd.exe
+venv\Scripts\Activate.ps1   # In PowerShell
 ```
 
 3. Install dependencies:
