@@ -21,7 +21,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://DESKTOP-RKA6JR0/PhotoGal
 # Configure your database URI
 # iqra db connection string
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:12345@DESKTOP-4S96KP6\SQLEXPRESS/PhotoGallery1?driver=ODBC+Driver+17+for+SQL+Server'
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:12345@DESKTOP-4S96KP6\SQLEXPRESS/PhotoGallery1?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:12345@DESKTOP-4S96KP6\SQLEXPRESS/PhotoGallery1?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'
 
 #aimen db connection string 
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:123@DESKTOP-R50Q2I1\\SQLEXPRESS/FYP2PhotoGallery?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'

@@ -96,3 +96,28 @@ delete from Link
 delete from Person
 delete from Event
 delete from Image
+
+////add location constraints    
+
+////                   ya queries run karni han sab nay apny pass ok 
+
+
+ALTER TABLE [dbo].[Location]
+ADD CONSTRAINT UQ_Location_Name UNIQUE ([name]);
+
+
+ALTER TABLE Person
+ADD DOB DATE;
+
+
+ALTER TABLE PersonHistory
+ADD DOB DATE;
+
+
+ALTER TABLE Person
+ADD Age INT;
+
+
+ALTER TABLE PersonHistory
+ADD Age INT;
+

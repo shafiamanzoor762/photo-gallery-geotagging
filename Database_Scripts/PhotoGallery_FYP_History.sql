@@ -53,6 +53,12 @@ ADD hash VARCHAR(64) NOT NULL;
 ALTER TABLE ImageHistory
 ADD is_Active bit Not NULL DEFAULT 0;
 
+
+--for undo add created_at column
+
+ALTER TABLE personHistory
+ADD created_at DATETIME DEFAULT GETDATE();
+
 -- 5 Associative table for Image-Person relationship (many-to-many)
 CREATE TABLE ImagePersonHistory (
     sr_no INT PRIMARY KEY IDENTITY(1,1),
