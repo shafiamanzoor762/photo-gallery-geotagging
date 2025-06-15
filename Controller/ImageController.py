@@ -65,11 +65,14 @@ class ImageController:
         image_data = data.get(str(image_id))  # Get the data associated with the numeric image_id
         if not image_data:
             return jsonify({"error": "image_id data is required"}), 400
+        
+       
 
         persons = image_data.get('persons_id')  # Corrected key name to 'persons_id'
         event_names = image_data.get('event_names')
         event_date = image_data.get('event_date')
         location_data = image_data.get('location')
+
 
         # Fetch the image record by image_id
         image = Image.query.filter(Image.id == image_id).first()
@@ -133,24 +136,52 @@ class ImageController:
 # ///////
             # Check if the location exists
             existing_location = Location.query.filter_by(name=location_name).first()
+            # existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
+
+            # if existing_location:
+            #     image.location_id = existing_location.id  # Associate existing location
+            # else:
+            #     # Create new location
+            #     print("yes am here")
+            #     new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
+            #     db.session.add(new_location)
+            #     db.session.flush()  # Get the new location ID before committing
+            #     image.location_id = new_location.id
+            
+            # Check if the location with the same name exists
+            existing_location = Location.query.filter_by(name=location_name).first()
 
             if existing_location:
-                image.location_id = existing_location.id  # Associate existing location
+                # Associate existing location
+                image.location_id = existing_location.id
             else:
                 # Create new location
                 print("yes am here")
                 new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
                 db.session.add(new_location)
-                db.session.flush()  # Get the new location ID before committing
+                db.session.flush()  # So we get new_location.id before commit
                 image.location_id = new_location.id
+
 
 # ///////
         # Update persons if provided
         if persons:
             for person_data in persons:
+                dob_str = person_data.get('dob')
+                dob = None
+                if dob_str :
+                    try:
+                        dob = datetime.fromisoformat(dob_str).date()  # 👈 converts '2000-08-24T18:32:38' to datetime.date(2000, 8, 24)
+
+                    except ValueError:
+                        print("Invalid DOB format and age_str:", dob_str)
+
+                print(f"Received DOB: {dob_str}, Parsed DOB: {dob}")
+
                 person_id = person_data.get('id')
                 person_name = person_data.get('name')
                 gender = person_data.get('gender')
+                age =person_data.get('age')
                 if person_id:
                     person = Person.query.filter(Person.id == person_id).first()
                     if person:
@@ -184,19 +215,29 @@ class ImageController:
                                             .values(name=person_name)  # even if same, it will still fire UPDATE
                                         )
                                 db.session.execute(stmt)
+                                person.name= person_name
+                                db.session.add(person)
                                 print("Updated:", pathes)
                             else:
                                 print("No match found in DB for:", pathes)
 
                                     
 
-
-                        if person_name and gender:
-                            person.name = person_name
-                            person.gender  =gender
-                            person_data['path'] = person.path # saving this for tagging
+                        print("person_name:", person_name)
+                        print("gender:", gender)
+                        print("dob:", dob)
+                        if person:
+                            if person_name and gender and dob:
+                                person.name = person_name
+                                person.gender = gender
+                                person.dob = dob
+                                person.age = age
+                                person_data['path'] = person.path  # For tagging
+                            else:
+                                return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
                         else:
-                            return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
+                            print("No match found in DB for:", pathes)
+
                     else:
                         return jsonify({"error": f"Person with id {person_id} not found"}), 404
                 else:
@@ -286,11 +327,26 @@ class ImageController:
         gender = data.get('gender', [])  # Now a list
         events = data.get('selectedEvents', [])
         capture_dates = data.get('capture_date', [])
+        age= data.get('age')
         locations = data.get('location', {})
 
         person_ids = []
         image_ids = []
 
+        # # Search for persons
+        # if person_names:
+        #     for name in person_names:
+        #         query = Person.query.filter(Person.name == name)
+
+        #         # If gender is provided and is a list, filter by it
+        #         if gender:
+        #             query = query.filter(Person.gender.in_(gender))  # ✅ FIXED
+
+        #         persons = query.all()
+
+        #         for person in persons:
+        #             if person:  
+        #                 person_ids.append(person.id)  
         # Search for persons
         if person_names:
             for name in person_names:
@@ -298,13 +354,19 @@ class ImageController:
 
                 # If gender is provided and is a list, filter by it
                 if gender:
-                    query = query.filter(Person.gender.in_(gender))  # ✅ FIXED
+                    query = query.filter(Person.gender.in_(gender))
 
+                # ✅ If age is provided, filter by it as well
+                if age is not None:
+                    query = query.filter(Person.age == age)
+
+                # Get matching persons
                 persons = query.all()
 
+                # Add their IDs to the list
                 for person in persons:
-                    if person:  
-                        person_ids.append(person.id)  
+                    if person:
+                        person_ids.append(person.id)
 
         # Search for images linked to persons
         if person_ids:
@@ -348,17 +410,22 @@ class ImageController:
 
         # Search for images by location
         if locations:
+            name = locations.get('Name')
             latitude = locations.get('latitude')
             longitude = locations.get('longitude')
-            if latitude and longitude:
-                loc_name = LocationController.get_location_from_lat_lon(latitude, longitude)
+            print(name,latitude,longitude)
 
-                if loc_name:
-                    location = Location.query.filter(Location.name == loc_name).first()
-                    if location:
-                        images_at_location = Image.query.filter(Image.location_id == location.id).all()
-                        for image in images_at_location:
-                            image_ids.append(image.id)
+            # if latitude and longitude :
+                # loc_name = LocationController.get_location_from_lat_lon(latitude, longitude)
+            loc_name = name
+
+
+            if loc_name:
+                location = Location.query.filter(Location.name == loc_name).first()
+                if location:
+                    images_at_location = Image.query.filter(Image.location_id == location.id).all()
+                    for image in images_at_location:
+                        image_ids.append(image.id)
 
         # Retrieve final image paths
         image_paths = []
@@ -1275,6 +1342,7 @@ class ImageController:
 
     def save_unsync_image_with_metadata(data):
         try:
+         print(data)
          for idx, item in enumerate(data):
             print(f"\n🔹 Processing Image {idx + 1}:")
 
@@ -1286,19 +1354,30 @@ class ImageController:
             location = item.get('location','')
             events = item.get('events', [])
             persons = item.get('persons', [])
+            print(last_modified_str,",",hash_val,capture_date)
 
             if not hash_val or not last_modified_str:
                 print("❌ Missing hash or last_modified. Skipping...")
                 continue
 
             # Convert string to date
+            # try:
+            #     last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d").date()
+            # except ValueError:
+            #     print("❌ Invalid date format. Skipping...")
+            #     continue
+
             try:
-                last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d").date()
+                # Try parsing as datetime with time
+                if " " in last_modified_str:
+                    last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d %H:%M:%S").date()
+                else:
+                    last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d").date()
             except ValueError:
                 print("❌ Invalid date format. Skipping...")
                 continue
 
-            # Check if image with hash exists
+                        # Check if image with hash exists
             existing_image = Image.query.filter_by(hash=hash_val).first()
 
             if existing_image:

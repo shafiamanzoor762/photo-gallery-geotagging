@@ -270,4 +270,5 @@ class MobileSideController:
             if image_details:
                 sync_images.append(image_details)
 
+        print("sync_images",sync_images)
         return sync_images
