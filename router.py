@@ -623,7 +623,12 @@ def get_undo_data():
         return ImageHistoryController.get_latest_inactive_non_deleted_images()
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
- 
+
+
+@app.route('/image_complete_details/<int:image_id>/<int:version>', methods=['GET'])
+def get_image_complete_details_for_undo(image_id,version):
+    return jsonify(ImageHistoryController.get_image_complete_details_undo(image_id,version))
+
 #Aimen's mobile side code requests 
 
 @app.route('/image_processing', methods=['POST'])
