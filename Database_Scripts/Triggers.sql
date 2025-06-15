@@ -9,7 +9,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO ImageHistory (id, path, is_sync, capture_date, event_date, last_modified, location_id, version_no,is_deleted,hash,is_active)
+    INSERT INTO ImageHistory (id, path, is_sync, capture_date, event_date, last_modified, location_id, version_no,is_deleted,hash,is_active,created_at)
     SELECT 
         d.id,
         d.path,
@@ -22,7 +22,8 @@ BEGIN
 		
 		d.is_deleted,
 		d.hash,
-		0 as inactive
+		0 as is_active,
+        SYSDATETIME() AS created_at
     FROM 
         Deleted d
     LEFT JOIN 
@@ -42,7 +43,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO PersonHistory (id, name,path,gender,version_no,is_Active)
+    INSERT INTO PersonHistory (id, name,path,gender,version_no,is_Active,created_at)
     SELECT 
         d.id,
 		d.name,
@@ -50,7 +51,8 @@ BEGIN
 		d.gender,
         
         ISNULL(MAX(h.version_no), 0) + 1,
-		0
+		0,
+        SYSDATETIME() AS created_at
 		
     FROM 
         Deleted d
@@ -70,12 +72,13 @@ BEGIN
     SET NOCOUNT ON;
 
     -- Insert the old data (before update) into the history table
-    INSERT INTO ImageEventHistory (image_id, event_id, version_no,is_Active)
+    INSERT INTO ImageEventHistory (image_id, event_id, version_no,is_Active,created_at)
     SELECT 
         d.image_id,
         d.event_id,
         ISNULL(v.MaxVersion, 0) + 1 , -- Increment the version number
-		0 AS is_active
+		0 AS is_active,
+        SYSDATETIME() AS created_at
     FROM 
         Deleted d  -- The 'Deleted' table holds the old data
     OUTER APPLY (

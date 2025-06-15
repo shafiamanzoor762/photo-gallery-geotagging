@@ -24,6 +24,7 @@ from Model.Link import Link
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, and_
+from sqlalchemy import update
 
 from config import db
 
@@ -175,8 +176,14 @@ class ImageController:
                         
                             person = Person.query.filter_by(path=pathes).first()
                             if person:
-                                person.name = person_name
-                                db.session.add(person)
+                                # person.name = person_name
+                                # db.session.add(person)
+                                stmt = (
+                                            update(Person)
+                                            .where(Person.path == pathes)
+                                            .values(name=person_name)  # even if same, it will still fire UPDATE
+                                        )
+                                db.session.execute(stmt)
                                 print("Updated:", pathes)
                             else:
                                 print("No match found in DB for:", pathes)
