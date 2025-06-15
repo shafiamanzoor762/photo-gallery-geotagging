@@ -36,7 +36,7 @@ class ImageController:
 #       {"id": 1, "name": "Ali","gender": "M"},
 #       {"id": 2, "name": "Amna","gender": "F"}
 #     ],
-#     "event_name": ["iNDEPENDENCE DAY"],
+#     "event_names": ["iNDEPENDENCE DAY"],
 #     "event_date": "2025-01-17",
 #     "location": ["New yORK", "33.1234", "73.5678"]
 #   }
@@ -57,7 +57,9 @@ class ImageController:
 
         # Extract the numeric image_id and its associated data
         try:
+            print('editing...')
             image_id = int(next(iter(data.keys())))
+            print('on the way...',image_id)
         except ValueError:
             return jsonify({"error": "image_id must be a numeric value"}), 400
 
@@ -153,6 +155,13 @@ class ImageController:
                 if person_id:
                     person = Person.query.filter(Person.id == person_id).first()
                     if person:
+                        if person_name and gender:
+                            person.name = person_name
+                            person.gender  = gender
+                            person_data['path'] = person.path # saving this for tagging
+                        else:
+                            return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
+                        
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         persons_db = Person.query.all()
                         person_list = [
@@ -167,11 +176,11 @@ class ImageController:
                         ]                        
                         res=ImageController.get_emb_names_for_recognition(person_list,link_list,person.path.split('/')[-1])
                         embeddings = res.get_json("embeddings", {})
-                        print(res)
-                        print("embeddings",embeddings)
+                        # print(res)
+                        # print("embeddings",embeddings)
                         for path in embeddings.get("embeddings", []):
                             pathes = f'face_images/{path}'
-                            print("Looking for person with path:", pathes)
+                            # print("Looking for person with path:", pathes)
                         
                             person = Person.query.filter_by(path=pathes).first()
                             if person:
@@ -183,13 +192,6 @@ class ImageController:
 
                                     
 
-
-                        if person_name and gender:
-                            person.name = person_name
-                            person.gender  =gender
-                            person_data['path'] = person.path # saving this for tagging
-                        else:
-                            return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
                     else:
                         return jsonify({"error": f"Person with id {person_id} not found"}), 404
                 else:
@@ -682,6 +684,43 @@ class ImageController:
 
         except Exception as e:
             db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+        
+    @staticmethod
+    def delete_image_metadata(image_id):
+        try:
+            image = image = Image.query.filter(Image.id == image_id).first()
+
+            image.event_date = None
+            image.location_id = None
+            image.last_modified=datetime.utcnow()
+            image.events = []
+            image.persons = []
+            image.is_sync = False
+            
+            db.session.commit()
+
+            tag_data = {
+                "event": "",
+                "event_date": "",
+                "location": "",
+                "persons": {}
+                }
+            
+            image_path = image.path
+            with open(image_path, "rb") as img_file:
+                img_bytes = BytesIO(img_file.read())
+                tagged_img_io = TaggingController.tagImage(img_bytes, tag_data)
+
+                if tagged_img_io:
+
+                    with open(image_path, "wb") as output:
+                        output.write(tagged_img_io.read())
+                        return jsonify({f"Image saved with EXIF data at:": "{image_path}"}), 200
+                else:
+                    return jsonify({"error": "Tagging failed."}), 500
+                
+        except Exception as e:
             return jsonify({'error': str(e)}), 500
 
     @staticmethod
