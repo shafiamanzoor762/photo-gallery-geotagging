@@ -1,6 +1,13 @@
 from config import db
 from datetime import datetime
 
+# Define the imageEventHistory association table
+imageEventHistory = db.Table('imageEventHistory',
+    db.Column('image_id', db.Integer, db.ForeignKey('ImageHistory.id'), primary_key=True),
+    db.Column('event_id', db.Integer, db.ForeignKey('event.id'), primary_key=True),
+    db.Column('created_at', db.DateTime, default=datetime.utcnow)  # optional if used in query
+)
+
 class ImageHistory(db.Model):
     __tablename__ = 'ImageHistory'
 
@@ -11,12 +18,33 @@ class ImageHistory(db.Model):
     capture_date = db.Column(db.Date)
     event_date = db.Column(db.Date)
     last_modified = db.Column(db.Date)
-    location_id = db.Column(db.Integer)
+    location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
+
     version_no = db.Column(db.Integer)
     is_deleted = db.Column(db.Boolean, default=False, nullable=False)
     hash = db.Column(db.String(64), nullable=False)
     is_Active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # ✅ Relationship using existing 'imagePerson' table
+    personhistory = db.relationship(
+        'PersonHistory',
+        secondary='imagePerson',
+        primaryjoin='ImageHistory.id == imagePerson.c.image_id',
+        secondaryjoin='PersonHistory.id == imagePerson.c.person_id',
+        viewonly=True
+    )
+
+    # ✅ Relationship using defined 'imageEventHistory' table
+    eventshistory = db.relationship(
+    'Event',
+    secondary=imageEventHistory,
+    backref=db.backref('imagehistories', lazy='dynamic'),  # ✅ auto-creates reverse
+    lazy='dynamic'
+)
+
+
+
 
     def to_dict(self):
         return {

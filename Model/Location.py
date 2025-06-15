@@ -10,6 +10,8 @@ class Location(db.Model):
     longitude = db.Column(db.Numeric(11, 8))
     
     images = db.relationship('Image', backref='location', lazy=True)
+    location = db.relationship('ImageHistory', backref='location', lazy=True)
+
 
     def __repr__(self):
         return f'<Location {self.name}>'

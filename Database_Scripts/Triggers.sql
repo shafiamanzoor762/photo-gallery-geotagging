@@ -66,7 +66,7 @@ END;
 -----------ImageEventhistory
 CREATE TRIGGER trg_UpdateImageEventHistory
 ON ImageEvent
-AFTER UPDATE
+AFTER Delete
 AS
 BEGIN
     SET NOCOUNT ON;

@@ -4,6 +4,11 @@ from Model.ImageHistory import ImageHistory  # ✅ Correct import
 from config import db  # ensure db is available
 from flask import request, jsonify
 from sqlalchemy import and_
+from Model.PersonHistory import PersonHistory  # ✅ Correct import
+from Model.ImageEventHistory import ImageEventHistory  # ✅ Correct import
+from datetime import timedelta
+
+
 class ImageHistoryController:
     @staticmethod
     def get_latest_inactive_non_deleted_images():
@@ -31,47 +36,83 @@ class ImageHistoryController:
         print (results)
         return [{'id': r.id, 'path': r.path, 'version_no': r.version_no} for r in results]
         
+    
     @staticmethod
-    def get_image_complete_details_undo(image_id,version):
+    def get_image_complete_details_undo(image_id, version):
         image = ImageHistory.query.filter(
-        and_(
-            ImageHistory.id == image_id,
-            ImageHistory.version_no == version
-        )
+            and_(
+                ImageHistory.id == image_id,
+                ImageHistory.version_no == version
+            )
         ).first()
+    
         if not image:
             return jsonify({"error": "Image not found"}), 404
-
+    
+        # ⏳ Allow a 5-second window for timestamp matching
+        delta = timedelta(seconds=5)
+        lower_bound = image.created_at - delta
+        upper_bound = image.created_at + delta
+    
+        # 📍 Location handling (only if the relationship is defined in ImageHistory via backref)
         location_data = None
         if image.location:
             location_data = {
-            "id": image.location.id,
-            "name": image.location.name,
-            "latitude": float(image.location.latitude),
-            "longitude": float(image.location.longitude)
+                "id": image.location.id,
+                "name": image.location.name,
+                "latitude": float(image.location.latitude),
+                "longitude": float(image.location.longitude)
             }
-
+    
+        # 👤 Get matching persons within time window
+        matching_persons = db.session.query(PersonHistory).join(
+        db.Table('imagePerson'),
+        and_(
+            PersonHistory.id == db.Table('imagePerson').c.person_id,
+            db.Table('imagePerson').c.image_id == image.id
+        )
+    ).filter(
+        PersonHistory.created_at.between(lower_bound, upper_bound)
+    ).all()
+    
         persons = [
-        {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender}
-        for person in image.persons
+            {
+                "id": person.id,
+                "name": person.name,
+                "path": person.path,
+                "gender": person.gender
+            }
+            for person in matching_persons
         ]
     
+        # 🎉 Get matching events within time window
+        matching_events = ImageEventHistory.query.filter(
+            and_(
+                ImageEventHistory.image_id == image.id,
+                ImageEventHistory.created_at.between(lower_bound, upper_bound)
+            )
+        ).all()
+    
         events = [
-        {"id": event.id, "name": event.name}
-        for event in image.events
+            {
+                "id": event.id,
+                "name": event.name
+            }
+            for event in matching_events
         ]
-
+    
+        # 🖼️ Final image data response
         image_data = {
-        "id": image.id,
-        "path": image.path,
-        "is_sync": image.is_sync,
-        "capture_date": image.capture_date.strftime('%Y-%m-%d') if image.capture_date else None,
-        "event_date": image.event_date.strftime('%Y-%m-%d') if image.event_date else None,
-        "last_modified": image.last_modified.strftime('%Y-%m-%d %H:%M:%S') if image.last_modified else None,
-        "hash":image.hash,
-        "location": location_data,
-        "persons": persons,
-        "events": events
+            "id": image.id,
+            "path": image.path,
+            "is_sync": image.is_sync,
+            "capture_date": image.capture_date.strftime('%Y-%m-%d') if image.capture_date else None,
+            "event_date": image.event_date.strftime('%Y-%m-%d') if image.event_date else None,
+            "last_modified": image.last_modified.strftime('%Y-%m-%d %H:%M:%S') if image.last_modified else None,
+            "hash": image.hash,
+            "location": location_data,
+            "persons": persons,
+            "events": events
         }
     
         return image_data

@@ -625,7 +625,7 @@ def get_undo_data():
         return jsonify({"error": "Image not found"}), 404
 
 
-@app.route('/image_complete_details/<int:image_id>/<int:version>', methods=['GET'])
+@app.route('/image_complete_details_undo/<int:image_id>/<int:version>', methods=['GET'])
 def get_image_complete_details_for_undo(image_id,version):
     return jsonify(ImageHistoryController.get_image_complete_details_undo(image_id,version))
 
