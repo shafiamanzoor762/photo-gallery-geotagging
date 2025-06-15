@@ -8,6 +8,9 @@ class Person(db.Model):
     name = db.Column(db.String(255), nullable=False)
     path = db.Column(db.String(255))
     gender = db.Column(db.String(1), nullable=False)  # Adding Gender column
+    dob = db.Column(db.Date, nullable=True)  # 👈 New column for Date of Birth (nullable)
+    age = db.Column(db.Integer,nullable=True)
+
 
     
     images = db.relationship('Image', secondary='imagePerson', back_populates='persons')
