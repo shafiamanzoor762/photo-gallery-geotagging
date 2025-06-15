@@ -673,14 +673,31 @@ class PersonController():
                     person_id_to_group_index[pid] = idx
 
             # Apply unions based on links
-            for link in links:
-                # g1 = person_id_to_group_index.get(link["person1_id"])
-                # g2 = person_id_to_group_index.get(link["person2_id"])
-                g1 = person_id_to_group_index.get(link["person1Id"])
-                g2 = person_id_to_group_index.get(link["person2Id"])
+            # for link in links:
+            #     # g1 = person_id_to_group_index.get(link["person1_id"])
+            #     # g2 = person_id_to_group_index.get(link["person2_id"])
+            #     g1 = person_id_to_group_index.get(link["person1Id"])
+            #     g2 = person_id_to_group_index.get(link["person2Id"])
 
+            #     if g1 is not None and g2 is not None and g1 != g2:
+            #         union(g1, g2)
+            for link in links:
+                # Dynamically detect the key format
+                if "person1Id" in link and "person2Id" in link:
+                    p1 = link["person1Id"]
+                    p2 = link["person2Id"]
+                elif "person1_id" in link and "person2_id" in link:
+                    p1 = link["person1_id"]
+                    p2 = link["person2_id"]
+                else:
+                    continue  # Skip malformed link
+            
+                g1 = person_id_to_group_index.get(p1)
+                g2 = person_id_to_group_index.get(p2)
+            
                 if g1 is not None and g2 is not None and g1 != g2:
                     union(g1, g2)
+
 
             # Step 3: Final groupings by root
             merged_groups = defaultdict(set)
@@ -697,11 +714,29 @@ class PersonController():
                         continue
 
                      # person_id and image_id
-                    image_records = [ip for ip in image_person_map if ip["personId"] == person_id]
+                    # image_records = [ip for ip in image_person_map if ip["personId"] == person_id]
+                    # for record in image_records:
+                    #     image = next((img for img in images if img["id"] == record["imageId"] and not img.get("is_deleted", False)), None)
+                    #     if not image:
+                    #         continue
+                    image_records = [
+                        ip for ip in image_person_map
+                            if ip.get("personId") == person_id or ip.get("person_id") == person_id
+                        ]
+                        
                     for record in image_records:
-                        image = next((img for img in images if img["id"] == record["imageId"] and not img.get("is_deleted", False)), None)
+                        image_id = record.get("imageId") or record.get("image_id")
+                        if image_id is None:
+                            continue
+                    
+                        image = next(
+                            (img for img in images if img.get("id") == image_id and not img.get("is_deleted", False)),
+                            None
+                        )
+                        
                         if not image:
                             continue
+
 
                         if group_idx not in grouped_data:
                             grouped_data[group_idx] = {
