@@ -50,7 +50,7 @@ ALTER TABLE imagehistory
 ADD is_deleted BIT NOT NULL DEFAULT 0;
 ALTER TABLE ImageHistory
 ADD hash VARCHAR(64) NOT NULL;
-ALTER TABLE ImagePersonHistory
+ALTER TABLE ImageHistory
 ADD is_Active bit Not NULL DEFAULT 0;
 
 

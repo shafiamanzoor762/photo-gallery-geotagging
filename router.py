@@ -397,6 +397,9 @@ def delete_image(image_id):
     return ImageController.delete_image(image_id)
 
 
+@app.route('/delete_image_metadata/<int:image_id>', methods=['DELETE'])
+def delete_image_metadata(image_id):
+    return ImageController.delete_image_metadata(image_id)
 # --------------------------EVENT---------------------------------
 #done
 @app.route('/fetch_events', methods = ['GET'])
