@@ -703,7 +703,7 @@ class ImageController:
             }
 
         persons = [
-        {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender}
+        {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender,"DOB":person.dob,"Age":person.age}
         for person in image.persons
         ]
     
