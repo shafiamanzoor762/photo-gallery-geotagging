@@ -675,6 +675,9 @@ def get_emb_names_for_recognition():
     persons = data.get("persons", [])
     links = data.get("links", [])
     emb_name = data.get("person1", [])
+    print("🧪 person list received:", persons)
+    print("🔗 links received:", links)
+    print("🎯 embedding name received:", emb_name)
     return ImageController.get_emb_names_for_recognition(persons,links,emb_name)
 
 
