@@ -632,6 +632,12 @@ def get_undo_data():
 def get_image_complete_details_for_undo(image_id,version):
     return jsonify(ImageHistoryController.get_image_complete_details_undo(image_id,version))
 
+
+@app.route('/undo_data/<int:image_id>/<int:version>', methods=['GET'])
+def undo_data(image_id,version):
+    print(image_id,version)
+    return jsonify(ImageHistoryController.undo_data(image_id,version))
+
 #Aimen's mobile side code requests 
 
 @app.route('/image_processing', methods=['POST'])

@@ -9,6 +9,7 @@ from Model.ImageEventHistory import ImageEventHistory  # ✅ Correct import
 from datetime import timedelta
 from Model.Event import Event  # ✅ Correct import
 from Model.ImagePerson import ImagePerson  # ✅ Correct import
+from Controller.ImageController import ImageController
 class ImageHistoryController:
     @staticmethod
     def get_latest_inactive_non_deleted_images():
@@ -120,3 +121,59 @@ class ImageHistoryController:
         }
     
         return image_data
+    
+
+    @staticmethod
+    def undo_data(image_id, version):
+        try:
+            image_data = ImageHistoryController.get_image_complete_details_undo(image_id, version)
+            ImageController.edit_image_data(image_data)
+    
+            image = ImageHistory.query.filter_by(id=image_id, version_no=version).first()
+            if not image:
+                return False
+    
+            delta = timedelta(seconds=5)
+            lower_bound = image.created_at - delta
+            upper_bound = image.created_at + delta
+    
+            # Update ImageHistory
+            ImageHistory.query.filter(
+                and_(
+                    ImageHistory.id == image_id,
+                    ImageHistory.version_no == version
+                )
+            ).update({"is_Active": True}, synchronize_session=False)
+    
+            # Update ImageEventHistory
+            updated_events = ImageEventHistory.query.filter(
+                and_(
+                    ImageEventHistory.image_id == image_id,
+                    ImageEventHistory.created_at.between(lower_bound, upper_bound)
+                )
+            ).all()
+    
+            for ev in updated_events:
+                ev.is_Active = True
+    
+            # Update PersonHistory
+            matching_persons = db.session.query(PersonHistory).select_from(PersonHistory).join(
+                ImagePerson,
+                PersonHistory.id == ImagePerson.person_id
+            ).filter(
+                ImagePerson.image_id == image_id,
+                PersonHistory.created_at.between(lower_bound, upper_bound),
+                PersonHistory.version_no == version
+            ).all()
+    
+            for person in matching_persons:
+                person.is_Active = True
+    
+            db.session.commit()
+            return True
+    
+        except Exception as e:
+            print(f"Error in undo_data: {e}")
+            db.session.rollback()
+            return False
+    
