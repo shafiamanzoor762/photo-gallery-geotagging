@@ -1,10 +1,13 @@
 from flask import jsonify, request
 import os, json
+import base64
 from collections import defaultdict
 
 from Model.Person import Person
+from Model.Image import Image
 
 from Controller.PersonController import PersonController
+from Controller.ImageController import ImageController
 from config import db
 
 class MobileSideController:
@@ -136,6 +139,8 @@ class MobileSideController:
 
         # Step 6: Prepare grouped output
         grouped_data = {}
+        used_image_ids_per_group = {}
+
         for group_idx, person_ids in merged_groups.items():
             for person_id in person_ids:
                 person = next((p for p in persons if p["id"] == person_id), None)
@@ -158,14 +163,111 @@ class MobileSideController:
                         },
                         "Images": []
                     }
+                    used_image_ids_per_group[group_idx] = set()
 
-                grouped_data[group_idx]["Images"].extend([
-                    {"id": img_id} for img_id in person_image_ids
-                ])
+                for img_id in person_image_ids:
+                    if img_id not in used_image_ids_per_group[group_idx]:
+                        grouped_data[group_idx]["Images"].append({"id": img_id})
+                        used_image_ids_per_group[group_idx].add(img_id)
 
         result = list(grouped_data.values())
+        return result
+
+
+     except Exception as e:
+        print(f"Error: {e}")
+        return {"error": str(e)}, 500
+     
+
+    @staticmethod
+    def get_unlinked_persons_by_id(person_id, persons, links):
+     try:
+        # Get target person's details
+        target_person = next((p for p in persons if p["id"] == person_id), None)
+        if not target_person:
+            return {"error": "Person not found"}, 404
+        
+        person_name = target_person.get("name")
+        if not person_name:
+            return {"error": "Person has no name"}, 400
+
+        # Load face grouping JSON
+        with open('./stored-faces/person_group.json', 'r') as f:
+            json_groups = json.load(f)
+
+        # Create mappings
+        path_to_person = {os.path.basename(p["path"]): p["id"] for p in persons if "path" in p}
+        id_to_person = {p["id"]: p for p in persons}
+
+        # Build person ID → group keys mapping
+        person_id_to_groups = defaultdict(set)
+        for key_path, group_paths in json_groups.items():
+            if key_path in path_to_person:
+                person_id_to_groups[path_to_person[key_path]].add(key_path)
+            for p in group_paths:
+                if p in path_to_person:
+                    person_id_to_groups[path_to_person[p]].add(key_path)
+
+        # Find existing links
+        linked_person_ids = {
+            link["person2_id"] if link["person1_id"] == person_id else link["person1_id"]
+            for link in links 
+            if person_id in (link["person1_id"], link["person2_id"])
+        }
+
+        # Find potential matches
+        result = []
+        for person in persons:
+            # Skip if: same person, different name, or already linked
+            if (person["id"] == person_id or 
+                person.get("name") != person_name or
+                person["id"] in linked_person_ids):
+                continue
+
+            # Get group members as full person objects
+            group_persons = []
+            for group_key in person_id_to_groups.get(person["id"], set()):
+                for path in json_groups.get(group_key, []):
+                    if path in path_to_person:
+                        member_id = path_to_person[path]
+                        if member_id in id_to_person and member_id != person_id:
+                            group_persons.append(id_to_person[member_id])
+
+            # Remove duplicates by ID
+            unique_persons = []
+            seen_ids = set()
+            for p in group_persons:
+                if p["id"] not in seen_ids:
+                    seen_ids.add(p["id"])
+                    unique_persons.append(p)
+
+            if unique_persons:
+                result.append({
+                    "person": {
+                        "id": person["id"],
+                        "name": person.get("name"),
+                        "path": person.get("path"),
+                        "gender": person.get("gender")
+                    },
+                    "persons": unique_persons,
+                    "shared_groups": list(person_id_to_groups.get(person["id"], set()))
+                })
+
+        print(result)
         return result
 
      except Exception as e:
         print(f"Error: {e}")
         return {"error": str(e)}, 500
+     
+    @staticmethod
+    def get_unsync_images():
+        images = Image.query.filter(Image.is_sync == False).all()
+        sync_images = []
+
+        for image in images:
+            image_details = ImageController.get_image_complete_details(image.id)
+            if image_details:
+                sync_images.append(image_details)
+
+        return sync_images

@@ -1,6 +1,7 @@
 from config import db
 from Model.Link import Link
 from Model.Person import Person
+from flask import jsonify, request
 
 class LinkController():
     @staticmethod
@@ -62,5 +63,34 @@ class LinkController():
         ).first()
     
         return existing is not None  # Returns True if link exists, otherwise False
+    
+    @staticmethod
+    def merge_persons(person1_id, person2_filename):
+        
+
+        try:
+            # Build the expected path
+            expected_path = f"face_images/{person2_filename}"
+
+            # Find person2 by path
+            person2 = db.session.query(Person).filter_by(path=expected_path).first()
+
+            if not person2:
+                return jsonify({"error": f"No person found with path '{expected_path}'"}), 404
+
+            # Create a new link record
+            print(f"Linking person1_id = {person1_id} with person2_id = {person2.id}")
+            new_link = Link(person1_id=person1_id, person2_id=person2.id)
+            db.session.add(new_link)
+            db.session.commit()
+
+            return jsonify({
+                "status": "success",
+                "message": f"Linked person1_id = {person1_id} with person2_id = {person2.id}"
+            }), 200
+
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
 
     

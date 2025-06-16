@@ -286,6 +286,7 @@ class PersonController():
     
      input_image = face_recognition.load_image_file(image_path)
      input_encodings = face_recognition.face_encodings(input_image)
+     print("------------------------"+person_name)
 
      if len(input_encodings) == 0:
         return {'error': 'No faces found in the image', 'status_code': 400}
@@ -303,14 +304,16 @@ class PersonController():
                 stored_name, encoding_str, cropped_image_path = parts[0], parts[1], parts[2].strip()
                 stored_encodings = [float(value) for value in encoding_str.split(',')]
 
-                
                 for input_encoding in input_encodings:
-                    matches = face_recognition.compare_faces([stored_encodings], input_encoding)
-                    if True in matches:
+                    distance = face_recognition.face_distance([stored_encodings], input_encoding)[0]
+                    threshold = 0.45  # Stricter than default
+
+                    if distance < threshold:
                         name = stored_name
                         if person_name:
                             new_lines.append(f'{person_name};{encoding_str};{cropped_image_path}\n')
                             name = person_name
+                            # print("----------SAVED to text file--------------"+person_name)
                         else:
                             new_lines.append(line)
 
@@ -319,9 +322,28 @@ class PersonController():
                             'name': name,
                             'status': 'Match found'
                         })
-                        break  
+                        break
                     else:
                         new_lines.append(line)
+
+                # for input_encoding in input_encodings:
+                #     matches = face_recognition.compare_faces([stored_encodings], input_encoding)
+                #     if True in matches:
+                #         name = stored_name
+                #         if person_name:
+                #             new_lines.append(f'{person_name};{encoding_str};{cropped_image_path}\n')
+                #             name = person_name
+                #         else:
+                #             new_lines.append(line)
+
+                #         recognition_results.append({
+                #             'file': cropped_image_path,
+                #             'name': name,
+                #             'status': 'Match found'
+                #         })
+                #         break  
+                #     else:
+                #         new_lines.append(line)
 
     
      if person_name and new_lines:
@@ -652,8 +674,11 @@ class PersonController():
 
             # Apply unions based on links
             for link in links:
-                g1 = person_id_to_group_index.get(link["person1_id"])
-                g2 = person_id_to_group_index.get(link["person2_id"])
+                # g1 = person_id_to_group_index.get(link["person1_id"])
+                # g2 = person_id_to_group_index.get(link["person2_id"])
+                g1 = person_id_to_group_index.get(link["person1Id"])
+                g2 = person_id_to_group_index.get(link["person2Id"])
+
                 if g1 is not None and g2 is not None and g1 != g2:
                     union(g1, g2)
 
