@@ -7,8 +7,8 @@ from sqlalchemy import and_
 from Model.PersonHistory import PersonHistory  # ✅ Correct import
 from Model.ImageEventHistory import ImageEventHistory  # ✅ Correct import
 from datetime import timedelta
-
-
+from Model.Event import Event  # ✅ Correct import
+from Model.ImagePerson import ImagePerson  # ✅ Correct import
 class ImageHistoryController:
     @staticmethod
     def get_latest_inactive_non_deleted_images():
@@ -66,15 +66,14 @@ class ImageHistoryController:
     
         # 👤 Get matching persons within time window
         matching_persons = db.session.query(PersonHistory).join(
-        db.Table('imagePerson'),
-        and_(
-            PersonHistory.id == db.Table('imagePerson').c.person_id,
-            db.Table('imagePerson').c.image_id == image.id
-        )
-    ).filter(
-        PersonHistory.created_at.between(lower_bound, upper_bound)
-    ).all()
-    
+    ImagePerson,
+    PersonHistory.id == ImagePerson.person_id
+).filter(
+    ImagePerson.image_id == image.id,
+        PersonHistory.version_no ==version
+
+            ).all()
+
         persons = [
             {
                 "id": person.id,
@@ -85,21 +84,26 @@ class ImageHistoryController:
             for person in matching_persons
         ]
     
-        # 🎉 Get matching events within time window
-        matching_events = ImageEventHistory.query.filter(
-            and_(
-                ImageEventHistory.image_id == image.id,
-                ImageEventHistory.created_at.between(lower_bound, upper_bound)
-            )
-        ).all()
+        
+        matching_events = db.session.query(Event).join(
+    ImageEventHistory,
+    and_(
+        Event.id == ImageEventHistory.event_id,
+        ImageEventHistory.image_id == image.id
+    )
+).filter(
+    ImageEventHistory.created_at.between(lower_bound, upper_bound)
+).all()
+
     
         events = [
-            {
-                "id": event.id,
-                "name": event.name
-            }
-            for event in matching_events
-        ]
+    {
+        "id": event.id,
+        "name": event.name
+    }
+    for event in matching_events
+]
+
     
         # 🖼️ Final image data response
         image_data = {

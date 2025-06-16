@@ -43,7 +43,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO PersonHistory (id, name,path,gender,version_no,is_Active,created_at)
+    INSERT INTO PersonHistory (id, name,path,gender,version_no,is_Active,created_at,DOB,Age)
     SELECT 
         d.id,
 		d.name,
@@ -52,14 +52,16 @@ BEGIN
         
         ISNULL(MAX(h.version_no), 0) + 1,
 		0,
-        SYSDATETIME() AS created_at
+        SYSDATETIME() AS created_at,
+        d.DOB,
+        d.Age
 		
     FROM 
         Deleted d
     LEFT JOIN 
         PersonHistory h ON d.id = h.id
     GROUP BY 
-        d.id,d.name, d.path,d.gender;
+        d.id,d.name, d.path,d.gender,d.DOB,d.Age;
 END;
 
 
