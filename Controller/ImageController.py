@@ -24,6 +24,7 @@ from Model.Link import Link
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, and_
+from sqlalchemy import update
 
 from config import db
 
@@ -36,98 +37,15 @@ class ImageController:
 #       {"id": 1, "name": "Ali","gender": "M"},
 #       {"id": 2, "name": "Amna","gender": "F"}
 #     ],
-#     "event_name": ["iNDEPENDENCE DAY"],
+#     "event_names": ["iNDEPENDENCE DAY"],
 #     "event_date": "2025-01-17",
 #     "location": ["New yORK", "33.1234", "73.5678"]
 #   }
 # }
 
-    # @staticmethod
-    # def edit_image_data():
-    #     data = request.get_json()  
-
-    #     if not data:
-    #         return jsonify({"error": "No data provided"}), 400
-
-    #     if len(data) != 1:
-    #         return jsonify({"error": "Invalid data format. Expecting a single numeric image_id as the key."}), 400
-
-    #     try:
-    #         image_id = int(next(iter(data.keys())))  
-    #     except ValueError:
-    #         return jsonify({"error": "image_id must be a numeric value"}), 400
-
-    #     image_data = data.get(str(image_id))  
-    #     if not image_data:
-    #         return jsonify({"error": "image_id data is required"}), 400
-
-       
-    #     persons = image_data.get('persons_id')  
-    #     event_name = image_data.get('event_name')
-    #     event_date = image_data.get('event_date')
-    #     locations = image_data.get('location')
-
-        
-    #     image = Image.query.filter(Image.id == image_id).first()
-    #     print(image)
-    #     if not image:
-    #         return jsonify({"error": "Image not found"}), 404
-
-        
-    #     if event_date:
-    #         image.event_date = event_date
-    #     if event_name:
-            
-    #         for event in image.events:
-    #             event.name = event_name
-
-       
-    #     if locations:
-    #         loc_id = image.location_id
-    #         if not loc_id:
-    #             return jsonify({"error": "No location associated with this image"}), 404
-
-    #         location =  Location.query.filter(Location.id == loc_id).first()
-    #         if location:
-    #             location.name = locations[0] if len(locations) > 0 else location.name
-    #             location.latitude = locations[2] if len(locations) > 2 else location.latitude
-    #             location.longitude = locations[3] if len(locations) > 3 else location.longitude
-    #         else:
-    #             return jsonify({"error": "Location record not found"}), 404
-
-        
-    #     if persons:
-    #         for person_data in persons:
-    #             person_id = person_data.get('id')
-    #             person_name = person_data.get('name')
-    #             gender = person_data.get('gender')
-    #             if person_id:
-    #                 person = Person.query.filter(Person.id == person_id).first()
-    #                 if person:
-    #                     if person_name and gender:
-    #                         person.name = person_name
-    #                         person.gender  =gender
-    #                     else:
-    #                         return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
-    #                 else:
-    #                     return jsonify({"error": f"Person with id {person_id} not found"}), 404
-    #             else:
-    #                 return jsonify({"error": "Person id is required"}), 400
-
-    #     try:
-    #         db.session.commit()
-    #         return jsonify({"message": "Image, location, and persons updated successfully"}), 200
-    #     except Exception as e:
-    #         db.session.rollback()
-    #         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-
-
-    # =================================
-
-
     @staticmethod
-    def edit_image_data():
-        data = request.get_json(force=True, silent=True)  # Get JSON data from the request
+    def edit_image_data(data):
+        
         
         print("Parsed JSON:", data)
 
@@ -140,19 +58,23 @@ class ImageController:
 
         # Extract the numeric image_id and its associated data
         try:
+            print('editing...')
             image_id = int(next(iter(data.keys())))
+            print('on the way...',image_id)
         except ValueError:
             return jsonify({"error": "image_id must be a numeric value"}), 400
 
         image_data = data.get(str(image_id))  # Get the data associated with the numeric image_id
         if not image_data:
             return jsonify({"error": "image_id data is required"}), 400
+        
+       
 
-        # Extract necessary fields
         persons = image_data.get('persons_id')  # Corrected key name to 'persons_id'
         event_names = image_data.get('event_names')
         event_date = image_data.get('event_date')
         location_data = image_data.get('location')
+
 
         # Fetch the image record by image_id
         image = Image.query.filter(Image.id == image_id).first()
@@ -187,7 +109,8 @@ class ImageController:
         longitude = None
 
         # Update location if provided
-        if location_data:
+        if location_data and isinstance(location_data[0], str) and location_data[0].strip():
+
             # location_name = location_data[0]
             # location_list = json.loads(location_name)
             # location_name = ", ".join(location_list)
@@ -214,28 +137,63 @@ class ImageController:
 
 # ///////
             # Check if the location exists
-            existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
+            existing_location = Location.query.filter_by(name=location_name).first()
+            # existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
+
+            # if existing_location:
+            #     image.location_id = existing_location.id  # Associate existing location
+            # else:
+            #     # Create new location
+            #     print("yes am here")
+            #     new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
+            #     db.session.add(new_location)
+            #     db.session.flush()  # Get the new location ID before committing
+            #     image.location_id = new_location.id
+            
+            # Check if the location with the same name exists
+            existing_location = Location.query.filter_by(name=location_name).first()
 
             if existing_location:
-                image.location_id = existing_location.id  # Associate existing location
+                # Associate existing location
+                image.location_id = existing_location.id
             else:
                 # Create new location
                 print("yes am here")
                 new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
                 db.session.add(new_location)
-                db.session.flush()  # Get the new location ID before committing
+                db.session.flush()  # So we get new_location.id before commit
                 image.location_id = new_location.id
+
 
 # ///////
         # Update persons if provided
         if persons:
             for person_data in persons:
+                dob_str = person_data.get('dob')
+                dob = None
+                if dob_str :
+                    try:
+                        dob = datetime.fromisoformat(dob_str).date()  # 👈 converts '2000-08-24T18:32:38' to datetime.date(2000, 8, 24)
+
+                    except ValueError:
+                        print("Invalid DOB format and age_str:", dob_str)
+
+                print(f"Received DOB: {dob_str}, Parsed DOB: {dob}")
+
                 person_id = person_data.get('id')
                 person_name = person_data.get('name')
                 gender = person_data.get('gender')
+                age =person_data.get('age')
                 if person_id:
                     person = Person.query.filter(Person.id == person_id).first()
                     if person:
+                        if person_name and gender:
+                            person.name = person_name
+                            person.gender  = gender
+                            person_data['path'] = person.path # saving this for tagging
+                        else:
+                            return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
+                        
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         persons_db = Person.query.all()
                         person_list = [
@@ -250,15 +208,23 @@ class ImageController:
                         ]                        
                         res=ImageController.get_emb_names_for_recognition(person_list,link_list,person.path.split('/')[-1])
                         embeddings = res.get_json("embeddings", {})
-                        print(res)
-                        print("embeddings",embeddings)
+                        # print(res)
+                        # print("embeddings",embeddings)
                         for path in embeddings.get("embeddings", []):
                             pathes = f'face_images/{path}'
-                            print("Looking for person with path:", pathes)
+                            # print("Looking for person with path:", pathes)
                         
                             person = Person.query.filter_by(path=pathes).first()
                             if person:
-                                person.name = person_name
+                                # person.name = person_name
+                                # db.session.add(person)
+                                stmt = (
+                                            update(Person)
+                                            .where(Person.path == pathes)
+                                            .values(name=person_name)  # even if same, it will still fire UPDATE
+                                        )
+                                db.session.execute(stmt)
+                                person.name= person_name
                                 db.session.add(person)
                                 print("Updated:", pathes)
                             else:
@@ -266,13 +232,22 @@ class ImageController:
 
                                     
 
-
-                        if person_name and gender:
-                            person.name = person_name
-                            person.gender  =gender
-                            person_data['path'] = person.path # saving this for tagging
+                        print("person_name:", person_name)
+                        print("gender:", gender)
+                        print("dob:", dob)
+                        if person:
+                            if person_name and gender and dob:
+                                person.name = person_name
+                                person.gender = gender
+                                person.dob = dob
+                                person.age = age
+                                person_data['path'] = person.path  # For tagging
+                            else:
+                                return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
                         else:
-                            return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
+                            print("No match found in DB for:", pathes)
+
+
                     else:
                         return jsonify({"error": f"Person with id {person_id} not found"}), 404
                 else:
@@ -350,149 +325,78 @@ class ImageController:
 #     "longitude":"-0.12775800"
 # } 
 # }
-    @staticmethod
-    def searching_on_image(): 
-        data = request.get_json()
-
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-
-        # Extract parameters
-        person_names = data.get('name', [])  
-        gender = data.get('gender', [])  # Now a list
-        events = data.get('selectedEvents', [])
-        capture_dates = data.get('capture_date', [])
-        locations = data.get('location', {})
-
-        person_ids = []
-        image_ids = []
-
-        # Search for persons
-        if person_names:
-            for name in person_names:
-                query = Person.query.filter(Person.name == name)
-
-                # If gender is provided and is a list, filter by it
-                if gender:
-                    query = query.filter(Person.gender.in_(gender))  # ✅ FIXED
-
-                persons = query.all()
-
-                for person in persons:
-                    if person:  
-                        person_ids.append(person.id)  
-
-        # Search for images linked to persons
-        if person_ids:
-            images = (
-                db.session.query(Image.id)  # Select the id column from the Image table
-                .join(ImagePerson, ImagePerson.image_id == Image.id)  # Join ImagePerson with Image
-                .join(Person, Person.id == ImagePerson.person_id)  # Join Person with ImagePerson
-                .filter(ImagePerson.person_id.in_(person_ids))  # Filter by the list of person_ids
-                .all()
-            )
-
-            for image in images:
-                image_ids.append(image.id)
-
-        # Search for images linked to events
-        event_ids = []
-        if events:
-            for event_name in events:
-                event = Event.query.filter(Event.name == event_name).first()
-                if event:
-                    event_ids.append(event.id)
-
-            if event_ids:
-                images_of_events = (
-                    db.session.query(Image.id)
-                    .join(ImageEvent, ImageEvent.image_id == Image.id)
-                    .join(Event, Event.id == ImageEvent.event_id)
-                    .filter(ImageEvent.event_id.in_(event_ids))
-                    .all()
-                )
-
-                for image in images_of_events:
-                    image_ids.append(image.id)
-
-        # Search for images by capture date
-        if capture_dates:
-            for date in capture_dates:
-                image_dates = Image.query.filter(Image.capture_date == date).all()
-                for image in image_dates:
-                    image_ids.append(image.id)
-
-        # Search for images by location
-        if locations:
-            latitude = locations.get('latitude')
-            longitude = locations.get('longitude')
-            if latitude and longitude:
-                loc_name = LocationController.get_location_from_lat_lon(latitude, longitude)
-
-                if loc_name:
-                    location = Location.query.filter(Location.name == loc_name).first()
-                    if location:
-                        images_at_location = Image.query.filter(Image.location_id == location.id).all()
-                        for image in images_at_location:
-                            image_ids.append(image.id)
-
-        # Retrieve final image paths
-        image_paths = []
-        if image_ids:
-            images = Image.query.filter(Image.id.in_(image_ids)).all()
-            for image in images:
-                if image:  
-                    image_paths.append(image.path)
-
-        return jsonify({"paths": image_paths}), 200  
-
-    # def searching_on_image():
+    # @staticmethod
+    # def searching_on_image(): 
     #     data = request.get_json()
+    #     print (data)
 
     #     if not data:
     #         return jsonify({"error": "No data provided"}), 400
 
-       
+    #     # Extract parameters
     #     person_names = data.get('name', [])  
-    #     gender = data.get('gender')
-    #     events = data.get('events', [])
+    #     gender = data.get('gender', [])  # Now a list
+    #     events = data.get('selectedEvents', [])
     #     capture_dates = data.get('capture_date', [])
+    #     age= data.get('age')
     #     locations = data.get('location', {})
 
-       
     #     person_ids = []
     #     image_ids = []
 
-       
+    #     # # Search for persons
+    #     # if person_names:
+    #     #     for name in person_names:
+    #     #         query = Person.query.filter(Person.name == name)
+
+    #     #         # If gender is provided and is a list, filter by it
+    #     #         if gender:
+    #     #             query = query.filter(Person.gender.in_(gender))  # ✅ FIXED
+
+    #     #         persons = query.all()
+
+    #     #         for person in persons:
+    #     #             if person:  
+    #     #                 person_ids.append(person.id)  
+    #     # Search for persons
     #     if person_names:
     #         for name in person_names:
-    #             persons = Person.query.filter(
-    #                 Person.name == name,
-    #                 Person.gender == gender if gender else True  
-    #             ).all()  
-    #             for person in persons:
-    #                 if person:  
-    #                     person_ids.append(person.id)  
+    #             query = Person.query.filter(Person.name == name)
 
-        
+    #             # If gender is provided and is a list, filter by it
+    #             if gender:
+    #                 query = query.filter(Person.gender.in_(gender))
+
+    #             # ✅ If age is provided, filter by it as well
+    #             if isinstance(age, int) and age > 0:
+    #                 query = query.filter(Person.age == age)
+
+    #             # Get matching persons
+    #             persons = query.all()
+
+    #             # Add their IDs to the list
+    #             for person in persons:
+    #                 if person:
+    #                     person_ids.append(person.id)
+
+    #     # Search for images linked to persons
     #     if person_ids:
     #         images = (
-    #             db.session.query(Image.id) 
-    #             .join(ImagePerson, ImagePerson.image_id == Image.id)  
-    #             .join(Person, Person.id == ImagePerson.person_id)  
-    #             .filter(ImagePerson.person_id.in_(person_ids))  
+    #             db.session.query(Image.id)  # Select the id column from the Image table
+    #             .join(ImagePerson, ImagePerson.image_id == Image.id)  # Join ImagePerson with Image
+    #             .join(Person, Person.id == ImagePerson.person_id)  # Join Person with ImagePerson
+    #             .filter(ImagePerson.person_id.in_(person_ids))  # Filter by the list of person_ids
     #             .all()
     #         )
 
-            
     #         for image in images:
     #             image_ids.append(image.id)
 
-        
+    #     # Search for images linked to events
     #     event_ids = []
     #     if events:
     #         for event_name in events:
-    #             event = Event.query.filter(Event.name == event_name).first()  
+    #             event = Event.query.filter(Event.name == event_name).first()
     #             if event:
     #                 event_ids.append(event.id)
 
@@ -508,28 +412,33 @@ class ImageController:
     #             for image in images_of_events:
     #                 image_ids.append(image.id)
 
-       
+    #     # Search for images by capture date
     #     if capture_dates:
     #         for date in capture_dates:
     #             image_dates = Image.query.filter(Image.capture_date == date).all()
     #             for image in image_dates:
     #                 image_ids.append(image.id)
 
-       
+    #     # Search for images by location
     #     if locations:
+    #         name = locations.get('Name')
     #         latitude = locations.get('latitude')
     #         longitude = locations.get('longitude')
-    #         if latitude and longitude:
-    #             loc_name = LocationController.get_location_from_lat_lon(latitude, longitude)
+    #         print(name,latitude,longitude)
 
-    #             if loc_name:
-    #                 location = Location.query.filter(Location.name == loc_name).first()
-    #                 if location:
-    #                     images_at_location = Image.query.filter(Image.location_id == location.id).all()
-    #                     for image in images_at_location:
-    #                         image_ids.append(image.id)
+    #         # if latitude and longitude :
+    #             # loc_name = LocationController.get_location_from_lat_lon(latitude, longitude)
+    #         loc_name = name
 
-        
+
+    #         if loc_name:
+    #             location = Location.query.filter(Location.name == loc_name).first()
+    #             if location:
+    #                 images_at_location = Image.query.filter(Image.location_id == location.id).all()
+    #                 for image in images_at_location:
+    #                     image_ids.append(image.id)
+
+    #     # Retrieve final image paths
     #     image_paths = []
     #     if image_ids:
     #         images = Image.query.filter(Image.id.in_(image_ids)).all()
@@ -537,70 +446,132 @@ class ImageController:
     #             if image:  
     #                 image_paths.append(image.path)
 
-    #     return jsonify({"paths": image_paths}), 200
-    
-    #  ===================================
+    #     return jsonify({"paths": image_paths}), 200  
 
-    # @staticmethod
-    # def add_image(data):
-    #     try:
-    #          # 1. Check if image path already exists
-    #         existing_image = Image.query.filter_by(path=data['path']).first()
-    #         if existing_image:
-    #             print(f"\u26a0\ufe0f Image already exists: {existing_image.path}")
-    #             return jsonify({'message': 'Image already exists'}), 200
+    @staticmethod
+    def searching_on_image():
+        data = request.get_json()
+        print(data)
 
-    #         # 2. Insert image record into the Image table.
-    #         image = Image(
-    #             path=data['path'],
-    #             is_sync=data.get('is_sync', 0),
-    #             capture_date=data.get('capture_date', datetime.utcnow()),
-    #             event_date=data.get('event_date', None),
-    #             last_modified=datetime.utcnow()
-    #         )
-    #         db.session.add(image)
-    #         db.session.commit()
-    #         print(f"\u2705 Image saved: {image.path}")
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
 
-    #         # 3. Extract faces from the added image.
-    #         extracted_faces = PictureController.extract_face(image.path.replace('images', 'Assets'))
-    #         if not extracted_faces:
-    #             return jsonify({'message': 'No faces found'}), 200
+        person_names = data.get('name', [])
+        gender = data.get('gender', [])
+        events = data.get('selectedEvents', [])
+        capture_dates = data.get('capture_date', [])
+        age = data.get('age')
+        location_data = data.get('location', {})
 
-    #         # 4. For each extracted face, check if a matching Person exists based on path.
-    #         for face_data in extracted_faces:
-    #             face_path = face_data["face_path"]
-    #             face_filename = os.path.basename(face_path)
-    #             db_face_path = f"face_images/{face_filename}"
+        image_ids = set()
 
-    #             # Check if face already exists in Person table based on path
-    #             matched_person = Person.query.filter_by(path=db_face_path).first()
+        # ⬇️ Filter persons first
+        person_ids = []
+        if person_names:
+            for name in person_names:
+                query = Person.query.filter(Person.name == name)
 
-    #             # 5. If no matching person is found, create a new Person record.
-    #             if not matched_person:
-    #                 new_person = Person(
-    #                     name="unknown",
-    #                     path=db_face_path,  # Use the constructed face path.
-    #                     gender="U"       # Use a valid value according to your constraint.
-    #                 )
-    #                 db.session.add(new_person)
-    #                 db.session.commit()
-    #                 print(f"\u2705 New person added: {new_person.path}")
-    #                 matched_person = new_person
-    #             else:
-    #                 print(f"\ud83d\udd39 Matched with existing person: {matched_person.name}")
+                if gender:
+                    query = query.filter(Person.gender.in_(gender))
 
-    #             # 6. Link the Person with the Image in the ImagePerson table.
-    #             image_person = ImagePerson(image_id=image.id, person_id=matched_person.id)
-    #             db.session.add(image_person)
+                if isinstance(age, int) and age > 0:
+                    query = query.filter(Person.age == age)
 
-    #         db.session.commit()
-    #         return jsonify({'message': 'Image and faces saved successfully'}), 201
+                persons = query.all()
+                for person in persons:
+                    person_ids.append(person.id)
 
-    #     except Exception as e:
-    #         db.session.rollback()
-    #         return jsonify({'error': str(e)}), 500
+        # ⬇️ Get initial images linked to persons
+                # ⬇️ Get initial images linked to persons
+        if person_ids:
+            # STEP 1: Base images linked with person(s)
+            person_images_query = (
+                db.session.query(Image.id)
+                .join(ImagePerson, ImagePerson.image_id == Image.id)
+                .filter(ImagePerson.person_id.in_(person_ids))
+            )
 
+            # ✅ Filter by capture date (only on person images)
+            if capture_dates:
+                person_images_query = person_images_query.filter(Image.capture_date.in_(capture_dates))
+
+            # ✅ Filter by location (only on person images)
+            if location_data:
+                loc_name = location_data.get("Name", "")
+                if loc_name:
+                    location = Location.query.filter(Location.name == loc_name).first()
+                    if not location:
+                        return jsonify({"paths": []}), 200  # ❌ Invalid location
+                    person_images_query = person_images_query.filter(Image.location_id == location.id)
+
+            # ✅ Filter by event (only on person images)
+            if events:
+                print("selected_events", events)
+                event_ids = [e.id for e in Event.query.filter(Event.name.in_(events)).all()]
+                if not event_ids:
+                    return jsonify({"paths": []}), 200  # ❌ Event not found, return empty
+
+                person_images_query = (
+                    person_images_query
+                    .join(ImageEvent, ImageEvent.image_id == Image.id)
+                    .filter(ImageEvent.event_id.in_(event_ids))
+                )
+
+            # ✅ Final person-filtered + additional filters result
+            for img in person_images_query.all():
+                image_ids.add(img.id)
+
+
+        # ➕ If no person is provided, fallback to event/date/location filters alone
+        elif events or capture_dates or location_data:
+            temp_image_ids = set()
+
+            # Filter by event
+            if events:
+                event_ids = [e.id for e in Event.query.filter(Event.name.in_(events)).all()]
+                if event_ids:
+                    event_images = (
+                        db.session.query(Image.id)
+                        .join(ImageEvent, ImageEvent.image_id == Image.id)
+                        .filter(ImageEvent.event_id.in_(event_ids))
+                        .all()
+                    )
+                    temp_image_ids.update([img.id for img in event_images])
+
+            # Filter by date
+            if capture_dates:
+                date_images = (
+                    db.session.query(Image.id)
+                    .filter(Image.capture_date.in_(capture_dates))
+                    .all()
+                )
+                temp_image_ids.update([img.id for img in date_images])
+
+            # Filter by location
+            if location_data:
+                loc_name = location_data.get("Name", "")
+                if loc_name:
+                    location = Location.query.filter(Location.name == loc_name).first()
+                    if location:
+                        loc_images = (
+                            db.session.query(Image.id)
+                            .filter(Image.location_id == location.id)
+                            .all()
+                        )
+                        temp_image_ids.update([img.id for img in loc_images])
+
+            image_ids.update(temp_image_ids)
+
+        # ✅ Flatten and retrieve image paths
+        final_image_ids = list(image_ids)
+        image_paths = []
+        if final_image_ids:
+            images = Image.query.filter(Image.id.in_(final_image_ids)).all()
+            image_paths = [img.path for img in images if img]
+
+        return jsonify({"paths": image_paths}), 200
+
+        
 
 
     @staticmethod
@@ -661,6 +632,7 @@ class ImageController:
                     normalized_path = file_path.replace("\\", "/")
                     face_path_1 = normalized_path.replace('stored-faces', 'face_images')
                     matched_person = Person.query.filter_by(path=face_path_1).first()
+                    PersonController.update_face_paths_json("./stored-faces/recognize_person.json", f"stored-faces\{face_filename}",matchedPath=normalized_path)
 
                     for res in  match_data["results"]:
                         resembeled_path = os.path.basename(res["file"])
@@ -747,6 +719,7 @@ class ImageController:
         "capture_date": image.capture_date.strftime('%Y-%m-%d') if image.capture_date else None,
         "event_date": image.event_date.strftime('%Y-%m-%d') if image.event_date else None,
         "last_modified": image.last_modified.strftime('%Y-%m-%d %H:%M:%S') if image.last_modified else None,
+        "hash":image.hash,
         "location": location_data,
         "persons": persons,
         "events": events
@@ -825,6 +798,43 @@ class ImageController:
 
         except Exception as e:
             db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+        
+    @staticmethod
+    def delete_image_metadata(image_id):
+        try:
+            image = image = Image.query.filter(Image.id == image_id).first()
+
+            image.event_date = None
+            image.location_id = None
+            image.last_modified=datetime.utcnow()
+            image.events = []
+            image.persons = []
+            image.is_sync = False
+            
+            db.session.commit()
+
+            tag_data = {
+                "event": "",
+                "event_date": "",
+                "location": "",
+                "persons": {}
+                }
+            
+            image_path = image.path
+            with open(image_path, "rb") as img_file:
+                img_bytes = BytesIO(img_file.read())
+                tagged_img_io = TaggingController.tagImage(img_bytes, tag_data)
+
+                if tagged_img_io:
+
+                    with open(image_path, "wb") as output:
+                        output.write(tagged_img_io.read())
+                        return jsonify({f"Image saved with EXIF data at:": "{image_path}"}), 200
+                else:
+                    return jsonify({"error": "Tagging failed."}), 500
+                
+        except Exception as e:
             return jsonify({'error': str(e)}), 500
 
     @staticmethod
@@ -1224,30 +1234,147 @@ class ImageController:
             return jsonify({'error': str(e)}), 500
         
     @staticmethod
-    def get_emb_names(links, person1, dbemb_name):
-        emb_name = person1["personPath"].split('/')[-1]
-        db_emb_name = dbemb_name["path"].split('/')[-1]
-     
-        # Check if person1 and dbemb_name are linked
+    def build_link_groups(links):
+        # Union-Find for grouping linked persons
+        parent = {}
+    
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+    
+        def union(x, y):
+            px, py = find(x), find(y)
+            if px != py:
+                parent[py] = px
+    
+        # Initialize parent map
+        for link in links:
+            # a, b = link["person1_id"], link["person2_id"]
+            a, b = link["person1Id"], link["person2Id"]
+
+            if a not in parent:
+                parent[a] = a
+            if b not in parent:
+                parent[b] = b
+            union(a, b)
+    
+        # Build groups
+        groups = {}
+        for person_id in parent:
+            root = find(person_id)
+            if root not in groups:
+                groups[root] = []
+            groups[root].append(person_id)
+    
+        return groups
+    @staticmethod
+    def are_groups_linked(group1, group2, persons, links):
+        id_by_emb = {person["path"].split("/")[-1]: person["id"] for person in persons}
+        
+        ids1 = {id_by_emb.get(name) for name in group1 if id_by_emb.get(name) is not None}
+        ids2 = {id_by_emb.get(name) for name in group2 if id_by_emb.get(name) is not None}
+    
+        # for link in links:
+        #     if (link["person1_id"] in ids1 and link["person2_id"] in ids2) or \
+        #        (link["person2_id"] in ids1 and link["person1_id"] in ids2):
+        #         return True
+        # return False
+        for link in links:
+            if (link["person1Id"] in ids1 and link["person2Id"] in ids2) or \
+               (link["person2Id"] in ids1 and link["person1Id"] in ids2):
+                return True
+        return False
+    @staticmethod
+    def merge_linked_overlapping_groups(group_dict, persons, links):
+        groups = [set(v) for v in group_dict.values()]
+        merged = []
+    
+        while groups:
+            first, *rest = groups
+            first = set(first)
+    
+            changed = True
+            while changed:
+                changed = False
+                rest2 = []
+                for r in rest:
+                    if first & r and ImageController.are_groups_linked(first, r, persons, links):
+                        first |= r
+                        changed = True
+                    else:
+                        rest2.append(r)
+                rest = rest2
+            merged.append(first)
+            groups = rest
+
+    # Build merged dict using first item of each group as key
+        merged_dict = {}
+        for group in merged:
+            group = sorted(group)
+            merged_dict[group[0]] = group
+    
+        return merged_dict
+
+
+    @staticmethod
+    def get_emb_names(persons, links, person1,personrecords):
+        # print(person1)
+        # print(persons)
+        # print(links)
+        # print(personrecords)
+        try:
+           emb_name = person1["personPath"].split('/')[-1]
+        except:
+              emb_name = person1["path"].split('/')[-1]
+        print(person1,"         ")
+        print(persons,"         ")
+        print(links,"           ")
+        # emb_name = person1["personPath"].split('/')[-1]
+        emb_name = person1["path"].split('/')[-1]
         person1_id = person1["id"]
-        dbemb_id = dbemb_name["id"]
-        if any(
-            (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
-            (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
-            for link in links
-        ):
-            print("Person1 and db_emb_name are directly linked — skipping.")
-            return {}  # They are linked; skip the group entirely
+        
+        link_groups = ImageController.build_link_groups(links)
     
         with open('stored-faces/person_group.json', 'r') as f:
             person_group = json.load(f)
     
         result = {}
     
-        for key, embeddings in person_group.items():
-            # Skip this group if emb_name is the key or is inside its values
-            if emb_name == key or emb_name in embeddings:
-                continue
+        for dbemb_name in persons:
+            db_emb_name = dbemb_name["path"].split('/')[-1]
+
+            dbemb_id = dbemb_name["id"]
+    
+            # Step 1: Check if both persons are in the same link group
+            for group in link_groups.values():
+                if person1_id in group and dbemb_id in group:
+                    print("Person1 and db_emb_name are logically linked in group — returning full group.")
+                    return {}  # Early return with linked group
+                    print("linked_group", list(group))
+                 
+    
+            # Step 2: Check for direct link
+            if any(
+                (link["person1Id"] == person1_id and link["person2Id"] == dbemb_id) or
+                (link["person1Id"] == dbemb_id and link["person2Id"] == person1_id)
+                for link in links
+            ):
+            #   if any(
+            #     (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
+            #     (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
+            #     for link in links
+            # ):
+
+                print("Person1 and db_emb_name are directly linked — skipping.")
+                return {}
+    
+            # Step 3: Check groupings in person_group JSON
+            for key, embeddings in person_group.items():
+                # Skip this group if emb_name is the key or in values
+                if emb_name == key or emb_name in embeddings:
+                    continue
     
                 # Skip if both are in same group already
                 if (key == emb_name or emb_name in embeddings) and (db_emb_name == key or db_emb_name in embeddings):
@@ -1270,39 +1397,66 @@ class ImageController:
 
     def save_unsync_image_with_metadata(data):
         try:
+         print(data)
          for idx, item in enumerate(data):
             print(f"\n🔹 Processing Image {idx + 1}:")
 
-            image_data_b64 = item.get('image_data')
+            # image_data_b64 = item.get('image_data')
             capture_date = item.get('capture_date')
             event_date = item.get('event_date','')
-            last_modified = item.get('last_modified')
+            last_modified_str = item.get('last_modified')
+            hash_val = item.get('hash','')
             location = item.get('location','')
             events = item.get('events', [])
             persons = item.get('persons', [])
+            print(last_modified_str,",",hash_val,capture_date)
 
-            # Image bytes base64 (assuming you renamed "path" to "image_data")
-            
-            # if image_data_b64:
-            #     image_bytes = base64.b64decode(image_data_b64)
-            #     filename = f"{uuid.uuid4().hex}.jpg"
-            #     filepath = os.path.join(FOLDER_NAME, filename)
+            if not hash_val or not last_modified_str:
+                print("❌ Missing hash or last_modified. Skipping...")
+                continue
 
-            #     with open(filepath, 'wb') as f:
-            #         f.write(image_bytes)
+            # Convert string to date
+            # try:
+            #     last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d").date()
+            # except ValueError:
+            #     print("❌ Invalid date format. Skipping...")
+            #     continue
 
-            #     print(f"✅ Saved image to: {filepath}")
-            # else:
-            #     print("⚠️ No image data provided")
+            try:
+                # Try parsing as datetime with time
+                if " " in last_modified_str:
+                    last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d %H:%M:%S").date()
+                else:
+                    last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d").date()
+            except ValueError:
+                print("❌ Invalid date format. Skipping...")
+                continue
 
-            print(f"📅 Capture Date: {capture_date}")
-            print(f"📅 Event Date: {event_date}")
-            print(f"🕓 Last Modified: {last_modified}")
-            print(f"📍 Location: {location}")
-            print(f"🎭 Events: {events}")
+                        # Check if image with hash exists
+            existing_image = Image.query.filter_by(hash=hash_val).first()
 
-            for person in persons:
-                print(f"   👤 Person: {person.get('name')} | Gender: {person.get('gender')} | Path: {person.get('path')}")
+            if existing_image:
+                print(f"✅ Image with hash {hash_val} found with ID {existing_image.id}")
+
+                if last_modified_date > existing_image.last_modified:
+                    for person in persons:
+                        per = Person.query.filter_by(path = person.get('path')).first()
+                    
+                        persons_data = [
+                            {"id": per.id, "name": p.get('path'), "gender": p.get('gender')}
+                            for p in persons
+                                ]
+                        
+                    if persons_data:
+                        edit_payload = {
+                                str(existing_image): {
+                                "persons_id": persons_data,
+                                "event_names": events,
+                                "event_date": event_date,
+                                "location": location
+                                }
+                            }
+                    ImageController.edit_image_data(edit_payload)
 
          return jsonify({'status': 'success', 'message': 'All images processed successfully'}), 200
 
@@ -1314,9 +1468,9 @@ class ImageController:
     
     @staticmethod
     def get_emb_names_for_recognition(persons, links, emb_name):
-        print('person list:', persons)
-        print('links:', links)
-        print('emb name:', emb_name)
+        # print('person list:', persons)
+        # print('links:', links)
+        # print('emb name:', emb_name)
     
         # Load the JSON file
         with open('stored-faces/person_group.json') as f:
@@ -1348,12 +1502,12 @@ class ImageController:
             # Step 3: Find linked person IDs
             linked_ids = set()
             for link in links:
-                # if person_id in (link["person1Id"], link["person2Id"]):
-                #     linked_ids.add(link["person1Id"])
-                #     linked_ids.add(link["person2Id"])
-                if person_id in (link["person1_id"], link["person2_id"]):
-                    linked_ids.add(link["person1_id"])
-                    linked_ids.add(link["person2_id"])
+                if person_id in (link["person1Id"], link["person2Id"]):
+                    linked_ids.add(link["person1Id"])
+                    linked_ids.add(link["person2Id"])
+                # if person_id in (link["person1_id"], link["person2_id"]):
+                #     linked_ids.add(link["person1_id"])
+                #     linked_ids.add(link["person2_id"])
             linked_ids.discard(person_id)
     
             # Step 4: For each linked ID, get embedding name and related groups

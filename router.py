@@ -1,20 +1,13 @@
 from datetime import datetime
-import io
-import json
-import uuid
 from flask import Flask, request, jsonify, send_file,make_response, send_from_directory
 from PIL import Image
 from io import BytesIO
-import tempfile
-import urllib
 from config import db,app
 
-import os, uuid, base64, json, piexif, io
+import os, uuid, base64, json, piexif, io, tempfile, urllib
 
 from werkzeug.utils import secure_filename
 from config import db,app
-import os
-import base64
 
 from Controller.PersonController import PersonController
 from Controller.EventController import EventController
@@ -24,7 +17,7 @@ from Controller.LinkController import LinkController
 from Controller.DirectoryController import DirectoryController
 from Controller.TaggingController import TaggingController
 from Controller.MobileSideController import MobileSideController
-
+from Controller.ImageHistoryController import ImageHistoryController
 
 # ✅ Set this dynamically on startup using your helper
 IMAGE_ROOT_DIR = DirectoryController.get_latest_directory()
@@ -209,7 +202,8 @@ def check_link():
 
 @app.route('/edit_image', methods=['POST'])
 def edit_Image():
-    return ImageController.edit_image_data()
+    data = request.get_json(force=True, silent=True)  # Get JSON data from the request
+    return ImageController.edit_image_data(data)
 
 @app.route('/searching_on_image', methods=['POST'])
 def searching():
@@ -403,6 +397,9 @@ def delete_image(image_id):
     return ImageController.delete_image(image_id)
 
 
+@app.route('/delete_image_metadata/<int:image_id>', methods=['DELETE'])
+def delete_image_metadata(image_id):
+    return ImageController.delete_image_metadata(image_id)
 # --------------------------EVENT---------------------------------
 #done
 @app.route('/fetch_events', methods = ['GET'])
@@ -621,6 +618,20 @@ def merge_persons():
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
   
+
+@app.route('/get_undo_data', methods=['GET'])
+def get_undo_data():
+    try:
+        
+        return ImageHistoryController.get_latest_inactive_non_deleted_images()
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
+
+@app.route('/image_complete_details_undo/<int:image_id>/<int:version>', methods=['GET'])
+def get_image_complete_details_for_undo(image_id,version):
+    return jsonify(ImageHistoryController.get_image_complete_details_undo(image_id,version))
+
 #Aimen's mobile side code requests 
 
 @app.route('/image_processing', methods=['POST'])
@@ -795,7 +806,7 @@ def get_unsync_images():
     data = request.get_json()
     if not isinstance(data, list):
         return jsonify({'error': 'Expected a list of image objects'}), 400
-    ImageController.save_unsync_image_with_metadata(data)    
+    ImageController.save_unsync_image_with_metadata(data)   
     return jsonify(MobileSideController.get_unsync_images())
 
 

@@ -128,7 +128,7 @@ class TaggingController:
             "persons": {},
             "event": "",  # Changed from "events"
             "location": "",
-            "event_date": ""  # Optional field (remove if not used)
+            "event_date": ""
         }
 
         if "Exif" in exif_data:
