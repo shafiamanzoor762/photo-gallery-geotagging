@@ -1115,7 +1115,9 @@ class ImageController:
                             Person.name == "unknown",
                             Person.name.is_(None),
                             Person.gender.is_(None),
-                            Person.gender == 'U'
+                            Person.gender == 'U',
+                            Person.dob=='',
+                            Person.dob.is_(None)
                         )
                     ),
                     ~Image.events.any(),  # No events at all
