@@ -86,6 +86,8 @@ class ImageController:
         if event_date:
             image.event_date = event_date
             image.last_modified=datetime.utcnow()
+        
+        print('done with image')
 
         if event_names:
             image.events = []  # Clears the relationship in the ORM
@@ -100,8 +102,9 @@ class ImageController:
             for event in events:
                 if event not in image.events:
                     image.events.append(event)
-
-        print(location_data)
+        
+        print('done with events')
+        # print(location_data)
 
         # Update location
         location_name = None
@@ -138,17 +141,6 @@ class ImageController:
 # ///////
             # Check if the location exists
             existing_location = Location.query.filter_by(name=location_name).first()
-            # existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
-
-            # if existing_location:
-            #     image.location_id = existing_location.id  # Associate existing location
-            # else:
-            #     # Create new location
-            #     print("yes am here")
-            #     new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
-            #     db.session.add(new_location)
-            #     db.session.flush()  # Get the new location ID before committing
-            #     image.location_id = new_location.id
             
             # Check if the location with the same name exists
             existing_location = Location.query.filter_by(name=location_name).first()
@@ -168,7 +160,9 @@ class ImageController:
 # ///////
         # Update persons if provided
         if persons:
+            print('💜👌💜👌------------->',persons)
             for person_data in persons:
+                print('💜--------------->personData',person_data)
                 dob_str = person_data.get('dob')
                 dob = None
                 if dob_str :
@@ -180,19 +174,22 @@ class ImageController:
 
                 print(f"Received DOB: {dob_str}, Parsed DOB: {dob}")
 
-                person_id = person_data.get('id')
+                # person_id = person_data.get('id')
                 person_name = person_data.get('name')
+                person_path = person_data.get('path')
+                print('------------>',person_path)
                 gender = person_data.get('gender')
                 age =person_data.get('age')
-                if person_id:
-                    person = Person.query.filter(Person.id == person_id).first()
+                if person_path:
+                    person = Person.query.filter(Person.path == person_path).first()
+                    print('------------>',person)
                     if person:
                         if person_name and gender:
                             person.name = person_name
                             person.gender  = gender
                             person_data['path'] = person.path # saving this for tagging
                         else:
-                            return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
+                            return jsonify({"error": f"Name is required for person with path {person_path}"}), 400
                         
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         persons_db = Person.query.all()
@@ -241,20 +238,21 @@ class ImageController:
                                 person.gender = gender
                                 person.dob = dob
                                 person.age = age
-                                person_data['path'] = person.path  # For tagging
+                                person_data['id'] = person.id  # For tagging
                             else:
-                                return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
+                                return jsonify({"error": f"Name is required for person with path {person_path}"}), 400
                         else:
                             print("No match found in DB for:", pathes)
 
 
                     else:
-                        return jsonify({"error": f"Person with id {person_id} not found"}), 404
+                        return jsonify({"error": f"Person with path {person_path} not found"}), 404
                 else:
                     return jsonify({"error": "Person id is required"}), 400
 
         # Save changes to the database
         try:
+            image.is_sync = False
             db.session.commit()
             # return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
         except SQLAlchemyError as e:
@@ -875,15 +873,6 @@ class ImageController:
         except Exception as e:
             # Catch any exceptions and return an error response
             return jsonify({"error": str(e)}), 500
-            
-
-    @staticmethod
-    def sync_images():
-        images = Image.query.filter(Image.is_sync == False).all()
-        syncImage=[]
-        for image in images:
-                syncImage.append(image.to_dict())
-        return jsonify(syncImage)
         
     @staticmethod
     def Load_images():
@@ -1419,6 +1408,14 @@ class ImageController:
         return result
 
 
+    @staticmethod
+    def sync_images():
+        images = Image.query.filter(Image.is_sync == False).all()
+        syncImage=[]
+        for image in images:
+                syncImage.append(image.to_dict())
+        return jsonify(syncImage)
+    
     def save_unsync_image_with_metadata(data):
         try:
          print(data)
@@ -1433,6 +1430,7 @@ class ImageController:
             location = item.get('location','')
             events = item.get('events', [])
             persons = item.get('persons', [])
+            links = item.get('links', [])
             print(last_modified_str,",",hash_val,capture_date)
 
             if not hash_val or not last_modified_str:
@@ -1446,48 +1444,84 @@ class ImageController:
             #     print("❌ Invalid date format. Skipping...")
             #     continue
 
-            try:
                 # Try parsing as datetime with time
-                if " " in last_modified_str:
-                    last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d %H:%M:%S").date()
-                else:
-                    last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d").date()
-            except ValueError:
-                print("❌ Invalid date format. Skipping...")
-                continue
+            if " " in last_modified_str:
+                last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d %H:%M:%S")
+                
+
+            
 
                         # Check if image with hash exists
             existing_image = Image.query.filter_by(hash=hash_val).first()
+            print(last_modified_str,'🙌--------->',existing_image.last_modified)
 
             if existing_image:
                 print(f"✅ Image with hash {hash_val} found with ID {existing_image.id}")
 
                 if last_modified_date > existing_image.last_modified:
-                    for person in persons:
-                        per = Person.query.filter_by(path = person.get('path')).first()
+                    # persons_data = []
+                    # for person in persons:
+                    #     per = Person.query.filter_by(path = person.get('path')).first()
                     
-                        persons_data = [
-                            {"id": per.id, "name": p.get('path'), "gender": p.get('gender')}
-                            for p in persons
-                                ]
+                    persons_data = [
+                        {"name": p.get('name'), "path": p.get('path'), "gender": p.get('gender')}
+                        for p in persons
+                        ]
                         
                     if persons_data:
                         edit_payload = {
-                                str(existing_image): {
+                                str(existing_image.id): {
                                 "persons_id": persons_data,
                                 "event_names": events,
                                 "event_date": event_date,
                                 "location": location
                                 }
                             }
-                    ImageController.edit_image_data(edit_payload)
+                        ImageController.edit_image_data(edit_payload)
+                        ImageController.create_links_if_not_exist(links)
+                        existing_image.is_sync = True
+                        print('👌-----------------------------------------saving--------')
+                        db.session.commit()
 
          return jsonify({'status': 'success', 'message': 'All images processed successfully'}), 200
 
         except Exception as e:
             print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
+        
+    @staticmethod
+    def create_links_if_not_exist(links):
+     for path1, related_paths in links.items():
+        # Get person1 object from path
+        person1 = Person.query.filter_by(path=path1).first()
+        if not person1:
+            print(f"❌ Person not found for path: {path1}")
+            continue
 
+        for path2 in related_paths:
+            # Get person2 object from path
+            person2 = Person.query.filter_by(path=path2).first()
+            if not person2:
+                print(f"❌ Person not found for path: {path2}")
+                continue
+
+            # Check if link already exists (in either direction)
+            existing_link = Link.query.filter(
+                ((Link.person1_id == person1.id) & (Link.person2_id == person2.id)) |
+                ((Link.person1_id == person2.id) & (Link.person2_id == person1.id))
+            ).first()
+
+            if existing_link:
+                print(f"🔗 Link already exists between {person1.name} and {person2.name}")
+                continue
+
+            # If not, create a new Link
+            new_link = Link(person1_id=person1.id, person2_id=person2.id)
+            db.session.add(new_link)
+            print(f"✅ Link created between {person1.name} and {person2.name}")
+
+     db.session.commit()
+     print("🎉 All links processed and committed.")
 
     
     @staticmethod

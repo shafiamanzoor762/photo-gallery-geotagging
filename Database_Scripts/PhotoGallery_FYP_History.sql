@@ -52,6 +52,8 @@ ALTER TABLE ImageHistory
 ADD hash VARCHAR(64) NOT NULL;
 ALTER TABLE ImageHistory
 ADD is_Active bit Not NULL DEFAULT 0;
+ALTER TABLE imageHistory
+ALTER COLUMN last_modified DATETIME;
 
 
 --for undo add created_at column
