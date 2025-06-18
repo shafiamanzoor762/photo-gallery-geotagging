@@ -171,7 +171,7 @@ def get_all_person():
 
 @app.route('/person/<int:person_id>', methods=['GET'])
 def get_person_and_linked_as_list(person_id):
-    return PersonController.get_person_and_linked_as_list(person_id)
+    return jsonify(PersonController.get_person_and_linked_as_list(person_id))
   
 #--------------------Link----------------
 @app.route('/create_link', methods=['POST'])

@@ -582,7 +582,7 @@ class PersonController():
             } for p in all_persons
         ]
 
-        return jsonify(person_list), 200
+        return person_list, 200
     
 
     def update_face_paths_json(json_file, path, matchedPath=None):

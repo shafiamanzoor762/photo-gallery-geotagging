@@ -701,7 +701,13 @@ class ImageController:
             }
 
         persons = [
-        {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender,"dob":person.dob,"age":person.age}
+        {"id": person.id, 
+         "name": person.name, 
+         "path": person.path, 
+         "gender": person.gender,
+        #  "dob":person.dob,
+        #  "age":person.age
+         }
         for person in image.persons
         ]
     
@@ -1497,7 +1503,7 @@ class ImageController:
 
             
 
-                        # Check if image with hash exists
+            # Check if image with hash exists
             existing_image = Image.query.filter_by(hash=hash_val).first()
             print(last_modified_str,'🙌--------->',existing_image.last_modified)
 
