@@ -1456,7 +1456,10 @@ class ImageController:
 #             "path": "face_images/7d7cb89d68414b22a99ec6ddafb75f51.jpg"
 #         }
 #     ],
-#    
+#    'links': {
+#               'face_images/2ff77cdd91324465bce5d30ca22e4b42.jpg': [], 
+#               'face_images/7d7cb89d68414b22a99ec6ddafb75f51.jpg': ['face_images/2ff77cdd91324465bce5d30ca22e4b42.jpg']
+#             }
 # }
 
     def save_unsync_image_with_metadata(data):
