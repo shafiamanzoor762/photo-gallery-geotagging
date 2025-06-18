@@ -638,6 +638,19 @@ def undo_data(image_id,version):
     print(image_id,version)
     return jsonify(ImageHistoryController.undo_data(image_id,version))
 
+@app.route('/bulk_undo', methods=['POST'])
+def bulk_undo():
+    data=request.get_json()
+    print("data",data)
+    for item in data:
+        image_id = item.get('id')
+        version = item.get('version_no')
+        if image_id is not None and version is not None:
+            ImageHistoryController.undo_data(image_id, version)
+    return jsonify({"message": "Bulk undo completed"}), 200
+
+
+
 #Aimen's mobile side code requests 
 
 @app.route('/image_processing', methods=['POST'])
