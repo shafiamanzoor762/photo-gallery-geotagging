@@ -701,7 +701,7 @@ class ImageController:
             }
 
         persons = [
-        {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender,"DOB":person.dob,"Age":person.age}
+        {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender,"dob":person.dob,"age":person.age}
         for person in image.persons
         ]
     
@@ -1418,6 +1418,47 @@ class ImageController:
                 syncImage.append(image.to_dict())
         return jsonify(syncImage)
     
+# {
+#     "capture_date": "2025-06-17",
+#     "event_date": "2025-06-10",
+#     "events": [
+#         {
+#             "id": 2,
+#             "name": "Convocation"
+#         }
+#     ],
+#     "hash": "8d97807e7d37bf87273d59ac0d1bbf30790322f5f5ec61c26845c3ae52390cc9",
+#     "id": 13,
+#     "is_sync": true,
+#     "last_modified": "2025-06-18 12:25:23",
+#     "location": {
+#         "id": 3,
+#         "latitude": 0.0,
+#         "longitude": 0.0,
+#         "name": "B"
+#     },
+#     "path": "E:/fyp/uni_images/2020-01-30 20th Convocation-20250418T034555Z-002/2020-01-30 20th Convocation/4-test/DSC_5274.JPG",
+#     "persons": [
+#         {
+#             "age": -1,
+#             "dob": "Wed, 18 Jun 2025 00:00:00 GMT",
+#             "gender": "M",
+#             "id": 38,
+#             "name": "Am",
+#             "path": "face_images/2ff77cdd91324465bce5d30ca22e4b42.jpg"
+#         },
+#         {
+#             "age": -1,
+#             "dob": "Wed, 18 Jun 2025 00:00:00 GMT",
+#             "gender": "M",
+#             "id": 39,
+#             "name": "Al",
+#             "path": "face_images/7d7cb89d68414b22a99ec6ddafb75f51.jpg"
+#         }
+#     ],
+#    
+# }
+
     def save_unsync_image_with_metadata(data):
         try:
          print(data)
@@ -1433,7 +1474,7 @@ class ImageController:
             events = item.get('events', [])
             persons = item.get('persons', [])
             links = item.get('links', [])
-            print(last_modified_str,",",hash_val,capture_date)
+            print(last_modified_str,",",hash_val,capture_date,links)
 
             if not hash_val or not last_modified_str:
                 print("❌ Missing hash or last_modified. Skipping...")
@@ -1466,9 +1507,14 @@ class ImageController:
                     #     per = Person.query.filter_by(path = person.get('path')).first()
                     
                     persons_data = [
-                        {"name": p.get('name'), "path": p.get('path'), "gender": p.get('gender')}
-                        for p in persons
-                        ]
+                        {
+                            "name": p.get('name'),
+                            "path": p.get('path'),
+                            "gender": p.get('gender'),
+                            # "dob": p.get('dob'),
+                            # "age": p.get('age')
+                            }
+                            for p in persons]
                         
                     if persons_data:
                         edit_payload = {
@@ -1479,8 +1525,9 @@ class ImageController:
                                 "location": location
                                 }
                             }
-                        ImageController.edit_image_data(edit_payload)
+                        
                         ImageController.create_links_if_not_exist(links)
+                        ImageController.edit_image_data(edit_payload)
                         existing_image.is_sync = True
                         print('👌-----------------------------------------saving--------')
                         db.session.commit()
