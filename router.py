@@ -647,7 +647,7 @@ def bulk_undo():
         version = item.get('version_no')
         if image_id is not None and version is not None:
             ImageHistoryController.undo_data(image_id, version)
-    return jsonify({"message": "Bulk undo completed"}), 200
+    return jsonify({"path": "Bulk undo completed"}), 200
 
 
 
