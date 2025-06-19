@@ -139,9 +139,7 @@ class ImageController:
 
 
 # ///////
-            # Check if the location exists
-            existing_location = Location.query.filter_by(name=location_name).first()
-            
+           
             # Check if the location with the same name exists
             existing_location = Location.query.filter_by(name=location_name).first()
 
@@ -176,8 +174,10 @@ class ImageController:
 
                 # person_id = person_data.get('id')
                 person_name = person_data.get('name')
-                person_path = person_data.get('path')
-                print('------------>',person_path)
+                person_pathh = person_data.get('path')
+                print('------------>here',person_pathh)
+                person_path = person_pathh.split("/", 3)[-1]
+                print(person_path)
                 gender = person_data.get('gender')
                 age =person_data.get('age')
                 if person_path:
@@ -883,7 +883,7 @@ class ImageController:
     @staticmethod
     def Load_images():
         data = request.get_json()
-        
+        print("dd",data)
         if not data:
             return jsonify({"error": "No data provided"}), 400
         
