@@ -5,6 +5,7 @@ from collections import defaultdict
 
 from Model.Person import Person
 from Model.Image import Image
+from Model.Link import Link
 
 from Controller.PersonController import PersonController
 from Controller.ImageController import ImageController
@@ -264,11 +265,69 @@ class MobileSideController:
     def get_unsync_images():
         images = Image.query.filter(Image.is_sync == False).all()
         sync_images = []
+        link = []
 
         for image in images:
             image_details = ImageController.get_image_complete_details(image.id)
             if image_details:
                 sync_images.append(image_details)
+                
+                print(image.persons)
+                for person in image.persons:
+                    res, status = PersonController.get_person_and_linked_as_list(person.id)
+                    if status == 200:
+                        link_data = MobileSideController.convert_to_linked_paths(res)
+                        link.append(link_data)
 
+                    # link.append(MobileSideController.convert_to_linked_paths(PersonController.get_person_and_linked_as_list(person.id)))
+        print('😍link',link)
         print("sync_images",sync_images)
         return sync_images
+    
+
+
+    def convert_to_linked_paths(person_list):
+     if not person_list or len(person_list) < 2:
+        return {}
+
+     first_path = person_list[0].get("path")
+     remaining_paths = [p["path"] for p in person_list[1:] if "path" in p]
+
+     return {first_path: remaining_paths}
+
+
+    def build_links_from_image(image):
+     links_dict = defaultdict(list)
+
+     for person in image.persons:
+        person_id = person.id
+
+        # Call the method (directly invoke underlying logic instead of jsonify)
+        main_person = Person.query.get(person_id)
+        if not main_person:
+            continue
+
+        # Get linked IDs (bidirectionally)
+        linked_ids = db.session.query(Link.person2_id).filter(Link.person1_id == person_id).all()
+        linked_ids += db.session.query(Link.person1_id).filter(Link.person2_id == person_id).all()
+        
+        # Flatten and remove duplicates and self
+        linked_ids = set(pid for tup in linked_ids for pid in tup if pid != person_id)
+
+        # Query linked persons
+        linked_persons = Person.query.filter(Person.id.in_(linked_ids)).all()
+
+        # Add links to the dict using path
+        current_path = main_person.path
+        linked_paths = [p.path for p in linked_persons if p.path and p.path != current_path]
+
+        # Avoid overwriting if already added
+        if current_path not in links_dict:
+            links_dict[current_path] = []
+
+        # Add unique paths
+        for lp in linked_paths:
+            if lp not in links_dict[current_path]:
+                links_dict[current_path].append(lp)
+
+     return dict(links_dict)

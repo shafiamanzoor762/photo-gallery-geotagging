@@ -36,7 +36,7 @@ CREATE TABLE Image (
     is_sync BIT,  -- Using BIT instead of BOOLEAN
     capture_date DATE,
     event_date DATE,  -- Event date
-    last_modified DATE,
+    last_modified DATETIME,
     location_id INT,  -- Define location_id column for foreign key reference
     CONSTRAINT FK_Image_Location FOREIGN KEY (location_id) REFERENCES Location(id)
 );

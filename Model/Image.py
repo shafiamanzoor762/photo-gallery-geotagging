@@ -8,7 +8,7 @@ class Image(db.Model):
     is_sync = db.Column(db.Boolean, nullable=False)
     capture_date = db.Column(db.Date)
     event_date = db.Column(db.Date)
-    last_modified = db.Column(db.Date)
+    last_modified = db.Column(db.DateTime)
     hash = db.Column(db.String(255), unique=True, nullable=False)  # <-- Important
 
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'), nullable=True)
