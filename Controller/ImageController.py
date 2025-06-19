@@ -630,7 +630,7 @@ class ImageController:
                     normalized_path = file_path.replace("\\", "/")
                     face_path_1 = normalized_path.replace('stored-faces', 'face_images')
                     matched_person = Person.query.filter_by(path=face_path_1).first()
-                    PersonController.update_face_paths_json("./stored-faces/recognize_person.json", f"stored-faces\{face_filename}",matchedPath=normalized_path)
+                    PersonController.update_face_paths_json("./stored-faces/person_group.json", face_filename,matchedPath=os.path.basename(result["file"]))
 
                     for res in  match_data["results"]:
                         resembeled_path = os.path.basename(res["file"])
