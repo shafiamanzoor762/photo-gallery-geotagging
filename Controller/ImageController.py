@@ -630,7 +630,11 @@ class ImageController:
                     normalized_path = file_path.replace("\\", "/")
                     face_path_1 = normalized_path.replace('stored-faces', 'face_images')
                     matched_person = Person.query.filter_by(path=face_path_1).first()
+<<<<<<< HEAD
                     PersonController.update_face_paths_json("./stored-faces/person_group.json", face_filename,matchedPath=os.path.basename(result["file"]))
+=======
+                    PersonController.update_face_paths_json("./stored-faces/person_group.json", f"stored-faces\{face_filename}",matchedPath=normalized_path)
+>>>>>>> aeac7facdf83ff8c6cffd1b7f4ed9f969a078c1b
 
                     for res in  match_data["results"]:
                         resembeled_path = os.path.basename(res["file"])
@@ -1248,7 +1252,7 @@ class ImageController:
     
         # Initialize parent map
         for link in links:
-    # Dynamically detect key style
+            # Dynamically detect key styleAdd commentMore actions
             if "person1Id" in link and "person2Id" in link:
                 a, b = link["person1Id"], link["person2Id"]
             elif "person1_id" in link and "person2_id" in link:
@@ -1256,14 +1260,11 @@ class ImageController:
             else:
                 continue  # Skip if keys are missing or inconsistent
         
-            # Initialize union-find parent structure
             if a not in parent:
                 parent[a] = a
             if b not in parent:
                 parent[b] = b
-        
             union(a, b)
-
     
         # Build groups
         groups = {}
@@ -1276,14 +1277,18 @@ class ImageController:
         return groups
     @staticmethod
     def are_groups_linked(group1, group2, persons, links):
-        
         id_by_emb = {person["path"].split("/")[-1]: person["id"] for person in persons}
         
         ids1 = {id_by_emb.get(name) for name in group1 if id_by_emb.get(name) is not None}
         ids2 = {id_by_emb.get(name) for name in group2 if id_by_emb.get(name) is not None}
     
+        # for link in links:
+        #     if (link["person1_id"] in ids1 and link["person2_id"] in ids2) or \
+        #        (link["person2_id"] in ids1 and link["person1_id"] in ids2):
+        #         return True
+        # return False
         for link in links:
-        # Dynamically detect the keys
+            # Dynamically detect the keysAdd commentMore actions
             if "person1Id" in link and "person2Id" in link:
                 p1 = link["person1Id"]
                 p2 = link["person2Id"]
@@ -1334,16 +1339,14 @@ class ImageController:
         # print(persons)
         # print(links)
         # print(personrecords)
-        
         if "personPath" in person1:
            emb_name = person1["personPath"].split('/')[-1]
         elif "path" in person1:
             emb_name = person1["path"].split('/')[-1]
-        # print(person1,"         ")
-        # print(persons,"         ")
-        # print(links,"           ")
-        # emb_name = person1["personPath"].split('/')[-1]
-        # emb_name = person1["path"].split('/')[-1]
+        print(person1,"         ")
+        print(persons,"         ")
+        print(links,"           ")
+        
         person1_id = person1["id"]
         
         link_groups = ImageController.build_link_groups(links)
@@ -1368,7 +1371,7 @@ class ImageController:
     
             # Step 2: Check for direct link
             if any(
-    (
+                (
         (
             ("person1Id" in link and "person2Id" in link and
              ((link["person1Id"] == person1_id and link["person2Id"] == dbemb_id) or
@@ -1381,8 +1384,7 @@ class ImageController:
     )
     for link in links
 ):
-
-            # if any(
+            #   if any(
             #     (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
             #     (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
             #     for link in links
@@ -1520,8 +1522,8 @@ class ImageController:
                             "name": p.get('name'),
                             "path": p.get('path'),
                             "gender": p.get('gender'),
-                            # "dob": p.get('dob'),
-                            # "age": p.get('age')
+                            "dob": p.get('dob'),
+                            "age": p.get('age')
                             }
                             for p in persons]
                         
@@ -1618,7 +1620,7 @@ class ImageController:
             # Step 3: Find linked person IDs
             linked_ids = set()
             for link in links:
-                # Dynamically get the correct keys
+                # Dynamically get the correct keysAdd commentMore actions
                 if "person1Id" in link and "person2Id" in link:
                     a, b = link["person1Id"], link["person2Id"]
                 elif "person1_id" in link and "person2_id" in link:
@@ -1629,10 +1631,6 @@ class ImageController:
                 if person_id in (a, b):
                     linked_ids.add(a)
                     linked_ids.add(b)
-
-                # if person_id in (link["person1_id"], link["person2_id"]):
-                #     linked_ids.add(link["person1_id"])
-                #     linked_ids.add(link["person2_id"])
             linked_ids.discard(person_id)
     
             # Step 4: For each linked ID, get embedding name and related groups
