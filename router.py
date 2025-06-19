@@ -8,6 +8,8 @@ import os, uuid, base64, json, piexif, io, tempfile, urllib
 
 from werkzeug.utils import secure_filename
 from config import db,app
+from Model.Person import Person
+
 
 from Controller.PersonController import PersonController
 from Controller.EventController import EventController
@@ -113,7 +115,7 @@ def recognize_person():
          # Get query parameters from the GET request
          image_path = request.args.get('image_path')
          person_name = request.args.get('name', None)
-
+ 
          if image_path:
              print(image_path)
             # Call the method from the PictureController class
@@ -171,7 +173,7 @@ def get_all_person():
 
 @app.route('/person/<int:person_id>', methods=['GET'])
 def get_person_and_linked_as_list(person_id):
-    return jsonify(PersonController.get_person_and_linked_as_list(person_id))
+    return PersonController.get_person_and_linked_as_list(person_id)
   
 #--------------------Link----------------
 @app.route('/create_link', methods=['POST'])
@@ -636,25 +638,6 @@ def get_undo_data():
 def get_image_complete_details_for_undo(image_id,version):
     return jsonify(ImageHistoryController.get_image_complete_details_undo(image_id,version))
 
-
-@app.route('/undo_data/<int:image_id>/<int:version>', methods=['GET'])
-def undo_data(image_id,version):
-    print(image_id,version)
-    return jsonify(ImageHistoryController.undo_data(image_id,version))
-
-@app.route('/bulk_undo', methods=['POST'])
-def bulk_undo():
-    data=request.get_json()
-    print("data",data)
-    for item in data:
-        image_id = item.get('id')
-        version = item.get('version_no')
-        if image_id is not None and version is not None:
-            ImageHistoryController.undo_data(image_id, version)
-    return jsonify({"path": "Bulk undo completed"}), 200
-
-
-
 #Aimen's mobile side code requests 
 
 @app.route('/image_processing', methods=['POST'])
@@ -709,6 +692,9 @@ def get_emb_names_for_recognition():
     persons = data.get("persons", [])
     links = data.get("links", [])
     emb_name = data.get("person1", [])
+    print("🧪 person list received:", persons)
+    print("🔗 links received:", links)
+    print("🎯 embedding name received:", emb_name)
     return ImageController.get_emb_names_for_recognition(persons,links,emb_name)
 
 
@@ -828,6 +814,42 @@ def get_unsync_images():
         return jsonify({'error': 'Expected a list of image objects'}), 400
     ImageController.save_unsync_image_with_metadata(data)   
     return jsonify(MobileSideController.get_unsync_images())
+
+
+
+@app.route('/api/images-by-person', methods=['GET'])
+def get_images_by_person():
+    person_name = request.args.get('name')
+    print(f"Received request for person name: {person_name}")  # Debug: check incoming parameter
+    
+    if not person_name:
+        print("No person name provided in request.")  # Debug
+        return jsonify({"error": "Missing 'name' parameter"}), 400
+
+    person = Person.query.filter_by(name=person_name).first()
+    print(f"Queried person: {person}")  # Debug: see if person is found or None
+    
+    if not person:
+        print(f"Person with name '{person_name}' not found.")  # Debug
+        return jsonify({"error": "Person not found"}), 404
+
+    images = [img for img in person.images if not img.is_deleted]
+    print(f"Found {len(images)} images for person '{person_name}'.")  # Debug
+    
+    event_images = {}
+
+    for image in images:
+        print(f"Processing image: {image.path}")  # Debug
+        for event in image.events.all():
+            print(f" - Event: {event.name}")  # Debug
+            if event.name not in event_images:
+                event_images[event.name] = []
+            event_images[event.name].append(image.path)
+
+    print(f"Returning event_images dictionary: {event_images}")  # Debug
+
+    return jsonify(event_images)
+
 
 
 
