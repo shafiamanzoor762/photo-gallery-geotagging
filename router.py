@@ -22,10 +22,10 @@ from Controller.MobileSideController import MobileSideController
 from Controller.ImageHistoryController import ImageHistoryController
 
 # ✅ Set this dynamically on startup using your helper
-# IMAGE_ROOT_DIR = DirectoryController.get_latest_directory()
-# print(IMAGE_ROOT_DIR)
-# if not IMAGE_ROOT_DIR:
-#     raise RuntimeError("No ROOT_DIR found in directory.env")
+IMAGE_ROOT_DIR = DirectoryController.get_latest_directory()
+print(IMAGE_ROOT_DIR)
+if not IMAGE_ROOT_DIR:
+    raise RuntimeError("No ROOT_DIR found in directory.env")
 
 
 FACES_FOLDER = 'stored-faces'  
