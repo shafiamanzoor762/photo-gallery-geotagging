@@ -17,7 +17,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:1234@DESKTOP-L6C900S\\SQLEXPRESS/PhotoGalleryFYP?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'
 
 #rafia
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:1234@DESKTOP-L6C900S\SQLEXPRESS/PhotoGalleryFYP?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:1234@DESKTOP-L6C900S\\SQLEXPRESS/PhotoGalleryFYP?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'
 # Configure your database URI
 # iqra db connection string
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:12345@DESKTOP-4S96KP6\SQLEXPRESS/PhotoGallery1?driver=ODBC+Driver+17+for+SQL+Server'
