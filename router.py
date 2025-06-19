@@ -847,38 +847,6 @@ def get_images_by_person():
     return jsonify(event_images)
 
 
-@app.route('/api/images-by-person', methods=['GET'])
-def get_images_by_person():
-    person_name = request.args.get('name')
-    print(f"Received request for person name: {person_name}")  # Debug: check incoming parameter
-    
-    if not person_name:
-        print("No person name provided in request.")  # Debug
-        return jsonify({"error": "Missing 'name' parameter"}), 400
-
-    person = Person.query.filter_by(name=person_name).first()
-    print(f"Queried person: {person}")  # Debug: see if person is found or None
-    
-    if not person:
-        print(f"Person with name '{person_name}' not found.")  # Debug
-        return jsonify({"error": "Person not found"}), 404
-
-    images = [img for img in person.images if not img.is_deleted]
-    print(f"Found {len(images)} images for person '{person_name}'.")  # Debug
-    
-    event_images = {}
-
-    for image in images:
-        print(f"Processing image: {image.path}")  # Debug
-        for event in image.events.all():
-            print(f" - Event: {event.name}")  # Debug
-            if event.name not in event_images:
-                event_images[event.name] = []
-            event_images[event.name].append(image.path)
-
-    print(f"Returning event_images dictionary: {event_images}")  # Debug
-
-    return jsonify(event_images)
 
 
 @app.route('/health')
