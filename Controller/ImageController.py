@@ -1520,8 +1520,8 @@ class ImageController:
                             "name": p.get('name'),
                             "path": p.get('path'),
                             "gender": p.get('gender'),
-                            # "dob": p.get('dob'),
-                            # "age": p.get('age')
+                            "dob": p.get('dob'),
+                            "age": p.get('age')
                             }
                             for p in persons]
                         
