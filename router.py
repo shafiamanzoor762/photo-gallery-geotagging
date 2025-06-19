@@ -106,6 +106,22 @@ def extract_face():
      except Exception as exp:
         return jsonify({'error':str(exp)}), 500
 
+@app.route('/undo_data/<int:image_id>/<int:version>', methods=['GET'])
+def undo_data(image_id,version):
+    print(image_id,version)
+    return jsonify(ImageHistoryController.undo_data(image_id,version))
+
+@app.route('/bulk_undo', methods=['POST'])
+def bulk_undo():
+    data=request.get_json()
+    print("data",data)
+    for item in data:
+        image_id = item.get('id')
+        version = item.get('version_no')
+        if image_id is not None and version is not None:
+            ImageHistoryController.undo_data(image_id, version)
+    return jsonify({"path": "Bulk undo completed"}), 200
+
 
 @app.route('/recognize_person', methods=['POST'])
 def recognize_person():
@@ -173,7 +189,8 @@ def get_all_person():
 
 @app.route('/person/<int:person_id>', methods=['GET'])
 def get_person_and_linked_as_list(person_id):
-    return PersonController.get_person_and_linked_as_list(person_id)
+    return jsonify(PersonController.get_person_and_linked_as_list(person_id))
+
   
 #--------------------Link----------------
 @app.route('/create_link', methods=['POST'])
