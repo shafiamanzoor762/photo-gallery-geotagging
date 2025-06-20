@@ -195,7 +195,7 @@ class ImageController:
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         persons_db = Person.query.all()
                         person_list = [
-                           {"id": p.id, "name": p.name, "path": p.path , "dob":p.dob , "age" : p.age}
+                           {"id": p.id, "name": p.name, "path": p.path }
                            for p in persons_db
                             ]
                         links = Link.query.all()
