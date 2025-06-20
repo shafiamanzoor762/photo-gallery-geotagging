@@ -191,13 +191,15 @@ class ImageController:
                             person.name = person_name
                             person.gender  = gender
                             person_data['path'] = person.path # saving this for tagging
+                            # person.dob = person.dob
+                            # person.age =person.age
                         else:
                             return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
                         
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         persons_db = Person.query.all()
                         person_list = [
-                           {"id": p.id, "name": p.name, "path": p.path}
+                           {"id": p.id, "name": p.name, "path": p.path , "dob":p.dob , "age" : p.age}
                            for p in persons_db
                             ]
                         links = Link.query.all()
@@ -703,7 +705,9 @@ class ImageController:
             }
 
         persons = [
-        {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender,"DOB":person.dob,"Age":person.age}
+        {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender,
+         "DOB": person.dob.strftime('%Y-%m-%d') if person.dob else None,
+         "Age":person.age}
         for person in image.persons
         ]
     
@@ -1461,8 +1465,10 @@ class ImageController:
 
             if existing_image:
                 print(f"✅ Image with hash {hash_val} found with ID {existing_image.id}")
+                print("last_MODIFIED ",{last_modified_date}," and", {existing_image.last_modified})
 
                 if last_modified_date > existing_image.last_modified:
+                    print("last_MODIFIED ${last_modified_date} and ${existing_image.last_modified}")
                     for person in persons:
                         per = Person.query.filter_by(path = person.get('path')).first()
                     
