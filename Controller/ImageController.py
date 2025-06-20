@@ -234,7 +234,7 @@ class ImageController:
                         print("gender:", gender)
                         print("dob:", dob)
                         if person:
-                            if person_name and gender and dob:
+                            if person_name and gender :
                                 person.name = person_name
                                 person.gender = gender
                                 person.dob = dob
