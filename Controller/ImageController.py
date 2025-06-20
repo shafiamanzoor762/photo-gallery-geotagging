@@ -705,8 +705,8 @@ class ImageController:
          "name": person.name, 
          "path": person.path, 
          "gender": person.gender,
-        #  "dob":person.dob,
-        #  "age":person.age
+         "dob":person.dob,
+         "age":person.age
          }
         for person in image.persons
         ]
