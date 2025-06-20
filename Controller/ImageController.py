@@ -139,9 +139,7 @@ class ImageController:
 
 
 # ///////
-            # Check if the location exists
-            existing_location = Location.query.filter_by(name=location_name).first()
-            
+           
             # Check if the location with the same name exists
             existing_location = Location.query.filter_by(name=location_name).first()
 
@@ -177,7 +175,8 @@ class ImageController:
                 # person_id = person_data.get('id')
                 person_name = person_data.get('name')
                 person_path = person_data.get('path')
-                print('------------>',person_path)
+                print('------------>here',person_path)
+                print(person_path)
                 gender = person_data.get('gender')
                 age =person_data.get('age')
                 if person_path:
@@ -188,13 +187,15 @@ class ImageController:
                             person.name = person_name
                             person.gender  = gender
                             person_data['path'] = person.path # saving this for tagging
+                            # person.dob = person.dob
+                            # person.age =person.age
                         else:
                             return jsonify({"error": f"Name is required for person with path {person_path}"}), 400
                         
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         persons_db = Person.query.all()
                         person_list = [
-                           {"id": p.id, "name": p.name, "path": p.path}
+                           {"id": p.id, "name": p.name, "path": p.path , "dob":p.dob , "age" : p.age}
                            for p in persons_db
                             ]
                         links = Link.query.all()
@@ -233,7 +234,7 @@ class ImageController:
                         print("gender:", gender)
                         print("dob:", dob)
                         if person:
-                            if person_name and gender and dob:
+                            if person_name and gender :
                                 person.name = person_name
                                 person.gender = gender
                                 person.dob = dob
@@ -630,7 +631,8 @@ class ImageController:
                     normalized_path = file_path.replace("\\", "/")
                     face_path_1 = normalized_path.replace('stored-faces', 'face_images')
                     matched_person = Person.query.filter_by(path=face_path_1).first()
-                    PersonController.update_face_paths_json("./stored-faces/person_group.json", f"stored-faces\{face_filename}",matchedPath=normalized_path)
+
+                    PersonController.update_face_paths_json("./stored-faces/person_group.json", face_filename,matchedPath=os.path.basename(result["file"]))
 
                     for res in  match_data["results"]:
                         resembeled_path = os.path.basename(res["file"])
@@ -700,13 +702,16 @@ class ImageController:
             "longitude": float(image.location.longitude)
             }
 
+# {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender,
+#          "DOB": person.dob.strftime('%Y-%m-%d') if person.dob else None,
+#          "Age":person.age}
         persons = [
         {"id": person.id, 
          "name": person.name, 
          "path": person.path, 
          "gender": person.gender,
-        #  "dob":person.dob,
-        #  "age":person.age
+         "dob":person.dob,
+         "age":person.age
          }
         for person in image.persons
         ]
@@ -883,7 +888,7 @@ class ImageController:
     @staticmethod
     def Load_images():
         data = request.get_json()
-        
+        print("dd",data)
         if not data:
             return jsonify({"error": "No data provided"}), 400
         
@@ -1507,6 +1512,7 @@ class ImageController:
 
             if existing_image:
                 print(f"✅ Image with hash {hash_val} found with ID {existing_image.id}")
+                print("last_MODIFIED ",{last_modified_date}," and", {existing_image.last_modified})
 
                 if last_modified_date > existing_image.last_modified:
                     # persons_data = []

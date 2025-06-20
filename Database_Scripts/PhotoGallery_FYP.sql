@@ -47,6 +47,9 @@ ADD hash VARCHAR(64) NOT NULL;
 ALTER TABLE image
 ADD is_deleted BIT NOT NULL DEFAULT 0;
 
+ALTER TABLE image
+ALTER COLUMN last_modified DATETIME;
+
 -- 5 Associative table for Image-Person relationship (many-to-many)
 CREATE TABLE ImagePerson (
     image_id INT,
@@ -93,9 +96,9 @@ delete from Personhistory
 delete from ImageEvent
 delete from ImagePerson
 delete from link
-delete from Location
 delete from Event
 delete from Person
+delete from Location
 delete from Image
 
 
