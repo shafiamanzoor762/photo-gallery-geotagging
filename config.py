@@ -10,14 +10,13 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 # Shafia (Macbook)
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:123@WINDOWS-R5NK4VK\SQLEXPRESS/PhotoGallery?driver=ODBC+Driver+17+for+SQL+Server'
 # Shafia (HP laptop)
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://DESKTOP-RKA6JR0/PhotoGallery?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'
-
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://DESKTOP-RKA6JR0/PhotoGallery?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'
 
 
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:1234@DESKTOP-L6C900S\\SQLEXPRESS/PhotoGalleryFYP?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'
 
 #rafia
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:1234@DESKTOP-L6C900S\SQLEXPRESS/PhotoGalleryFYP?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:1234@DESKTOP-L6C900S\\SQLEXPRESS/PhotoGalleryFYP?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes&autocommit=True'
 # Configure your database URI
 # iqra db connection string
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'mssql+pyodbc://sa:12345@DESKTOP-4S96KP6\SQLEXPRESS/PhotoGallery1?driver=ODBC+Driver+17+for+SQL+Server'

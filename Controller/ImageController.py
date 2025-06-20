@@ -86,6 +86,8 @@ class ImageController:
         if event_date:
             image.event_date = event_date
             image.last_modified=datetime.utcnow()
+        
+        print('done with image')
 
         if event_names:
             image.events = []  # Clears the relationship in the ORM
@@ -100,8 +102,9 @@ class ImageController:
             for event in events:
                 if event not in image.events:
                     image.events.append(event)
-
-        print(location_data)
+        
+        print('done with events')
+        # print(location_data)
 
         # Update location
         location_name = None
@@ -136,20 +139,7 @@ class ImageController:
 
 
 # ///////
-            # Check if the location exists
-            existing_location = Location.query.filter_by(name=location_name).first()
-            # existing_location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
-
-            # if existing_location:
-            #     image.location_id = existing_location.id  # Associate existing location
-            # else:
-            #     # Create new location
-            #     print("yes am here")
-            #     new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
-            #     db.session.add(new_location)
-            #     db.session.flush()  # Get the new location ID before committing
-            #     image.location_id = new_location.id
-            
+           
             # Check if the location with the same name exists
             existing_location = Location.query.filter_by(name=location_name).first()
 
@@ -168,7 +158,9 @@ class ImageController:
 # ///////
         # Update persons if provided
         if persons:
+            print('💜👌💜👌------------->',persons)
             for person_data in persons:
+                print('💜--------------->personData',person_data)
                 dob_str = person_data.get('dob')
                 dob = None
                 if dob_str :
@@ -180,12 +172,16 @@ class ImageController:
 
                 print(f"Received DOB: {dob_str}, Parsed DOB: {dob}")
 
-                person_id = person_data.get('id')
+                # person_id = person_data.get('id')
                 person_name = person_data.get('name')
+                person_path = person_data.get('path')
+                print('------------>here',person_path)
+                print(person_path)
                 gender = person_data.get('gender')
                 age =person_data.get('age')
-                if person_id:
-                    person = Person.query.filter(Person.id == person_id).first()
+                if person_path:
+                    person = Person.query.filter(Person.path == person_path).first()
+                    print('------------>',person)
                     if person:
                         if person_name and gender:
                             person.name = person_name
@@ -194,7 +190,7 @@ class ImageController:
                             # person.dob = person.dob
                             # person.age =person.age
                         else:
-                            return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
+                            return jsonify({"error": f"Name is required for person with path {person_path}"}), 400
                         
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         persons_db = Person.query.all()
@@ -243,20 +239,21 @@ class ImageController:
                                 person.gender = gender
                                 person.dob = dob
                                 person.age = age
-                                person_data['path'] = person.path  # For tagging
+                                person_data['id'] = person.id  # For tagging
                             else:
-                                return jsonify({"error": f"Name is required for person with id {person_id}"}), 400
+                                return jsonify({"error": f"Name is required for person with path {person_path}"}), 400
                         else:
                             print("No match found in DB for:", pathes)
 
 
                     else:
-                        return jsonify({"error": f"Person with id {person_id} not found"}), 404
+                        return jsonify({"error": f"Person with path {person_path} not found"}), 404
                 else:
                     return jsonify({"error": "Person id is required"}), 400
 
         # Save changes to the database
         try:
+            image.is_sync = False
             db.session.commit()
             # return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
         except SQLAlchemyError as e:
@@ -634,7 +631,8 @@ class ImageController:
                     normalized_path = file_path.replace("\\", "/")
                     face_path_1 = normalized_path.replace('stored-faces', 'face_images')
                     matched_person = Person.query.filter_by(path=face_path_1).first()
-                    PersonController.update_face_paths_json("./stored-faces/recognize_person.json", f"stored-faces\{face_filename}",matchedPath=normalized_path)
+
+                    PersonController.update_face_paths_json("./stored-faces/person_group.json", face_filename,matchedPath=os.path.basename(result["file"]))
 
                     for res in  match_data["results"]:
                         resembeled_path = os.path.basename(res["file"])
@@ -704,10 +702,17 @@ class ImageController:
             "longitude": float(image.location.longitude)
             }
 
+# {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender,
+#          "DOB": person.dob.strftime('%Y-%m-%d') if person.dob else None,
+#          "Age":person.age}
         persons = [
-        {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender,
-         "DOB": person.dob.strftime('%Y-%m-%d') if person.dob else None,
-         "Age":person.age}
+        {"id": person.id, 
+         "name": person.name, 
+         "path": person.path, 
+         "gender": person.gender,
+         "dob":person.dob,
+         "age":person.age
+         }
         for person in image.persons
         ]
     
@@ -879,20 +884,11 @@ class ImageController:
         except Exception as e:
             # Catch any exceptions and return an error response
             return jsonify({"error": str(e)}), 500
-            
-
-    @staticmethod
-    def sync_images():
-        images = Image.query.filter(Image.is_sync == False).all()
-        syncImage=[]
-        for image in images:
-                syncImage.append(image.to_dict())
-        return jsonify(syncImage)
         
     @staticmethod
     def Load_images():
         data = request.get_json()
-        
+        print("dd",data)
         if not data:
             return jsonify({"error": "No data provided"}), 400
         
@@ -1119,7 +1115,9 @@ class ImageController:
                             Person.name == "unknown",
                             Person.name.is_(None),
                             Person.gender.is_(None),
-                            Person.gender == 'U'
+                            Person.gender == 'U',
+                            Person.dob=='',
+                            Person.dob.is_(None)
                         )
                     ),
                     ~Image.events.any(),  # No events at all
@@ -1255,7 +1253,7 @@ class ImageController:
     
         # Initialize parent map
         for link in links:
-    # Dynamically detect key style
+            # Dynamically detect key styleAdd commentMore actions
             if "person1Id" in link and "person2Id" in link:
                 a, b = link["person1Id"], link["person2Id"]
             elif "person1_id" in link and "person2_id" in link:
@@ -1263,14 +1261,11 @@ class ImageController:
             else:
                 continue  # Skip if keys are missing or inconsistent
         
-            # Initialize union-find parent structure
             if a not in parent:
                 parent[a] = a
             if b not in parent:
                 parent[b] = b
-        
             union(a, b)
-
     
         # Build groups
         groups = {}
@@ -1283,14 +1278,18 @@ class ImageController:
         return groups
     @staticmethod
     def are_groups_linked(group1, group2, persons, links):
-        
         id_by_emb = {person["path"].split("/")[-1]: person["id"] for person in persons}
         
         ids1 = {id_by_emb.get(name) for name in group1 if id_by_emb.get(name) is not None}
         ids2 = {id_by_emb.get(name) for name in group2 if id_by_emb.get(name) is not None}
     
+        # for link in links:
+        #     if (link["person1_id"] in ids1 and link["person2_id"] in ids2) or \
+        #        (link["person2_id"] in ids1 and link["person1_id"] in ids2):
+        #         return True
+        # return False
         for link in links:
-        # Dynamically detect the keys
+            # Dynamically detect the keysAdd commentMore actions
             if "person1Id" in link and "person2Id" in link:
                 p1 = link["person1Id"]
                 p2 = link["person2Id"]
@@ -1341,16 +1340,14 @@ class ImageController:
         # print(persons)
         # print(links)
         # print(personrecords)
-        
         if "personPath" in person1:
            emb_name = person1["personPath"].split('/')[-1]
         elif "path" in person1:
             emb_name = person1["path"].split('/')[-1]
-        # print(person1,"         ")
-        # print(persons,"         ")
-        # print(links,"           ")
-        # emb_name = person1["personPath"].split('/')[-1]
-        # emb_name = person1["path"].split('/')[-1]
+        print(person1,"         ")
+        print(persons,"         ")
+        print(links,"           ")
+        
         person1_id = person1["id"]
         
         link_groups = ImageController.build_link_groups(links)
@@ -1375,7 +1372,7 @@ class ImageController:
     
             # Step 2: Check for direct link
             if any(
-    (
+                (
         (
             ("person1Id" in link and "person2Id" in link and
              ((link["person1Id"] == person1_id and link["person2Id"] == dbemb_id) or
@@ -1388,8 +1385,7 @@ class ImageController:
     )
     for link in links
 ):
-
-            # if any(
+            #   if any(
             #     (link["person1_id"] == person1_id and link["person2_id"] == dbemb_id) or
             #     (link["person1_id"] == dbemb_id and link["person2_id"] == person1_id)
             #     for link in links
@@ -1423,6 +1419,58 @@ class ImageController:
         return result
 
 
+    @staticmethod
+    def sync_images():
+        images = Image.query.filter(Image.is_sync == False).all()
+        syncImage=[]
+        for image in images:
+                syncImage.append(image.to_dict())
+        return jsonify(syncImage)
+    
+# {
+#     "capture_date": "2025-06-17",
+#     "event_date": "2025-06-10",
+#     "events": [
+#         {
+#             "id": 2,
+#             "name": "Convocation"
+#         }
+#     ],
+#     "hash": "8d97807e7d37bf87273d59ac0d1bbf30790322f5f5ec61c26845c3ae52390cc9",
+#     "id": 13,
+#     "is_sync": true,
+#     "last_modified": "2025-06-18 12:25:23",
+#     "location": {
+#         "id": 3,
+#         "latitude": 0.0,
+#         "longitude": 0.0,
+#         "name": "B"
+#     },
+#     "path": "E:/fyp/uni_images/2020-01-30 20th Convocation-20250418T034555Z-002/2020-01-30 20th Convocation/4-test/DSC_5274.JPG",
+#     "persons": [
+#         {
+#             "age": -1,
+#             "dob": "Wed, 18 Jun 2025 00:00:00 GMT",
+#             "gender": "M",
+#             "id": 38,
+#             "name": "Am",
+#             "path": "face_images/2ff77cdd91324465bce5d30ca22e4b42.jpg"
+#         },
+#         {
+#             "age": -1,
+#             "dob": "Wed, 18 Jun 2025 00:00:00 GMT",
+#             "gender": "M",
+#             "id": 39,
+#             "name": "Al",
+#             "path": "face_images/7d7cb89d68414b22a99ec6ddafb75f51.jpg"
+#         }
+#     ],
+#    'links': {
+#               'face_images/2ff77cdd91324465bce5d30ca22e4b42.jpg': [], 
+#               'face_images/7d7cb89d68414b22a99ec6ddafb75f51.jpg': ['face_images/2ff77cdd91324465bce5d30ca22e4b42.jpg']
+#             }
+# }
+
     def save_unsync_image_with_metadata(data):
         try:
          print(data)
@@ -1437,7 +1485,8 @@ class ImageController:
             location = item.get('location','')
             events = item.get('events', [])
             persons = item.get('persons', [])
-            print(last_modified_str,",",hash_val,capture_date)
+            links = item.get('links', [])
+            print(last_modified_str,",",hash_val,capture_date,links)
 
             if not hash_val or not last_modified_str:
                 print("❌ Missing hash or last_modified. Skipping...")
@@ -1450,50 +1499,91 @@ class ImageController:
             #     print("❌ Invalid date format. Skipping...")
             #     continue
 
-            try:
                 # Try parsing as datetime with time
-                if " " in last_modified_str:
-                    last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d %H:%M:%S").date()
-                else:
-                    last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d").date()
-            except ValueError:
-                print("❌ Invalid date format. Skipping...")
-                continue
+            if " " in last_modified_str:
+                last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d %H:%M:%S")
+                
 
-                        # Check if image with hash exists
+            
+
+            # Check if image with hash exists
             existing_image = Image.query.filter_by(hash=hash_val).first()
+            print(last_modified_str,'🙌--------->',existing_image.last_modified)
 
             if existing_image:
                 print(f"✅ Image with hash {hash_val} found with ID {existing_image.id}")
                 print("last_MODIFIED ",{last_modified_date}," and", {existing_image.last_modified})
 
                 if last_modified_date > existing_image.last_modified:
-                    print("last_MODIFIED ${last_modified_date} and ${existing_image.last_modified}")
-                    for person in persons:
-                        per = Person.query.filter_by(path = person.get('path')).first()
+                    # persons_data = []
+                    # for person in persons:
+                    #     per = Person.query.filter_by(path = person.get('path')).first()
                     
-                        persons_data = [
-                            {"id": per.id, "name": p.get('path'), "gender": p.get('gender')}
-                            for p in persons
-                                ]
+                    persons_data = [
+                        {
+                            "name": p.get('name'),
+                            "path": p.get('path'),
+                            "gender": p.get('gender'),
+                            "dob": p.get('dob'),
+                            "age": p.get('age')
+                            }
+                            for p in persons]
                         
                     if persons_data:
                         edit_payload = {
-                                str(existing_image): {
+                                str(existing_image.id): {
                                 "persons_id": persons_data,
                                 "event_names": events,
                                 "event_date": event_date,
                                 "location": location
                                 }
                             }
-                    ImageController.edit_image_data(edit_payload)
+                        
+                        ImageController.create_links_if_not_exist(links)
+                        ImageController.edit_image_data(edit_payload)
+                        existing_image.is_sync = True
+                        print('👌-----------------------------------------saving--------')
+                        db.session.commit()
 
          return jsonify({'status': 'success', 'message': 'All images processed successfully'}), 200
 
         except Exception as e:
             print(f"❌ Error: {e}")
             return jsonify({'error': str(e)}), 500
+        
+    @staticmethod
+    def create_links_if_not_exist(links):
+     for path1, related_paths in links.items():
+        # Get person1 object from path
+        person1 = Person.query.filter_by(path=path1).first()
+        if not person1:
+            print(f"❌ Person not found for path: {path1}")
+            continue
 
+        for path2 in related_paths:
+            # Get person2 object from path
+            person2 = Person.query.filter_by(path=path2).first()
+            if not person2:
+                print(f"❌ Person not found for path: {path2}")
+                continue
+
+            # Check if link already exists (in either direction)
+            existing_link = Link.query.filter(
+                ((Link.person1_id == person1.id) & (Link.person2_id == person2.id)) |
+                ((Link.person1_id == person2.id) & (Link.person2_id == person1.id))
+            ).first()
+
+            if existing_link:
+                print(f"🔗 Link already exists between {person1.name} and {person2.name}")
+                continue
+
+            # If not, create a new Link
+            new_link = Link(person1_id=person1.id, person2_id=person2.id)
+            db.session.add(new_link)
+            print(f"✅ Link created between {person1.name} and {person2.name}")
+
+     db.session.commit()
+     print("🎉 All links processed and committed.")
 
     
     @staticmethod
@@ -1532,7 +1622,7 @@ class ImageController:
             # Step 3: Find linked person IDs
             linked_ids = set()
             for link in links:
-                # Dynamically get the correct keys
+                # Dynamically get the correct keysAdd commentMore actions
                 if "person1Id" in link and "person2Id" in link:
                     a, b = link["person1Id"], link["person2Id"]
                 elif "person1_id" in link and "person2_id" in link:
@@ -1543,10 +1633,6 @@ class ImageController:
                 if person_id in (a, b):
                     linked_ids.add(a)
                     linked_ids.add(b)
-
-                # if person_id in (link["person1_id"], link["person2_id"]):
-                #     linked_ids.add(link["person1_id"])
-                #     linked_ids.add(link["person2_id"])
             linked_ids.discard(person_id)
     
             # Step 4: For each linked ID, get embedding name and related groups

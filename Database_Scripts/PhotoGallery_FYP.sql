@@ -36,7 +36,7 @@ CREATE TABLE Image (
     is_sync BIT,  -- Using BIT instead of BOOLEAN
     capture_date DATE,
     event_date DATE,  -- Event date
-    last_modified DATE,
+    last_modified DATETIME,
     location_id INT,  -- Define location_id column for foreign key reference
     CONSTRAINT FK_Image_Location FOREIGN KEY (location_id) REFERENCES Location(id)
 );
@@ -46,6 +46,9 @@ ADD hash VARCHAR(64) NOT NULL;
 
 ALTER TABLE image
 ADD is_deleted BIT NOT NULL DEFAULT 0;
+
+ALTER TABLE image
+ALTER COLUMN last_modified DATETIME;
 
 -- 5 Associative table for Image-Person relationship (many-to-many)
 CREATE TABLE ImagePerson (
@@ -93,9 +96,9 @@ delete from Personhistory
 delete from ImageEvent
 delete from ImagePerson
 delete from link
-delete from Location
 delete from Event
 delete from Person
+delete from Location
 delete from Image
 
 
