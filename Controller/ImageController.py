@@ -174,9 +174,8 @@ class ImageController:
 
                 # person_id = person_data.get('id')
                 person_name = person_data.get('name')
-                person_pathh = person_data.get('path')
-                print('------------>here',person_pathh)
-                person_path = person_pathh.split("/", 3)[-1]
+                person_path = person_data.get('path')
+                print('------------>here',person_path)
                 print(person_path)
                 gender = person_data.get('gender')
                 age =person_data.get('age')
