@@ -187,13 +187,15 @@ class ImageController:
                             person.name = person_name
                             person.gender  = gender
                             person_data['path'] = person.path # saving this for tagging
+                            # person.dob = person.dob
+                            # person.age =person.age
                         else:
                             return jsonify({"error": f"Name is required for person with path {person_path}"}), 400
                         
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         persons_db = Person.query.all()
                         person_list = [
-                           {"id": p.id, "name": p.name, "path": p.path}
+                           {"id": p.id, "name": p.name, "path": p.path }
                            for p in persons_db
                             ]
                         links = Link.query.all()
@@ -232,7 +234,7 @@ class ImageController:
                         print("gender:", gender)
                         print("dob:", dob)
                         if person:
-                            if person_name and gender and dob:
+                            if person_name and gender :
                                 person.name = person_name
                                 person.gender = gender
                                 person.dob = dob
@@ -700,6 +702,9 @@ class ImageController:
             "longitude": float(image.location.longitude)
             }
 
+# {"id": person.id, "name": person.name, "path": person.path, "gender": person.gender,
+#          "DOB": person.dob.strftime('%Y-%m-%d') if person.dob else None,
+#          "Age":person.age}
         persons = [
         {"id": person.id, 
          "name": person.name, 
@@ -1507,6 +1512,7 @@ class ImageController:
 
             if existing_image:
                 print(f"✅ Image with hash {hash_val} found with ID {existing_image.id}")
+                print("last_MODIFIED ",{last_modified_date}," and", {existing_image.last_modified})
 
                 if last_modified_date > existing_image.last_modified:
                     # persons_data = []
@@ -1668,4 +1674,28 @@ class ImageController:
         result=ImageController.get_emb_names(samenamedpersons_list, link_list, person1,person_list) 
         print(result)
         return result or {} 
-               
+    
+    @staticmethod
+    def build_person_links(person_records, link_records):
+        # Step 1: Create a mapping from person_id to image path
+        id_to_path = {person["id"]: person["path"] for person in person_records}
+    
+        # Step 2: Initialize result dict with empty lists
+        links = {path: [] for path in id_to_path.values()}
+    
+        # Step 3: Fill in the links based on link_records
+        for link in link_records:
+            p1_id = link.get("person1_id")
+            p2_id = link.get("person2_id")
+    
+            p1_path = id_to_path.get(p1_id)
+            p2_path = id_to_path.get(p2_id)
+    
+            if p1_path and p2_path:
+                # Add links in one direction or both as needed
+                links[p2_path].append(p1_path)
+                # If you want bidirectional links, uncomment this:
+                # links[p1_path].append(p2_path)
+    
+        return {"links": links}
+                   
