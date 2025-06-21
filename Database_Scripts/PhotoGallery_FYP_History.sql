@@ -54,6 +54,8 @@ ALTER TABLE ImageHistory
 ADD is_Active bit Not NULL DEFAULT 0;
 ALTER TABLE imageHistory
 ALTER COLUMN last_modified DATETIME;
+Alter table ImageHistory
+Add created_at DATE;
 
 
 --for undo add created_at column
@@ -70,6 +72,8 @@ CREATE TABLE ImagePersonHistory (
 );
 ALTER TABLE ImagePersonHistory
 ADD is_Active bit Not NULL DEFAULT 0;
+Alter table PersonHistory
+Add created_at DATE;
 
 -- 6 Associative table for Image-Event relationship (many-to-many)
 CREATE TABLE ImageEventHistory (
@@ -80,6 +84,8 @@ CREATE TABLE ImageEventHistory (
 );
 ALTER TABLE ImageEventHistory
 ADD is_Active bit Not NULL DEFAULT 0;
+Alter table ImageEventHistory
+Add created_at DATE;
 
 --7 Link Table (NEW)
 Create TABLE LinkHistory(

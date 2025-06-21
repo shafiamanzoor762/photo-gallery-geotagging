@@ -195,7 +195,7 @@ class ImageController:
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         persons_db = Person.query.all()
                         person_list = [
-                           {"id": p.id, "name": p.name, "path": p.path , "dob":p.dob , "age" : p.age}
+                           {"id": p.id, "name": p.name, "path": p.path }
                            for p in persons_db
                             ]
                         links = Link.query.all()
@@ -249,7 +249,7 @@ class ImageController:
                     else:
                         return jsonify({"error": f"Person with path {person_path} not found"}), 404
                 else:
-                    return jsonify({"error": "Person id is required"}), 400
+                    return jsonify({"error": "Person path is required"}), 400
 
         # Save changes to the database
         try:
@@ -710,8 +710,8 @@ class ImageController:
          "name": person.name, 
          "path": person.path, 
          "gender": person.gender,
-         "dob":person.dob,
-         "age":person.age
+        #  "dob":person.dob,
+        #  "age":person.age
          }
         for person in image.persons
         ]
@@ -1674,4 +1674,28 @@ class ImageController:
         result=ImageController.get_emb_names(samenamedpersons_list, link_list, person1,person_list) 
         print(result)
         return result or {} 
-               
+    
+    @staticmethod
+    def build_person_links(person_records, link_records):
+        # Step 1: Create a mapping from person_id to image path
+        id_to_path = {person["id"]: person["path"] for person in person_records}
+    
+        # Step 2: Initialize result dict with empty lists
+        links = {path: [] for path in id_to_path.values()}
+    
+        # Step 3: Fill in the links based on link_records
+        for link in link_records:
+            p1_id = link.get("person1_id")
+            p2_id = link.get("person2_id")
+    
+            p1_path = id_to_path.get(p1_id)
+            p2_path = id_to_path.get(p2_id)
+    
+            if p1_path and p2_path:
+                # Add links in one direction or both as needed
+                links[p2_path].append(p1_path)
+                # If you want bidirectional links, uncomment this:
+                # links[p1_path].append(p2_path)
+    
+        return {"links": links}
+                   

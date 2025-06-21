@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify, request,Response
 import os, json
 import base64
 from collections import defaultdict
@@ -265,7 +265,7 @@ class MobileSideController:
     def get_unsync_images():
         images = Image.query.filter(Image.is_sync == False).all()
         sync_images = []
-        link = []
+        links = []
 
         for image in images:
             image_details = ImageController.get_image_complete_details(image.id)
@@ -277,14 +277,48 @@ class MobileSideController:
                     res, status = PersonController.get_person_and_linked_as_list(person.id)
                     if status == 200:
                         link_data = MobileSideController.convert_to_linked_paths(res)
-                        link.append(link_data)
+                        links.append(link_data)
 
                     # link.append(MobileSideController.convert_to_linked_paths(PersonController.get_person_and_linked_as_list(person.id)))
-        print('😍link',link)
-        print("sync_images",sync_images)
-        return sync_images
+        print('😍link',links)
+        images = {
+            "sync_images": sync_images,
+            "links": links
+        }
+        print("images",images)
+        return images
     
+    @staticmethod
+    def get_unsync_images_new():
+        images = Image.query.filter(Image.is_sync == False).all()
+        sync_images = []
+        links = []
+    
+        for image in images:
+            image_details = ImageController.get_image_complete_details(image.id)
+            if image_details:
+                sync_images.append(image_details)
+    
+                for person in image.persons:
+                    res, status = PersonController.get_person_and_linked_as_list(person.id)
+                    if status == 200:
+                        if isinstance(res, Response):
+                            res_data = res.get_json()
+                        else:
+                            res_data = res
+                        
+                        link_data = MobileSideController.convert_to_linked_paths(res_data)
+                        links.append(link_data)
+    
+        print("✅ Sync Images:", sync_images)
+        print("🔗 Links:", links)
+        # return sync_images
+        return {
+    "images": sync_images,
+    "links": links
+}
 
+    
 
     def convert_to_linked_paths(person_list):
      if not person_list or len(person_list) < 2:

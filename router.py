@@ -829,6 +829,14 @@ def get_emb_names_for_recognition():
     return ImageController.get_emb_names_for_recognition(persons,links,emb_name)
 
 
+@app.route('/get_linked_person', methods=['POST'])
+def get_linked_person():
+    data=request.get_json()
+    person_records = data.get("person", [])
+    link_records = data.get("links", [])
+    # print("Person Records:", person_records, "Link Records:", link_records)
+    return ImageController.build_person_links(person_records, link_records)
+
 # =======================Shafia's Mobile side Requests========================================
 @app.route('/add_mobile_image', methods=['POST'])
 def add_mobile_image():
@@ -941,10 +949,29 @@ def get_unsync_images():
         return jsonify({'error': 'Missing JSON in request'}), 400
             
     data = request.get_json()
+    print(data)
     if not isinstance(data, list):
         return jsonify({'error': 'Expected a list of image objects'}), 400
     ImageController.save_unsync_image_with_metadata(data)   
     return jsonify(MobileSideController.get_unsync_images())
+    
+
+
+@app.route('/get_unsync_images_new', methods=['POST'])
+def get_unsync_images_new():
+
+    # Ensure we have JSON data
+    if not request.is_json:
+        return jsonify({'error': 'Missing JSON in request'}), 400
+            
+    data = request.get_json()
+    print(data)
+    if not isinstance(data, list):
+        return jsonify({'error': 'Expected a list of image objects'}), 400
+    ImageController.save_unsync_image_with_metadata(data)   
+    images_data = MobileSideController.get_unsync_images_new()
+    # return jsonify({'status': 'success', 'images': images_data}), 200
+    return jsonify({'status': 'success', **images_data}), 200
 
 
 
