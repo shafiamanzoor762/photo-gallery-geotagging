@@ -275,9 +275,17 @@ class MobileSideController:
                 print(image.persons)
                 for person in image.persons:
                     res, status = PersonController.get_person_and_linked_as_list(person.id)
+                    print("res",res)
                     if status == 200:
-                        link_data = MobileSideController.convert_to_linked_paths(res)
+                        # ✅ Extract actual data from Flask Response object
+                        if isinstance(res, Response):
+                            res_data = res.get_json()
+                        else:
+                            res_data = res
+        
+                        link_data = MobileSideController.convert_to_linked_paths(res_data)
                         links.append(link_data)
+                    
 
                     # link.append(MobileSideController.convert_to_linked_paths(PersonController.get_person_and_linked_as_list(person.id)))
         print('😍link',links)

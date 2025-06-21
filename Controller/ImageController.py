@@ -710,8 +710,11 @@ class ImageController:
          "name": person.name, 
          "path": person.path, 
          "gender": person.gender,
-        #  "dob":person.dob,
-        #  "age":person.age
+           "dob":person.dob,
+          "age":person.age
+        # ya comment rhna dena isy nhi hatana ok na    
+        #  "DOB": person.dob.strftime('%Y-%m-%d') if person.dob else None,
+        #  "Age":person.age
          }
         for person in image.persons
         ]
@@ -1473,7 +1476,7 @@ class ImageController:
 
     def save_unsync_image_with_metadata(data):
         try:
-         print(data)
+         print("Receive Unsync",data)
          for idx, item in enumerate(data):
             print(f"\n🔹 Processing Image {idx + 1}:")
 
@@ -1485,8 +1488,8 @@ class ImageController:
             location = item.get('location','')
             events = item.get('events', [])
             persons = item.get('persons', [])
-            links = item.get('links', [])
-            print(last_modified_str,",",hash_val,capture_date,links)
+            links = item.get('links', {})
+            print("HHHHHHHHHHHHHEEEEEEEELOOOOOO",last_modified_str,",",hash_val,capture_date,links)
 
             if not hash_val or not last_modified_str:
                 print("❌ Missing hash or last_modified. Skipping...")
@@ -1554,8 +1557,10 @@ class ImageController:
     @staticmethod
     def create_links_if_not_exist(links):
      for path1, related_paths in links.items():
+        # print(f"🧠 Looking for person by path: {path1} and {path2}")
         # Get person1 object from path
         person1 = Person.query.filter_by(path=path1).first()
+
         if not person1:
             print(f"❌ Person not found for path: {path1}")
             continue
