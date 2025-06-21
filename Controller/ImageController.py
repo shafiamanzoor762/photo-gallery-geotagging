@@ -25,6 +25,8 @@ from datetime import datetime
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, and_
 from sqlalchemy import update
+from sqlalchemy.orm.attributes import flag_modified
+
 
 from config import db
 
@@ -47,7 +49,7 @@ class ImageController:
     def edit_image_data(data):
         
         
-        print("Parsed JSON:", data)
+        print("😋 Parsed JSON:", data)
 
         if not data:
             return jsonify({"error": "No data provided"}), 400
@@ -84,8 +86,9 @@ class ImageController:
 
         # Update event_date and event_name if provided
         if event_date:
+            print('========🎃')
             image.event_date = event_date
-            image.last_modified=datetime.utcnow()
+            # image.last_modified=datetime.utcnow()
         
         print('done with image')
 
@@ -94,14 +97,33 @@ class ImageController:
             db.session.commit()
             
             # Access the related events
-            events = Event.query.filter(Event.name.in_(event_names)).all()
-            if not events:
-                return {"error": "No matching events found"}, 404
+            # events = Event.query.filter(Event.name.in_(event_names)).all()
+            # if not events:
+            #     return {"error": "No matching events found"}, 404
+            existing_events = Event.query.filter(Event.name.in_(event_names)).all()
+            existing_event_names = {event.name for event in existing_events}
+        
+            # Determine missing event names
+            missing_event_names = set(event_names) - existing_event_names
+        
+            # Create missing events
+            new_events = []
+            for name in missing_event_names:
+                new_event = Event(name=name)
+                db.session.add(new_event)
+                new_events.append(new_event)
+            
+            # Commit new events to get their IDs
+            db.session.commit()
+        
+            # Combine existing and new events
+            all_events = existing_events + new_events
 
             # Associate image with events
-            for event in events:
+            for event in all_events:
                 if event not in image.events:
                     image.events.append(event)
+            db.session.commit()
         
         print('done with events')
         # print(location_data)
@@ -112,49 +134,34 @@ class ImageController:
         longitude = None
 
         # Update location if provided
-        if location_data and isinstance(location_data[0], str) and location_data[0].strip():
-
-            # location_name = location_data[0]
-            # location_list = json.loads(location_name)
-            # location_name = ", ".join(location_list)
-
-            raw_location_name = location_data[0]
-
+        # Expecting location_data to be a dict
+        # Expecting location_data as: ["Hall", 0.0, 0.0]
+        if location_data and isinstance(location_data, list) and len(location_data) == 3 and str(location_data[0]).strip() != "":
+            print('here in location ')
             try:
-                # Try to parse as JSON list
-                location_list = json.loads(raw_location_name)
-                if isinstance(location_list, list):
-                    location_name = ", ".join(location_list)
-                else:
-                    # Not a list? Fall back to string
-                    location_name = str(raw_location_name)
-            except (json.JSONDecodeError, TypeError):
-                # It's not JSON formatted — treat as plain string
-                location_name = str(raw_location_name)
-                
-            latitude = round(float(location_data[1]), 6)
-            longitude = round(float(location_data[2]), 6)
-
-            print(location_name, latitude, longitude)
-
-
-# ///////
-           
-            # Check if the location with the same name exists
-            existing_location = Location.query.filter_by(name=location_name).first()
-
+                location_name = str(location_data[0]).strip().title()
+                latitude = round(float(location_data[1]), 6)
+                longitude = round(float(location_data[2]), 6)
+            except (ValueError, TypeError, IndexError) as e:
+                print(f"❌ Invalid location data format or value: {location_data}")
+                raise ValueError("Invalid location list format or coordinates") from e
+        
+            print(f"Checking for: {location_name}, {latitude}, {longitude}")
+        
+            existing_location = Location.query.filter(
+                    func.lower(Location.name) == location_name.lower()
+                ).first()
+            print('existing_location',existing_location)
             if existing_location:
-                # Associate existing location
+                print(f"✅ Found existing location with ID: {existing_location.id}")
                 image.location_id = existing_location.id
             else:
-                # Create new location
-                print("yes am here")
-                new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
+                new_location = Location(name=location_name)
                 db.session.add(new_location)
-                db.session.flush()  # So we get new_location.id before commit
+                db.session.flush()
                 image.location_id = new_location.id
-
-
+        
+    
 # ///////
         # Update persons if provided
         if persons:
@@ -254,6 +261,8 @@ class ImageController:
         # Save changes to the database
         try:
             image.is_sync = False
+            image.last_modified=datetime.utcnow()
+
             db.session.commit()
             # return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
         except SQLAlchemyError as e:
@@ -1533,6 +1542,14 @@ class ImageController:
                         edit_payload = {
                                 str(existing_image.id): {
                                 "persons_id": persons_data,
+                                "event_names": events,
+                                "event_date": event_date,
+                                "location": location
+                                }
+                            }
+                    else:
+                        edit_payload = {
+                                str(existing_image.id): {
                                 "event_names": events,
                                 "event_date": event_date,
                                 "location": location
