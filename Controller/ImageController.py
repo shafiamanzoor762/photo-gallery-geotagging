@@ -140,8 +140,8 @@ class ImageController:
             print('here in location ')
             try:
                 location_name = str(location_data[0]).strip().title()
-                latitude = round(float(location_data[1]), 6)
-                longitude = round(float(location_data[2]), 6)
+                latitude = 0.0
+                longitude = 0.0
             except (ValueError, TypeError, IndexError) as e:
                 print(f"❌ Invalid location data format or value: {location_data}")
                 raise ValueError("Invalid location list format or coordinates") from e
@@ -156,7 +156,7 @@ class ImageController:
                 print(f"✅ Found existing location with ID: {existing_location.id}")
                 image.location_id = existing_location.id
             else:
-                new_location = Location(name=location_name)
+                new_location = Location(name=location_name, latitude=0.0, longitude=0.0)
                 db.session.add(new_location)
                 db.session.flush()
                 image.location_id = new_location.id
