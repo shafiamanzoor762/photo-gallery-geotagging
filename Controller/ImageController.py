@@ -1449,12 +1449,7 @@ class ImageController:
 #     "id": 13,
 #     "is_sync": true,
 #     "last_modified": "2025-06-18 12:25:23",
-#     "location": {
-#         "id": 3,
-#         "latitude": 0.0,
-#         "longitude": 0.0,
-#         "name": "B"
-#     },
+#     "location": ["New yORK", "33.1234", "73.5678"],
 #     "path": "E:/fyp/uni_images/2020-01-30 20th Convocation-20250418T034555Z-002/2020-01-30 20th Convocation/4-test/DSC_5274.JPG",
 #     "persons": [
 #         {
