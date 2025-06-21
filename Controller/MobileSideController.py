@@ -265,7 +265,7 @@ class MobileSideController:
     def get_unsync_images():
         images = Image.query.filter(Image.is_sync == False).all()
         sync_images = []
-        link = []
+        links = []
 
         for image in images:
             image_details = ImageController.get_image_complete_details(image.id)
@@ -277,12 +277,16 @@ class MobileSideController:
                     res, status = PersonController.get_person_and_linked_as_list(person.id)
                     if status == 200:
                         link_data = MobileSideController.convert_to_linked_paths(res)
-                        link.append(link_data)
+                        links.append(link_data)
 
                     # link.append(MobileSideController.convert_to_linked_paths(PersonController.get_person_and_linked_as_list(person.id)))
-        print('😍link',link)
-        print("sync_images",sync_images)
-        return sync_images
+        print('😍link',links)
+        images = {
+            "sync_images": sync_images,
+            "links": links
+        }
+        print("images",images)
+        return images
     
 
 

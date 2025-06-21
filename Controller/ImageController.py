@@ -247,7 +247,7 @@ class ImageController:
                     else:
                         return jsonify({"error": f"Person with path {person_path} not found"}), 404
                 else:
-                    return jsonify({"error": "Person id is required"}), 400
+                    return jsonify({"error": "Person path is required"}), 400
 
         # Save changes to the database
         try:
@@ -705,8 +705,8 @@ class ImageController:
          "name": person.name, 
          "path": person.path, 
          "gender": person.gender,
-         "dob":person.dob,
-         "age":person.age
+        #  "dob":person.dob,
+        #  "age":person.age
          }
         for person in image.persons
         ]
