@@ -77,6 +77,7 @@ class MobileSideController:
     @staticmethod
     def get_person_groups_from_data(persons, links, image_persons, image_ids):
      try:
+        # print(persons,links,image_persons,image_ids)
 
         # Load JSON file
         with open('./stored-faces/person_group.json', 'r') as f:
@@ -160,16 +161,22 @@ class MobileSideController:
                             "id": person["id"],
                             "name": person.get("name"),
                             "path": person.get("path"),
-                            "gender": person.get("gender")
+                            "gender": person.get("gender"),
+                            "dob": person.get("dob"),
+                            "age": person.get("age")
                         },
                         "Images": []
                     }
                     used_image_ids_per_group[group_idx] = set()
+                    # print(grouped_data)
 
                 for img_id in person_image_ids:
                     if img_id not in used_image_ids_per_group[group_idx]:
                         grouped_data[group_idx]["Images"].append({"id": img_id})
                         used_image_ids_per_group[group_idx].add(img_id)
+                        # print(grouped_data)
+
+        print(grouped_data)
 
         result = list(grouped_data.values())
         return result
@@ -265,7 +272,7 @@ class MobileSideController:
     def get_unsync_images():
         images = Image.query.filter(Image.is_sync == False).all()
         sync_images = []
-        link = []
+        links = []
 
         for image in images:
             image_details = ImageController.get_image_complete_details(image.id)
@@ -277,12 +284,16 @@ class MobileSideController:
                     res, status = PersonController.get_person_and_linked_as_list(person.id)
                     if status == 200:
                         link_data = MobileSideController.convert_to_linked_paths(res)
-                        link.append(link_data)
+                        links.append(link_data)
 
                     # link.append(MobileSideController.convert_to_linked_paths(PersonController.get_person_and_linked_as_list(person.id)))
-        print('😍link',link)
-        print("sync_images",sync_images)
-        return sync_images
+        print('😍link',links)
+        images = {
+            "sync_images": sync_images,
+            "links": links
+        }
+        print("images",images)
+        return images
     
     @staticmethod
     def get_unsync_images_new():
@@ -306,13 +317,15 @@ class MobileSideController:
                         link_data = MobileSideController.convert_to_linked_paths(res_data)
                         links.append(link_data)
     
-        print("✅ Sync Images:", sync_images)
-        print("🔗 Links:", links)
-        # return sync_images
+        print({
+            "images": sync_images,
+            "links": links
+            })
+        
         return {
-    "images": sync_images,
-    "links": links
-}
+            "images": sync_images,
+            "links": links
+            }
 
     
 

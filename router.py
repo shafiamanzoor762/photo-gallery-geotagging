@@ -1,4 +1,5 @@
 from datetime import datetime
+import traceback
 from flask import Flask, request, jsonify, send_file,make_response, send_from_directory
 from PIL import Image
 from io import BytesIO
@@ -239,6 +240,119 @@ def group_by_date():
 @app.route('/unedited_images', methods=['GET'])
 def get_unedited_images_route():
     return ImageController.get_unedited_images()
+
+
+@app.route('/move_images', methods=['POST'])
+def moveImages():
+    data = request.get_json()
+
+    source_id = data.get("source_id")
+    destination_id = data.get("destination_id")
+    persons = data.get("persons", [])
+
+    print(source_id, "   ", destination_id, "   ", persons)
+
+    try:
+        # Step 1: Get source path and extract file name only
+        source_person = db.session.get(Person, int(source_id))
+        source_path = source_person.path if source_person else None
+        source_path = os.path.basename(source_path) if source_path else None
+
+        print("source_path", source_path)
+
+        if not source_path:
+            return jsonify({"error": "Invalid source_id"}), 400
+
+        # Step 2: Load person_group.json
+        with open("./stored-faces/person_group.json", "r") as f:
+            group_data = json.load(f)
+            print("group_Data", group_data)
+
+        # Step 3: Find the group (key) that contains the source_path
+        source_group_key = None
+
+        # Case 1: source path is group key itself
+        if source_path in group_data:
+            source_group_key = source_path
+        else:
+            # Case 2: source path is in values of a group
+            for key, paths in group_data.items():
+                if source_path in paths:
+                    source_group_key = key
+                    break
+
+        if not source_group_key:
+            return jsonify({"error": "Source path not found in any group"}), 400
+
+        # Step 4: Get paths of each person and take only file names
+        person_paths = []
+        owner_conflict = None  # store if any image is the group owner
+
+        for p in persons:
+            person = db.session.get(Person, int(p["id"]))
+            if person and person.path:
+                filename = os.path.basename(person.path)
+
+                # ❗ Check if trying to move the group owner
+                if filename == source_group_key:
+                    owner_conflict = filename
+                    break
+
+                person_paths.append(filename)
+
+        # ❌ Stop and return if group owner image is selected
+        if owner_conflict:
+            return jsonify({
+                "error": f"This image is the owner of the group and cannot be moved: {owner_conflict}"
+            }), 400
+
+        print("Person Paths:", person_paths)
+
+        # ✅ Step 5: Remove person paths, but never remove the owner image
+        if source_group_key in group_data:
+            group_data[source_group_key] = [
+                path for path in group_data[source_group_key]
+                if path not in person_paths or path == source_group_key
+            ]
+
+        # Step 6: Get destination path (as file name)
+        dest_person = db.session.get(Person, int(destination_id))
+        dest_path = dest_person.path if dest_person else None
+        dest_path = os.path.basename(dest_path) if dest_path else None
+
+        if not dest_path:
+            return jsonify({"error": "Invalid destination_id"}), 400
+
+        # ❌ Prevent moving within same group
+        if source_group_key == dest_path:
+            return jsonify({"error": "Source and destination groups are the same"}), 400
+
+        # Step 7: Add person paths to destination group
+        if dest_path not in group_data:
+            group_data[dest_path] = []
+
+        for path in person_paths:
+            if path not in group_data[dest_path]:
+                group_data[dest_path].append(path)
+
+        # Step 8: Save updated person_group.json
+        with open("./stored-faces/person_group.json", "w") as f:
+            json.dump(group_data, f, indent=4)
+
+        response_data = {
+            "message": "Images moved successfully.",
+            "moved_paths": person_paths,
+            "from_group": source_group_key,
+            "to_group": dest_path
+        }
+
+        print("Response JSON:", response_data)
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        print("🔥 Exception occurred:")
+        print(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
 
 # -----------------------------------------------------------
 
@@ -839,7 +953,7 @@ def get_unsync_images():
     if not isinstance(data, list):
         return jsonify({'error': 'Expected a list of image objects'}), 400
     ImageController.save_unsync_image_with_metadata(data)   
-    return jsonify(MobileSideController.get_unsync_images())
+    return jsonify(MobileSideController.get_unsync_images_new())
     
 
 
