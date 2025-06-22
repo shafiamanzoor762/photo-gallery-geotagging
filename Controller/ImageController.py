@@ -25,6 +25,8 @@ from datetime import datetime
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, and_
 from sqlalchemy import update
+from sqlalchemy.orm.attributes import flag_modified
+
 
 from config import db
 
@@ -43,11 +45,12 @@ class ImageController:
 #   }
 # }
 
+
     @staticmethod
     def edit_image_data(data):
         
         
-        print("Parsed JSON:", data)
+        print("😋 Parsed JSON:", data)
 
         if not data:
             return jsonify({"error": "No data provided"}), 400
@@ -84,8 +87,9 @@ class ImageController:
 
         # Update event_date and event_name if provided
         if event_date:
+            print('========🎃')
             image.event_date = event_date
-            image.last_modified=datetime.utcnow()
+            # image.last_modified=datetime.utcnow()
         
         print('done with image')
 
@@ -94,67 +98,71 @@ class ImageController:
             db.session.commit()
             
             # Access the related events
-            events = Event.query.filter(Event.name.in_(event_names)).all()
-            if not events:
-                return {"error": "No matching events found"}, 404
+            # events = Event.query.filter(Event.name.in_(event_names)).all()
+            # if not events:
+            #     return {"error": "No matching events found"}, 404
+            existing_events = Event.query.filter(Event.name.in_(event_names)).all()
+            existing_event_names = {event.name for event in existing_events}
+        
+            # Determine missing event names
+            missing_event_names = set(event_names) - existing_event_names
+        
+            # Create missing events
+            new_events = []
+            for name in missing_event_names:
+                new_event = Event(name=name)
+                db.session.add(new_event)
+                new_events.append(new_event)
+            
+            # Commit new events to get their IDs
+            db.session.commit()
+        
+            # Combine existing and new events
+            all_events = existing_events + new_events
 
             # Associate image with events
-            for event in events:
+            for event in all_events:
                 if event not in image.events:
                     image.events.append(event)
+            db.session.commit()
         
         print('done with events')
         # print(location_data)
 
         # Update location
         location_name = None
-        latitude = None
-        longitude = None
+        latitude = 0.0
+        longitude = 0.0
 
         # Update location if provided
-        if location_data and isinstance(location_data[0], str) and location_data[0].strip():
-
-            # location_name = location_data[0]
-            # location_list = json.loads(location_name)
-            # location_name = ", ".join(location_list)
-
-            raw_location_name = location_data[0]
-
+        # Expecting location_data to be a dict
+        # Expecting location_data as: ["Hall", 0.0, 0.0]
+        if location_data and isinstance(location_data, list) and len(location_data) == 3 and str(location_data[0]).strip() != "":
+            print('here in location ')
             try:
-                # Try to parse as JSON list
-                location_list = json.loads(raw_location_name)
-                if isinstance(location_list, list):
-                    location_name = ", ".join(location_list)
-                else:
-                    # Not a list? Fall back to string
-                    location_name = str(raw_location_name)
-            except (json.JSONDecodeError, TypeError):
-                # It's not JSON formatted — treat as plain string
-                location_name = str(raw_location_name)
-                
-            latitude = round(float(location_data[1]), 6)
-            longitude = round(float(location_data[2]), 6)
-
-            print(location_name, latitude, longitude)
-
-
-# ///////
-           
-            # Check if the location with the same name exists
-            existing_location = Location.query.filter_by(name=location_name).first()
-
+                location_name = str(location_data[0]).strip().title()
+                latitude = 0.0
+                longitude = 0.0
+            except (ValueError, TypeError, IndexError) as e:
+                print(f"❌ Invalid location data format or value: {location_data}")
+                raise ValueError("Invalid location list format or coordinates") from e
+        
+            print(f"Checking for: {location_name}, {latitude}, {longitude}")
+        
+            existing_location = Location.query.filter(
+                    func.lower(Location.name) == location_name.lower()
+                ).first()
+            print('existing_location',existing_location)
             if existing_location:
-                # Associate existing location
+                print(f"✅ Found existing location with ID: {existing_location.id}")
                 image.location_id = existing_location.id
             else:
-                # Create new location
-                print("yes am here")
-                new_location = Location(name=location_name, latitude=latitude, longitude=longitude)
+                new_location = Location(name=location_name, latitude=0.0, longitude=0.0)
                 db.session.add(new_location)
-                db.session.flush()  # So we get new_location.id before commit
+                db.session.flush()
                 image.location_id = new_location.id
-
-
+        
+    
 # ///////
         # Update persons if provided
         if persons:
@@ -195,7 +203,7 @@ class ImageController:
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         persons_db = Person.query.all()
                         person_list = [
-                           {"id": p.id, "name": p.name, "path": p.path , "dob":p.dob , "age" : p.age}
+                           {"id": p.id, "name": p.name, "path": p.path }
                            for p in persons_db
                             ]
                         links = Link.query.all()
@@ -249,11 +257,279 @@ class ImageController:
                     else:
                         return jsonify({"error": f"Person with path {person_path} not found"}), 404
                 else:
-                    return jsonify({"error": "Person id is required"}), 400
+                    return jsonify({"error": "Person path is required"}), 400
 
         # Save changes to the database
         try:
             image.is_sync = False
+            image.last_modified=datetime.utcnow()
+
+            db.session.commit()
+            # return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+        try:
+            image_path = image.path  # Full path to original image
+            print(persons)
+        # Reconstruct the tag JSON structure
+            tag_data = {
+                "persons": {
+                    str(p.get("id")): {
+                        "name": p.get("name"),
+                        "gender": p.get("gender"),
+                        "path": p.get("path", "")
+                    }
+                    for p in persons
+                } if persons else {},
+                "event": event_names[0] if event_names else "",
+                "location": location_name if location_name else "",
+                "event_date": event_date if event_date else ""
+            }
+
+             # Read image file as binary to pass to TaggingController.tagImage
+            with open(image_path, "rb") as img_file:
+                img_bytes = BytesIO(img_file.read())
+                tagged_img_io = TaggingController.tagImage(img_bytes, tag_data)
+
+                if tagged_img_io:
+
+                    with open(image_path, "wb") as output:
+                        output.write(tagged_img_io.read())
+                        return jsonify({f"Image saved with EXIF data at:": "{image_path}"}), 200
+                else:
+                    return jsonify({"error": "Tagging failed."}), 500
+
+        except Exception as e:
+            print(f"Error tagging and saving image: {str(e)}")
+            return jsonify({"error": "EXIF metadata embedding failed."}), 500
+
+    @staticmethod
+    def edit_image_data_for_sync_iqra(data):
+        
+        
+        print("😋 Parsed JSON:", data)
+
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Ensure that the input data has exactly one key (the image_id)
+        if len(data) != 1:
+            return jsonify({"error": "Invalid data format. Expecting a single numeric image_id as the key."}), 400
+
+        # Extract the numeric image_id and its associated data
+        try:
+            print('editing...')
+            image_id = int(next(iter(data.keys())))
+            print('on the way...',image_id)
+        except ValueError:
+            return jsonify({"error": "image_id must be a numeric value"}), 400
+
+        image_data = data.get(str(image_id))  # Get the data associated with the numeric image_id
+        if not image_data:
+            return jsonify({"error": "image_id data is required"}), 400
+        
+       
+
+        persons = image_data.get('persons_id')  # Corrected key name to 'persons_id'
+        event_names = image_data.get('event_names')
+        event_date = image_data.get('event_date')
+        location_data = image_data.get('location')
+
+
+        # Fetch the image record by image_id
+        image = Image.query.filter(Image.id == image_id).first()
+        print(image)
+        if not image:
+            return jsonify({"error": "Image not found"}), 404
+
+        # Update event_date and event_name if provided
+        if event_date:
+            print('========🎃')
+            image.event_date = event_date
+            # image.last_modified=datetime.utcnow()
+        
+        print('done with image')
+
+
+
+        if event_names:
+            image.events = []  # Clears the relationship in the ORM
+            db.session.commit()
+            
+            # Access the related events
+            # events = Event.query.filter(Event.name.in_(event_names)).all()
+            # if not events:
+            #     return {"error": "No matching events found"}, 404
+            existing_events = Event.query.filter(Event.name.in_(event_names)).all()
+            existing_event_names = {event.name for event in existing_events}
+        
+            # Determine missing event names
+            missing_event_names = set(event_names) - existing_event_names
+        
+            # Create missing events
+            new_events = []
+            for name in missing_event_names:
+                new_event = Event(name=name)
+                db.session.add(new_event)
+                new_events.append(new_event)
+            
+            # Commit new events to get their IDs
+            db.session.commit()
+        
+            # Combine existing and new events
+            all_events = existing_events + new_events
+
+            # Associate image with events
+            for event in all_events:
+                if event not in image.events:
+                    image.events.append(event)
+            db.session.commit()
+        
+        print('done with events')
+        # print(location_data)
+
+        # Update location
+        location_name = None
+        latitude = None
+        longitude = None
+
+        # Update location if provided
+        # Expecting location_data to be a dict
+        # Expecting location_data as: ["Hall", 0.0, 0.0]
+        if location_data and isinstance(location_data, list) and len(location_data) == 3 and str(location_data[0]).strip() != "":
+            print('here in location ')
+            try:
+                location_name = str(location_data[0]).strip().title()
+                latitude = 0.0
+                longitude = 0.0
+            except (ValueError, TypeError, IndexError) as e:
+                print(f"❌ Invalid location data format or value: {location_data}")
+                raise ValueError("Invalid location list format or coordinates") from e
+        
+            print(f"Checking for: {location_name}, {latitude}, {longitude}")
+        
+            existing_location = Location.query.filter(
+                    func.lower(Location.name) == location_name.lower()
+                ).first()
+            print('existing_location',existing_location)
+            if existing_location:
+                print(f"✅ Found existing location with ID: {existing_location.id}")
+                image.location_id = existing_location.id
+            else:
+                new_location = Location(name=location_name, latitude=0.0, longitude=0.0)
+                db.session.add(new_location)
+                db.session.flush()
+                image.location_id = new_location.id
+        
+    
+# ///////
+        # Update persons if provided
+        if persons:
+            print('💜👌💜👌------------->',persons)
+            for person_data in persons:
+                print('💜--------------->personData',person_data)
+                dob_str = person_data.get('dob')
+                dob = None
+                if dob_str:
+                    try:
+                        # Try ISO format (e.g., '2000-08-24T18:32:38')
+                        dob = datetime.fromisoformat(dob_str).date()
+                    except ValueError:
+                        try:
+                            # Try custom format (e.g., 'Jun 19, 1984 12:46:02 AM')
+                            dob = datetime.strptime(dob_str, "%b %d, %Y %I:%M:%S %p").date()
+                            # dob = dob.strftime("%Y-%m-%d")
+                        except ValueError:
+                            print("❌ Still Invalid DOB format:", dob_str)
+
+                print(f"Received DOB: {dob_str}, Parsed DOB: {dob}")
+
+                # person_id = person_data.get('id')
+                person_name = person_data.get('name')
+                person_path = person_data.get('path')
+                print('------------>here',person_path)
+                print(person_path)
+                gender = person_data.get('gender')
+                age =person_data.get('age')
+                if person_path:
+                    person = Person.query.filter(Person.path == person_path).first()
+                    print('------------>',person)
+                    if person:
+                        if person_name and gender:
+                            person.name = person_name
+                            person.gender  = gender
+                            person_data['path'] = person.path # saving this for tagging
+                            # person.dob = person.dob
+                            # person.age =person.age
+                        else:
+                            return jsonify({"error": f"Name is required for person with path {person_path}"}), 400
+                        
+                        PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
+                        persons_db = Person.query.all()
+                        person_list = [
+                           {"id": p.id, "name": p.name, "path": p.path }
+                           for p in persons_db
+                            ]
+                        links = Link.query.all()
+                        
+                        link_list = [
+                            {"person1_id": link.person1_id, "person2_id": link.person2_id}
+                            for link in links
+                        ]                        
+                        res=ImageController.get_emb_names_for_recognition(person_list,link_list,person.path.split('/')[-1])
+                        embeddings = res.get_json("embeddings", {})
+                        # print(res)
+                        # print("embeddings",embeddings)
+                        for path in embeddings.get("embeddings", []):
+                            pathes = f'face_images/{path}'
+                            # print("Looking for person with path:", pathes)
+                        
+                            person = Person.query.filter_by(path=pathes).first()
+                            if person:
+                                # person.name = person_name
+                                # db.session.add(person)
+                                stmt = (
+                                            update(Person)
+                                            .where(Person.path == pathes)
+                                            .values(name=person_name)  # even if same, it will still fire UPDATE
+                                        )
+                                db.session.execute(stmt)
+                                person.name= person_name
+                                db.session.add(person)
+                                print("Updated:", pathes)
+                            else:
+                                print("No match found in DB for:", pathes)
+
+                                    
+
+                        print("person_name:", person_name)
+                        print("gender:", gender)
+                        print("dob:", dob)
+                        if person:
+                            if person_name and gender :
+                                person.name = person_name
+                                person.gender = gender
+                                person.dob = dob
+                                person.age = age
+                                person_data['id'] = person.id  # For tagging
+                            else:
+                                return jsonify({"error": f"Name is required for person with path {person_path}"}), 400
+                        else:
+                            print("No match found in DB for:", pathes)
+
+
+                    else:
+                        return jsonify({"error": f"Person with path {person_path} not found"}), 404
+                else:
+                    return jsonify({"error": "Person path is required"}), 400
+
+        # Save changes to the database
+        try:
+            image.is_sync = False
+            image.last_modified=datetime.utcnow()
+
             db.session.commit()
             # return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
         except SQLAlchemyError as e:
@@ -296,10 +572,7 @@ class ImageController:
             return jsonify({"error": "EXIF metadata embedding failed."}), 500
 
 
-
-       
      # -=============    Searching          ===============
-
 
 
 # {
@@ -710,8 +983,11 @@ class ImageController:
          "name": person.name, 
          "path": person.path, 
          "gender": person.gender,
-         "dob":person.dob,
-         "age":person.age
+           "dob":person.dob,
+          "age":person.age
+        # ya comment rhna dena isy nhi hatana ok na    
+        #  "DOB": person.dob.strftime('%Y-%m-%d') if person.dob else None,
+        #  "Age":person.age
          }
         for person in image.persons
         ]
@@ -1440,12 +1716,7 @@ class ImageController:
 #     "id": 13,
 #     "is_sync": true,
 #     "last_modified": "2025-06-18 12:25:23",
-#     "location": {
-#         "id": 3,
-#         "latitude": 0.0,
-#         "longitude": 0.0,
-#         "name": "B"
-#     },
+#     "location": ["New yORK", "33.1234", "73.5678"],
 #     "path": "E:/fyp/uni_images/2020-01-30 20th Convocation-20250418T034555Z-002/2020-01-30 20th Convocation/4-test/DSC_5274.JPG",
 #     "persons": [
 #         {
@@ -1471,9 +1742,119 @@ class ImageController:
 #             }
 # }
 
+    def save_unsync_image_with_metadata_iqra(data):
+        try:
+            print("Receive Images ////////////",data)
+            for idx, item in enumerate(data):
+                print(f"\n🔹 Processing Image {idx + 1}:")
+
+                # image_data_b64 = item.get('image_data')
+                capture_date = item.get('capture_date')
+                event_date = item.get('event_date','')
+                last_modified_str = item.get('last_modified')
+                hash_val = item.get('hash','')
+                location = item.get('location','')
+                events = item.get('events', [])
+                persons = item.get('persons', [])
+                links = item.get('links', [])
+                print("HEEEEEEEEEEEEEEEEEEEEEEEEEELOO",last_modified_str,",",hash_val,capture_date,links)
+                print("Locationnnnnnnn", location)
+                print("Linkssssssss",links)
+
+                if not hash_val or not last_modified_str:
+                    print("❌ Missing hash or last_modified. Skipping...")
+                    continue
+
+                # Convert string to date
+                # try:
+                #     last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d").date()
+                # except ValueError:
+                #     print("❌ Invalid date format. Skipping...")
+                #     continue
+
+                    # Try parsing as datetime with time
+                if " " in last_modified_str:
+                    last_modified_date = datetime.strptime(last_modified_str, "%Y-%m-%d %H:%M:%S")
+                    
+
+                
+
+                # Check if image with hash exists
+                existing_image = Image.query.filter_by(hash=hash_val).first()
+                print(last_modified_str,'🙌--------->',existing_image.last_modified)
+
+                if existing_image:
+                    print(f"✅ Image with hash {hash_val} found with ID {existing_image.id}")
+                    print("last_MODIFIED ",{last_modified_date}," and", {existing_image.last_modified})
+
+                    if last_modified_date > existing_image.last_modified:
+                        #  Extract event names if events are dictionaries
+                        event_names = [e['name'] for e in events if isinstance(e, dict) and 'name' in e]
+                        # ✅ Convert location dict to list
+                        location_list = []
+                        if isinstance(location, dict):
+                            location_list = [
+                                location.get("name"),
+                                location.get("latitude"),
+                                location.get("longitude")
+                            ]
+
+                        # persons_data = []
+                        # for person in persons:
+                        #     per = Person.query.filter_by(path = person.get('path')).first()
+                        
+                        persons_data = [
+                            {
+                                "name": p.get('name'),
+                                "path": p.get('path'),
+                                "gender": p.get('gender'),
+                                "dob": p.get('DOB'),
+                                "age": p.get('Age')
+                                # "dob": p.get('dob'),
+                                # "age": p.get('age')
+                                }
+                                for p in persons]
+                            
+                        if persons_data:
+                            print("Persons Data.........", persons_data)
+                            print("Events Data.........", event_names)
+                            print("Location Data.........", location_list)
+                            edit_payload = {
+                                    str(existing_image.id): {
+                                    "persons_id": persons_data,
+                                    "event_names": event_names,
+                                    "event_date": event_date,
+                                    "location": location_list
+                                    }
+                                }
+                        else:
+                            edit_payload = {
+                                    str(existing_image.id): {
+                                    "event_names": event_names,
+                                    "event_date": event_date,
+                                    "location": location_list
+                                    }
+                                }
+                            
+                        print("EditPayload/////// ////",edit_payload)  
+                        ImageController.create_links_if_not_exist(links)
+                        ImageController.edit_image_data_for_sync_iqra(edit_payload)
+
+                        existing_image.is_sync = True
+                        print('👌-----------------------------------------saving--------')
+                        db.session.commit()
+
+            return jsonify({'status': 'success', 'message': 'All images processed successfully'}), 200
+
+        except Exception as e:
+                print(f"❌ Error: {e}")
+                return jsonify({'error': str(e)}), 500
+
+
+
     def save_unsync_image_with_metadata(data):
         try:
-         print(data)
+         print("Receive Unsync",data)
          for idx, item in enumerate(data):
             print(f"\n🔹 Processing Image {idx + 1}:")
 
@@ -1485,8 +1866,8 @@ class ImageController:
             location = item.get('location','')
             events = item.get('events', [])
             persons = item.get('persons', [])
-            links = item.get('links', [])
-            print(last_modified_str,",",hash_val,capture_date,links)
+            links = item.get('links', {})
+            print("HHHHHHHHHHHHHEEEEEEEELOOOOOO",last_modified_str,",",hash_val,capture_date,links)
 
             if not hash_val or not last_modified_str:
                 print("❌ Missing hash or last_modified. Skipping...")
@@ -1515,31 +1896,58 @@ class ImageController:
                 print("last_MODIFIED ",{last_modified_date}," and", {existing_image.last_modified})
 
                 if last_modified_date > existing_image.last_modified:
+
+                    print("✅ last_modified_1 is more recent")
+
                     # persons_data = []
                     # for person in persons:
                     #     per = Person.query.filter_by(path = person.get('path')).first()
-                    
+
+                    # Extract event names if events are dictionaries
+                    event_names = [e['name'] for e in events if isinstance(e, dict) and 'name' in e]
+
+                
                     persons_data = [
                         {
                             "name": p.get('name'),
                             "path": p.get('path'),
                             "gender": p.get('gender'),
+                    
                             "dob": p.get('dob'),
                             "age": p.get('age')
                             }
                             for p in persons]
                         
                     if persons_data:
+                        print("Persons Data/////////////////////////", persons_data)
                         edit_payload = {
                                 str(existing_image.id): {
                                 "persons_id": persons_data,
-                                "event_names": events,
+                                "event_names": event_names,
                                 "event_date": event_date,
                                 "location": location
                                 }
                             }
-                        
+                        print("Before check links")
                         ImageController.create_links_if_not_exist(links)
+                        print("After check links")
+                        ImageController.edit_image_data(edit_payload)
+                        existing_image.is_sync = True
+                        print('👌-----------------------------------------saving--------')
+                        db.session.commit()
+                    else:
+                        edit_payload = {
+                                str(existing_image.id): {
+                                "event_names": event_names,
+                                "event_date": event_date,
+                                "location": location
+                                }
+                            }
+                        print("Before check links")
+                        ImageController.create_links_if_not_exist(links)
+                        print("After check links")
+                        print("Event NAMES", event_names, "AND LOCATION",location)
+
                         ImageController.edit_image_data(edit_payload)
                         existing_image.is_sync = True
                         print('👌-----------------------------------------saving--------')
@@ -1554,8 +1962,10 @@ class ImageController:
     @staticmethod
     def create_links_if_not_exist(links):
      for path1, related_paths in links.items():
+        # print(f"🧠 Looking for person by path: {path1} and {path2}")
         # Get person1 object from path
         person1 = Person.query.filter_by(path=path1).first()
+
         if not person1:
             print(f"❌ Person not found for path: {path1}")
             continue
@@ -1674,4 +2084,28 @@ class ImageController:
         result=ImageController.get_emb_names(samenamedpersons_list, link_list, person1,person_list) 
         print(result)
         return result or {} 
-               
+    
+    @staticmethod
+    def build_person_links(person_records, link_records):
+        # Step 1: Create a mapping from person_id to image path
+        id_to_path = {person["id"]: person["path"] for person in person_records}
+    
+        # Step 2: Initialize result dict with empty lists
+        links = {path: [] for path in id_to_path.values()}
+    
+        # Step 3: Fill in the links based on link_records
+        for link in link_records:
+            p1_id = link.get("person1_id")
+            p2_id = link.get("person2_id")
+    
+            p1_path = id_to_path.get(p1_id)
+            p2_path = id_to_path.get(p2_id)
+    
+            if p1_path and p2_path:
+                # Add links in one direction or both as needed
+                links[p2_path].append(p1_path)
+                # If you want bidirectional links, uncomment this:
+                # links[p1_path].append(p2_path)
+    
+        return {"links": links}
+                   

@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify, request,Response
 import os, json
 import base64
 from collections import defaultdict
@@ -77,6 +77,7 @@ class MobileSideController:
     @staticmethod
     def get_person_groups_from_data(persons, links, image_persons, image_ids):
      try:
+        # print(persons,links,image_persons,image_ids)
 
         # Load JSON file
         with open('./stored-faces/person_group.json', 'r') as f:
@@ -160,16 +161,22 @@ class MobileSideController:
                             "id": person["id"],
                             "name": person.get("name"),
                             "path": person.get("path"),
-                            "gender": person.get("gender")
+                            "gender": person.get("gender"),
+                            "dob": person.get("dob"),
+                            "age": person.get("age")
                         },
                         "Images": []
                     }
                     used_image_ids_per_group[group_idx] = set()
+                    # print(grouped_data)
 
                 for img_id in person_image_ids:
                     if img_id not in used_image_ids_per_group[group_idx]:
                         grouped_data[group_idx]["Images"].append({"id": img_id})
                         used_image_ids_per_group[group_idx].add(img_id)
+                        # print(grouped_data)
+
+        print(grouped_data)
 
         result = list(grouped_data.values())
         return result
@@ -260,40 +267,53 @@ class MobileSideController:
      except Exception as e:
         print(f"Error: {e}")
         return {"error": str(e)}, 500
-     
+
+
     @staticmethod
-    def get_unsync_images():
+    def get_unsync_images_new():
         images = Image.query.filter(Image.is_sync == False).all()
         sync_images = []
-        link = []
-
+        links = []
+    
         for image in images:
             image_details = ImageController.get_image_complete_details(image.id)
             if image_details:
                 sync_images.append(image_details)
-                
-                print(image.persons)
+    
                 for person in image.persons:
                     res, status = PersonController.get_person_and_linked_as_list(person.id)
+                    print("Links data status////////",status)
                     if status == 200:
-                        link_data = MobileSideController.convert_to_linked_paths(res)
-                        link.append(link_data)
+                        if isinstance(res, Response):
+                            res_data = res.get_json()
+                        else:
+                            res_data = res
+                        
+                        print("linked get from json",res_data)
+                        link_data = MobileSideController.convert_to_linked_paths(res_data)
+                        links.append(link_data)
+                        print("LINK DATA.//////",link_data)
+    
+        print({
+            "images": sync_images,
+            "links": links
+            })
+        
+        return {
+            "images": sync_images,
+            "links": links
+            }
 
-                    # link.append(MobileSideController.convert_to_linked_paths(PersonController.get_person_and_linked_as_list(person.id)))
-        print('😍link',link)
-        print("sync_images",sync_images)
-        return sync_images
     
 
-
     def convert_to_linked_paths(person_list):
-     if not person_list or len(person_list) < 2:
-        return {}
+        if not person_list or len(person_list) < 2:
+            return {}
 
-     first_path = person_list[0].get("path")
-     remaining_paths = [p["path"] for p in person_list[1:] if "path" in p]
+        first_path = person_list[0].get("path")
+        remaining_paths = [p["path"] for p in person_list[1:] if "path" in p]
 
-     return {first_path: remaining_paths}
+        return {first_path: remaining_paths}
 
 
     def build_links_from_image(image):

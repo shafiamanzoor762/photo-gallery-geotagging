@@ -112,7 +112,7 @@ BEGIN
         FROM ImagepersonHistory
         WHERE image_id = d.image_id AND person_id = d.person_id
     ) v;
-END;
+END; 
 
 
 ---------------linkperson

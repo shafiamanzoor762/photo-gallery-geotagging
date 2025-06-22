@@ -111,11 +111,9 @@ class LinkController():
         try:
             # Build the expected path
             expected_path = f"face_images/{person2_filename}"
-            print(expected_path)
 
             # Find person2 by path
             person2 = db.session.query(Person).filter_by(path=expected_path).first()
-            print("person333",person2)
 
             if not person2:
                 return jsonify({"error": f"No person found with path '{expected_path}'"}), 404
