@@ -130,8 +130,8 @@ class ImageController:
 
         # Update location
         location_name = None
-        latitude = None
-        longitude = None
+        latitude = 0.0
+        longitude = 0.0
 
         # Update location if provided
         # Expecting location_data to be a dict
@@ -156,7 +156,7 @@ class ImageController:
                 print(f"✅ Found existing location with ID: {existing_location.id}")
                 image.location_id = existing_location.id
             else:
-                new_location = Location(name=location_name)
+                new_location = Location(name=location_name, latitude=0.0, longitude=0.0)
                 db.session.add(new_location)
                 db.session.flush()
                 image.location_id = new_location.id
