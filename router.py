@@ -975,6 +975,25 @@ def get_unsync_images_new():
     return jsonify({'status': 'success', **images_data}), 200
 
 
+@app.route('/get_unsync_images_new_iqra', methods=['POST'])
+def get_unsync_images_new_iqra():
+
+    # Ensure we have JSON data
+    if not request.is_json:
+        return jsonify({'error': 'Missing JSON in request'}), 400
+            
+    data = request.get_json()
+    print(data)
+    if not isinstance(data, list):
+        return jsonify({'error': 'Expected a list of image objects'}), 400
+    ImageController.save_unsync_image_with_metadata_iqra(data)   
+    images_data = MobileSideController.get_unsync_images_new()
+    print("Unsync Response",images_data)
+    # return jsonify({'status': 'success', 'images': images_data}), 200
+    return jsonify({'status': 'success', **images_data}), 200
+
+
+
 
 @app.route('/api/images-by-person', methods=['GET'])
 def get_images_by_person():
