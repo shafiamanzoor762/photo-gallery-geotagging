@@ -711,7 +711,7 @@ def get_image2(filepath):
         print("Decoded path:", decoded_path)
 
         # Normalize slashes
-        normalized_path = decoded_path.replace("\\", "/")
+        normalized_path = decoded_path.replace("\\", "/").replace("+", " ")
         print("Normalized path:", normalized_path)
 
         if not os.path.exists(normalized_path):
@@ -970,6 +970,7 @@ def get_unsync_images_new():
         return jsonify({'error': 'Expected a list of image objects'}), 400
     ImageController.save_unsync_image_with_metadata(data)   
     images_data = MobileSideController.get_unsync_images_new()
+    print("Unsync Response",images_data)
     # return jsonify({'status': 'success', 'images': images_data}), 200
     return jsonify({'status': 'success', **images_data}), 200
 
