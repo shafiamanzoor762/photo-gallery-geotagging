@@ -268,7 +268,7 @@ class MobileSideController:
         print(f"Error: {e}")
         return {"error": str(e)}, 500
 
-    
+
     @staticmethod
     def get_unsync_images_new():
         images = Image.query.filter(Image.is_sync == False).all()
