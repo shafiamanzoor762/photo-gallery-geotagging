@@ -107,19 +107,39 @@ class ImageHistoryController:
 
     
         # 🖼️ Final image data response
+        # image_data = {
+        #     "id": image.id,
+        #     "path": image.path,
+        #     "is_sync": image.is_sync,
+        #     "capture_date": image.capture_date.strftime('%Y-%m-%d') if image.capture_date else None,
+        #     "event_date": image.event_date.strftime('%Y-%m-%d') if image.event_date else None,
+        #     "last_modified": image.last_modified.strftime('%Y-%m-%d %H:%M:%S') if image.last_modified else None,
+        #     "hash": image.hash,
+        #     "location": location_data,
+        #     "persons": persons,
+        #     "events": events
+        # }
+
         image_data = {
-            "id": image.id,
-            "path": image.path,
+    str(image.id): {
+        "path": image.path,
             "is_sync": image.is_sync,
             "capture_date": image.capture_date.strftime('%Y-%m-%d') if image.capture_date else None,
             "event_date": image.event_date.strftime('%Y-%m-%d') if image.event_date else None,
             "last_modified": image.last_modified.strftime('%Y-%m-%d %H:%M:%S') if image.last_modified else None,
             "hash": image.hash,
-            "location": location_data,
-            "persons": persons,
-            "events": events
-        }
-    
+        "persons_id": persons,  # Rename if needed
+        "event_names": [event["name"] for event in events],
+        "event_date": image.event_date.strftime('%Y-%m-%dT%H:%M:%S') if image.event_date else None,
+        "location": [
+            location_data.get("name"),
+            location_data.get("latitude"),
+            location_data.get("longitude")
+        ]
+    }
+}
+
+        print("Image Data:", image_data)  # Debugging line to check the output
         return image_data
     
 

@@ -267,42 +267,8 @@ class MobileSideController:
      except Exception as e:
         print(f"Error: {e}")
         return {"error": str(e)}, 500
-     
-    @staticmethod
-    def get_unsync_images():
-        images = Image.query.filter(Image.is_sync == False).all()
-        sync_images = []
-        links = []
 
-        for image in images:
-            image_details = ImageController.get_image_complete_details(image.id)
-            if image_details:
-                sync_images.append(image_details)
-                
-                print(image.persons)
-                for person in image.persons:
-                    res, status = PersonController.get_person_and_linked_as_list(person.id)
-                    print("res",res)
-                    if status == 200:
-                        # ✅ Extract actual data from Flask Response object
-                        if isinstance(res, Response):
-                            res_data = res.get_json()
-                        else:
-                            res_data = res
-        
-                        link_data = MobileSideController.convert_to_linked_paths(res_data)
-                        links.append(link_data)
-                    
 
-                    # link.append(MobileSideController.convert_to_linked_paths(PersonController.get_person_and_linked_as_list(person.id)))
-        print('😍link',links)
-        images = {
-            "sync_images": sync_images,
-            "links": links
-        }
-        print("images",images)
-        return images
-    
     @staticmethod
     def get_unsync_images_new():
         images = Image.query.filter(Image.is_sync == False).all()
