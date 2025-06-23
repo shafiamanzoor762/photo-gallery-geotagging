@@ -282,14 +282,17 @@ class MobileSideController:
     
                 for person in image.persons:
                     res, status = PersonController.get_person_and_linked_as_list(person.id)
+                    print("Links data status////////",status)
                     if status == 200:
                         if isinstance(res, Response):
                             res_data = res.get_json()
                         else:
                             res_data = res
                         
+                        print("linked get from json",res_data)
                         link_data = MobileSideController.convert_to_linked_paths(res_data)
                         links.append(link_data)
+                        print("LINK DATA.//////",link_data)
     
         print({
             "images": sync_images,
@@ -304,13 +307,13 @@ class MobileSideController:
     
 
     def convert_to_linked_paths(person_list):
-     if not person_list or len(person_list) < 2:
-        return {}
+        if not person_list or len(person_list) < 2:
+            return {}
 
-     first_path = person_list[0].get("path")
-     remaining_paths = [p["path"] for p in person_list[1:] if "path" in p]
+        first_path = person_list[0].get("path")
+        remaining_paths = [p["path"] for p in person_list[1:] if "path" in p]
 
-     return {first_path: remaining_paths}
+        return {first_path: remaining_paths}
 
 
     def build_links_from_image(image):
