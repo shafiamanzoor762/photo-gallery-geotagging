@@ -736,105 +736,115 @@ class ImageController:
         location_data = data.get('location', {})
 
         image_ids = set()
+        has_any_filter = False
 
-        # ⬇️ Filter persons first
+        # ✅ PERSON FILTER (all combinations like Kotlin)
         person_ids = []
-        if person_names:
-            for name in person_names:
-                query = Person.query.filter(Person.name == name)
+        if person_names or gender or (isinstance(age, int) and age > 0):
+            has_any_filter = True
 
-                if gender:
-                    query = query.filter(Person.gender.in_(gender))
+            if person_names and gender and isinstance(age, int) and age > 0:
+                persons = Person.query.filter(
+                    Person.name.in_(person_names),
+                    Person.gender.in_(gender),
+                    Person.age == age
+                ).all()
+            elif person_names and gender:
+                persons = Person.query.filter(
+                    Person.name.in_(person_names),
+                    Person.gender.in_(gender)
+                ).all()
+            elif person_names and isinstance(age, int) and age > 0:
+                persons = Person.query.filter(
+                    Person.name.in_(person_names),
+                    Person.age == age
+                ).all()
+            elif gender and isinstance(age, int) and age > 0:
+                persons = Person.query.filter(
+                    Person.gender.in_(gender),
+                    Person.age == age
+                ).all()
+            elif person_names:
+                persons = Person.query.filter(Person.name.in_(person_names)).all()
+            elif gender:
+                persons = Person.query.filter(Person.gender.in_(gender)).all()
+            elif isinstance(age, int) and age > 0:
+                persons = Person.query.filter(Person.age == age).all()
+            else:
+                persons = []
 
-                if isinstance(age, int) and age > 0:
-                    query = query.filter(Person.age == age)
+            person_ids = [p.id for p in persons]
 
-                persons = query.all()
-                for person in persons:
-                    person_ids.append(person.id)
-
-        # ⬇️ Get initial images linked to persons
-                # ⬇️ Get initial images linked to persons
-        if person_ids:
-            # STEP 1: Base images linked with person(s)
-            person_images_query = (
-                db.session.query(Image.id)
-                .join(ImagePerson, ImagePerson.image_id == Image.id)
-                .filter(ImagePerson.person_id.in_(person_ids))
-            )
-
-            # ✅ Filter by capture date (only on person images)
-            if capture_dates:
-                person_images_query = person_images_query.filter(Image.capture_date.in_(capture_dates))
-
-            # ✅ Filter by location (only on person images)
-            if location_data:
-                loc_name = location_data.get("Name", "")
-                if loc_name:
-                    location = Location.query.filter(Location.name == loc_name).first()
-                    if not location:
-                        return jsonify({"paths": []}), 200  # ❌ Invalid location
-                    person_images_query = person_images_query.filter(Image.location_id == location.id)
-
-            # ✅ Filter by event (only on person images)
-            if events:
-                print("selected_events", events)
-                event_ids = [e.id for e in Event.query.filter(Event.name.in_(events)).all()]
-                if not event_ids:
-                    return jsonify({"paths": []}), 200  # ❌ Event not found, return empty
-
+            if person_ids:
                 person_images_query = (
-                    person_images_query
-                    .join(ImageEvent, ImageEvent.image_id == Image.id)
-                    .filter(ImageEvent.event_id.in_(event_ids))
-                )
-
-            # ✅ Final person-filtered + additional filters result
-            for img in person_images_query.all():
-                image_ids.add(img.id)
-
-
-        # ➕ If no person is provided, fallback to event/date/location filters alone
-        elif events or capture_dates or location_data:
-            temp_image_ids = set()
-
-            # Filter by event
-            if events:
-                event_ids = [e.id for e in Event.query.filter(Event.name.in_(events)).all()]
-                if event_ids:
-                    event_images = (
-                        db.session.query(Image.id)
-                        .join(ImageEvent, ImageEvent.image_id == Image.id)
-                        .filter(ImageEvent.event_id.in_(event_ids))
-                        .all()
-                    )
-                    temp_image_ids.update([img.id for img in event_images])
-
-            # Filter by date
-            if capture_dates:
-                date_images = (
                     db.session.query(Image.id)
-                    .filter(Image.capture_date.in_(capture_dates))
-                    .all()
+                    .join(ImagePerson, ImagePerson.image_id == Image.id)
+                    .filter(ImagePerson.person_id.in_(person_ids))
                 )
-                temp_image_ids.update([img.id for img in date_images])
 
-            # Filter by location
-            if location_data:
-                loc_name = location_data.get("Name", "")
-                if loc_name:
-                    location = Location.query.filter(Location.name == loc_name).first()
-                    if location:
-                        loc_images = (
-                            db.session.query(Image.id)
-                            .filter(Image.location_id == location.id)
-                            .all()
+                # ✅ Date filter
+                if capture_dates:
+                    person_images_query = person_images_query.filter(Image.capture_date.in_(capture_dates))
+
+                # ✅ Location filter
+                if location_data:
+                    loc_name = location_data.get("Name", "")
+                    if loc_name:
+                        location = Location.query.filter(Location.name == loc_name).first()
+                        if location:
+                            person_images_query = person_images_query.filter(Image.location_id == location.id)
+
+                # ✅ Event filter
+                if events:
+                    event_ids = [e.id for e in Event.query.filter(Event.name.in_(events)).all()]
+                    if event_ids:
+                        person_images_query = (
+                            person_images_query
+                            .join(ImageEvent, ImageEvent.image_id == Image.id)
+                            .filter(ImageEvent.event_id.in_(event_ids))
                         )
-                        temp_image_ids.update([img.id for img in loc_images])
 
-            image_ids.update(temp_image_ids)
+                # ✅ Add all final image IDs
+                for img in person_images_query.all():
+                    image_ids.add(img.id)
 
-        # ✅ Flatten and retrieve image paths
+        # ✅ GLOBAL FILTERS (if person filters were not used or gave no results)
+        if not person_ids:
+            if events or capture_dates or location_data:
+                has_any_filter = True
+
+                query = db.session.query(Image.id)
+
+                # Event filter
+                if events:
+                    event_ids = [e.id for e in Event.query.filter(Event.name.in_(events)).all()]
+                    if event_ids:
+                        query = (
+                            query.join(ImageEvent, ImageEvent.image_id == Image.id)
+                            .filter(ImageEvent.event_id.in_(event_ids))
+                        )
+
+                # Date filter
+                if capture_dates:
+                    query = query.filter(Image.capture_date.in_(capture_dates))
+
+                # Location filter
+                if location_data:
+                    loc_name = location_data.get("Name", "")
+                    if loc_name:
+                        location = Location.query.filter(Location.name == loc_name).first()
+                        if location:
+                            query = query.filter(Image.location_id == location.id)
+
+                # ✅ Add final filtered image IDs
+                for img in query.all():
+                    image_ids.add(img.id)
+
+        # ✅ Return if no filters applied
+        if not has_any_filter:
+            return jsonify({"paths": []}), 200
+
+        # ✅ Get image paths from final image IDs
         final_image_ids = list(image_ids)
         image_paths = []
         if final_image_ids:
@@ -843,7 +853,6 @@ class ImageController:
 
         return jsonify({"paths": image_paths}), 200
 
-        
 
 
     @staticmethod
