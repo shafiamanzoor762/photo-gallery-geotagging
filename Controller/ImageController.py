@@ -719,11 +719,15 @@ class ImageController:
          "name": person.name, 
          "path": person.path, 
          "gender": person.gender,
-           "dob":person.dob,
-          "age":person.age
-        # ya comment rhna dena isy nhi hatana ok na    
-        #  "DOB": person.dob.strftime('%Y-%m-%d') if person.dob else None,
-        #  "Age":person.age
+        #    "dob":person.dob,
+        #   "age":person.age
+
+        #"dob": person.dob.strftime('%Y-%m-%d') if person.dob else None,
+        #"age":person.age 
+        
+        # ya comment rhna dena isy nhi hatana ok na 
+         "DOB": person.dob.strftime('%Y-%m-%d') if person.dob else None,
+         "Age":person.age
          }
         for person in image.persons
         ]
