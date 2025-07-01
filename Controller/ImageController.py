@@ -1008,7 +1008,8 @@ class ImageController:
                 db.session.add(image_person)
 
             db.session.commit()
-            return jsonify({'message': 'Image and faces saved successfully'}), 201
+            # return jsonify({'message': 'Image and faces saved successfully'}), 201
+            return jsonify({'message': image.id}), 201
 
         except Exception as e:
             db.session.rollback()
