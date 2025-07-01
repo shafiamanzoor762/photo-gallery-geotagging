@@ -194,11 +194,96 @@ class ImageController:
                         if person_name and gender:
                             person.name = person_name
                             person.gender  = gender
+                            person.dob = dob
+                            person.age =age
                             person_data['path'] = person.path # saving this for tagging
-                            # person.dob = person.dob
-                            # person.age =person.age
+                            person_data['dob'] = dob
+                            person_data['age'] = age
                         else:
                             return jsonify({"error": f"Name is required for person with path {person_path}"}), 400
+                        
+                        # PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
+                        # persons_db = Person.query.all()
+                        # person_list = [
+                        #    {"id": p.id, "name": p.name, "path": p.path }
+                        #    for p in persons_db
+                        #     ]
+                        # links = Link.query.all()
+                        
+                        # link_list = [
+                        #     {"person1_id": link.person1_id, "person2_id": link.person2_id}
+                        #     for link in links
+                        # ]                        
+                        # res=ImageController.get_emb_names_for_recognition(person_list,link_list,person.path.split('/')[-1])
+                        # embeddings = res.get_json("embeddings", {})
+                        # # print(res)
+                        # # print("embeddings",embeddings)
+                        # for path in embeddings.get("embeddings", []):
+                        #     pathes = f'face_images/{path}'
+                        #     # print("Looking for person with path:", pathes)
+                        
+                        #     person = Person.query.filter_by(path=pathes).first()
+                        #     if person:
+                        #         # person.name = person_name
+                        #         # db.session.add(person)
+                        #         stmt = (
+                        #                     update(Person)
+                        #                     .where(Person.path == pathes)
+                        #                     .values(name=person_name)  # even if same, it will still fire UPDATE
+                        #                 )
+                        #         db.session.execute(stmt)
+                        #         person.name= person_name
+                        #         db.session.add(person)
+                        #         print("Updated:", pathes)
+                        #     else:
+                        #         print("No match found in DB for:", pathes)
+
+
+
+                    else:
+                        return jsonify({"error": f"Person with path {person_path} not found"}), 404
+                else:
+                    return jsonify({"error": "Person path is required"}), 400
+        
+        # Save changes to the database
+        try:
+            image.is_sync = False
+            image.last_modified=datetime.utcnow()
+
+            db.session.commit()
+            # return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+
+
+        if persons:
+            print('💜👌💜👌------------->',persons)
+            for person_data in persons:
+                print('💜--------------->personData',person_data)
+                dob_str = person_data.get('dob')
+                dob = None
+                if dob_str :
+                    try:
+                        dob = datetime.fromisoformat(dob_str).date()  # 👈 converts '2000-08-24T18:32:38' to datetime.date(2000, 8, 24)
+
+                    except ValueError:
+                        print("Invalid DOB format and age_str:", dob_str)
+
+                print(f"Received DOB: {dob_str}, Parsed DOB: {dob}")
+
+                # person_id = person_data.get('id')
+                person_name = person_data.get('name')
+                person_path = person_data.get('path')
+                print('------------>here',person_path)
+                print(person_path)
+                gender = person_data.get('gender')
+                age =person_data.get('age')
+                if person_path:
+                    person = Person.query.filter(Person.path == person_path).first()
+                    print('------------>',person)
+                    if person:
                         
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
                         persons_db = Person.query.all()
@@ -235,40 +320,12 @@ class ImageController:
                                 print("Updated:", pathes)
                             else:
                                 print("No match found in DB for:", pathes)
-
-                                    
-
-                        print("person_name:", person_name)
-                        print("gender:", gender)
-                        print("dob:", dob)
-                        if person:
-                            if person_name and gender :
-                                person.name = person_name
-                                person.gender = gender
-                                person.dob = dob
-                                person.age = age
-                                person_data['id'] = person.id  # For tagging
-                            else:
-                                return jsonify({"error": f"Name is required for person with path {person_path}"}), 400
-                        else:
-                            print("No match found in DB for:", pathes)
-
-
                     else:
                         return jsonify({"error": f"Person with path {person_path} not found"}), 404
                 else:
                     return jsonify({"error": "Person path is required"}), 400
 
-        # Save changes to the database
-        try:
-            image.is_sync = False
-            image.last_modified=datetime.utcnow()
 
-            db.session.commit()
-            # return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
         try:
             image_path = image.path  # Full path to original image
@@ -279,7 +336,9 @@ class ImageController:
                     str(p.get("id")): {
                         "name": p.get("name"),
                         "gender": p.get("gender"),
-                        "path": p.get("path", "")
+                        "path": p.get("path", ""),
+                        "dob": p.get("dob", ""),
+                        "age": p.age("age","")
                     }
                     for p in persons
                 } if persons else {},
