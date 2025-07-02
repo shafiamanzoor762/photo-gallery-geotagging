@@ -102,6 +102,7 @@ class ImageController:
             # events = Event.query.filter(Event.name.in_(event_names)).all()
             # if not events:
             #     return {"error": "No matching events found"}, 404
+
             existing_events = Event.query.filter(Event.name.in_(event_names)).all()
             existing_event_names = {event.name for event in existing_events}
         
@@ -111,9 +112,10 @@ class ImageController:
             # Create missing events
             new_events = []
             for name in missing_event_names:
-                new_event = Event(name=name)
-                db.session.add(new_event)
-                new_events.append(new_event)
+                if name!=None:
+                    new_event = Event(name=name)
+                    db.session.add(new_event)
+                    new_events.append(new_event)
             
             # Commit new events to get their IDs
             db.session.commit()
@@ -160,10 +162,11 @@ class ImageController:
                 print(f"✅ Found existing location with ID: {existing_location.id}")
                 image.location_id = existing_location.id
             else:
-                new_location = Location(name=location_name, latitude=0.0, longitude=0.0)
-                db.session.add(new_location)
-                db.session.flush()
-                image.location_id = new_location.id
+                if location_name and location_name!='None':
+                    new_location = Location(name=location_name, latitude=0.0, longitude=0.0)
+                    db.session.add(new_location)
+                    db.session.flush()
+                    image.location_id = new_location.id
         
     
 # ///////

@@ -51,7 +51,7 @@ class ImageHistoryController:
             return jsonify({"error": "Image not found"}), 404
     
         # ⏳ Allow a 5-second window for timestamp matching
-        delta = timedelta(seconds=5)
+        delta = timedelta(seconds=1)
         lower_bound = image.created_at - delta
         upper_bound = image.created_at + delta
         deltaperson= timedelta(seconds=2)
