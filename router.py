@@ -188,6 +188,9 @@ def get_person_groups_from_json():
 def get_all_person():
     return ImageController.get_all_person()
 
+# @app.route('/person/<int:person_id>', methods=['GET'])
+# def get_person_and_linked_as_list(person_id):
+#     return PersonController.get_person_and_linked_as_list(person_id)
 @app.route('/person/<int:person_id>', methods=['GET'])
 def get_person_and_linked_as_list(person_id):
     return PersonController.get_person_and_linked_as_list(person_id)
