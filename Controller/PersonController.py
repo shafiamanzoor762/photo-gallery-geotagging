@@ -578,7 +578,10 @@ class PersonController():
                 "id": p.id,
                 "name": p.name,
                 "path": p.path,
-                "gender": p.gender
+                "gender": p.gender,
+                "DOB":p.dob,
+                "Age":p.age,
+
             } for p in all_persons
         ]
 
