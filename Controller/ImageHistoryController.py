@@ -196,4 +196,3 @@ class ImageHistoryController:
             print(f"Error in undo_data: {e}")
             db.session.rollback()
             return False
-    
