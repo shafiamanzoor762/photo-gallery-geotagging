@@ -97,6 +97,11 @@ delete from Person
 delete from Event
 delete from Image
 
+delete  from ImageHistory
+delete from ImageEventHistory
+delete from PersonHistory
+
+
 ////add location constraints    
 
 ////                   ya queries run karni han sab nay apny pass ok 

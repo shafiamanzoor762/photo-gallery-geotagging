@@ -579,13 +579,12 @@ class PersonController():
                 "name": p.name,
                 "path": p.path,
                 "gender": p.gender,
-                "DOB":p.dob,
-                "Age":p.age,
-
+                "dob":p.dob,
+                "age":p.age
             } for p in all_persons
         ]
 
-        return jsonify(person_list), 200
+        return jsonify({"personList": person_list}), 200
 
     
 
