@@ -584,12 +584,12 @@ class ImageController:
 
         # Save changes to the database
         try:
-            
+            image.last_modified=datetime.utcnow()
             if event_date:
                print('========🎃')
                image.event_date = event_date
             image.is_sync = False
-            image.last_modified=datetime.utcnow()
+            
             db.session.commit()
             # return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
         except SQLAlchemyError as e:
