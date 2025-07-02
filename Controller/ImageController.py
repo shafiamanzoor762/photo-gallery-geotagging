@@ -404,9 +404,7 @@ class ImageController:
             return jsonify({"error": "Image not found"}), 404
 
         # Update event_date and event_name if provided
-        if event_date:
-            print('========🎃')
-            image.event_date = event_date
+        
             # image.last_modified=datetime.utcnow()
         
         print('done with image')
@@ -586,9 +584,12 @@ class ImageController:
 
         # Save changes to the database
         try:
+            
+            if event_date:
+               print('========🎃')
+               image.event_date = event_date
             image.is_sync = False
             image.last_modified=datetime.utcnow()
-
             db.session.commit()
             # return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
         except SQLAlchemyError as e:
