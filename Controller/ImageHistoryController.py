@@ -54,6 +54,9 @@ class ImageHistoryController:
         delta = timedelta(seconds=5)
         lower_bound = image.created_at - delta
         upper_bound = image.created_at + delta
+        deltaperson= timedelta(seconds=2)
+        lower_boundperson = image.created_at - deltaperson
+        upper_boundperson = image.created_at + deltaperson
     
         # 📍 Location handling (only if the relationship is defined in ImageHistory via backref)
         location_data = None
@@ -71,7 +74,7 @@ class ImageHistoryController:
     PersonHistory.id == ImagePerson.person_id
 ).filter(
     ImagePerson.image_id == image.id,
-        PersonHistory.version_no ==version
+        PersonHistory.created_at.between(lower_boundperson, upper_boundperson),
 
             ).all()
 

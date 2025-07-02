@@ -193,8 +193,7 @@ def get_all_person():
 #     return PersonController.get_person_and_linked_as_list(person_id)
 @app.route('/person/<int:person_id>', methods=['GET'])
 def get_person_and_linked_as_list(person_id):
-    return PersonController.get_person_and_linked_as_list(person_id)  # ✅ correct
-
+    return PersonController.get_person_and_linked_as_list(person_id)
 
   
 #--------------------Link----------------
