@@ -581,6 +581,8 @@ class PersonController():
                 "gender": p.gender,
                 "dob":p.dob,
                 "age":p.age
+                # "DOB": p.dob.strftime('%Y-%m-%d') if p.dob else None,
+                # "Age":p.age
             } for p in all_persons
         ]
 
