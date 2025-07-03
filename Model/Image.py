@@ -12,7 +12,7 @@ class Image(db.Model):
     hash = db.Column(db.String(255), unique=True, nullable=False)  # <-- Important
 
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'), nullable=True)
-    is_deleted = db.Column(db.Boolean, nullable=False, default=False)
+    # is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     
     # New 'is_deleted' column
     is_deleted = db.Column(db.Boolean, default=False)  # Added 'is_deleted' field

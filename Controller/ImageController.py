@@ -2,6 +2,7 @@ import os,cv2,uuid,json,base64,face_recognition
 from io import BytesIO
 
 from datetime import datetime
+from datetime import date
 
 from flask import jsonify, request
 import numpy as np
@@ -61,9 +62,9 @@ class ImageController:
 
         # Extract the numeric image_id and its associated data
         try:
-            print('editing...')
+            # print('editing...')
             image_id = int(next(iter(data.keys())))
-            print('on the way...',image_id)
+            # print('on the way...',image_id)
         except ValueError:
             return jsonify({"error": "image_id must be a numeric value"}), 400
 
@@ -81,13 +82,13 @@ class ImageController:
 
         # Fetch the image record by image_id
         image = Image.query.filter(Image.id == image_id).first()
-        print(image)
+        # print(image)
         if not image:
             return jsonify({"error": "Image not found"}), 404
 
         # Update event_date and event_name if provided
         if event_date:
-            print('========🎃')
+            # print('========🎃')
             image.event_date = event_date
             # image.last_modified=datetime.utcnow()
         
@@ -101,6 +102,7 @@ class ImageController:
             # events = Event.query.filter(Event.name.in_(event_names)).all()
             # if not events:
             #     return {"error": "No matching events found"}, 404
+
             existing_events = Event.query.filter(Event.name.in_(event_names)).all()
             existing_event_names = {event.name for event in existing_events}
         
@@ -110,9 +112,10 @@ class ImageController:
             # Create missing events
             new_events = []
             for name in missing_event_names:
-                new_event = Event(name=name)
-                db.session.add(new_event)
-                new_events.append(new_event)
+                if name!=None:
+                    new_event = Event(name=name)
+                    db.session.add(new_event)
+                    new_events.append(new_event)
             
             # Commit new events to get their IDs
             db.session.commit()
@@ -147,28 +150,31 @@ class ImageController:
                 print(f"❌ Invalid location data format or value: {location_data}")
                 raise ValueError("Invalid location list format or coordinates") from e
         
-            print(f"Checking for: {location_name}, {latitude}, {longitude}")
+            # print(f"Checking for: {location_name}, {latitude}, {longitude}")
         
             existing_location = Location.query.filter(
                     func.lower(Location.name) == location_name.lower()
                 ).first()
-            print('existing_location',existing_location)
+            
+            # print('existing_location',existing_location)
+
             if existing_location:
                 print(f"✅ Found existing location with ID: {existing_location.id}")
                 image.location_id = existing_location.id
             else:
-                new_location = Location(name=location_name, latitude=0.0, longitude=0.0)
-                db.session.add(new_location)
-                db.session.flush()
-                image.location_id = new_location.id
+                if location_name and location_name!='None':
+                    new_location = Location(name=location_name, latitude=0.0, longitude=0.0)
+                    db.session.add(new_location)
+                    db.session.flush()
+                    image.location_id = new_location.id
         
     
 # ///////
         # Update persons if provided
         if persons:
-            print('💜👌💜👌------------->',persons)
+            # print('💜👌💜👌------------->',persons)
             for person_data in persons:
-                print('💜--------------->personData',person_data)
+                # print('💜--------------->personData',person_data)
                 dob_str = person_data.get('dob')
                 dob = None
                 if dob_str :
@@ -183,13 +189,12 @@ class ImageController:
                 # person_id = person_data.get('id')
                 person_name = person_data.get('name')
                 person_path = person_data.get('path')
-                print('------------>here',person_path)
-                print(person_path)
+
                 gender = person_data.get('gender')
                 age =person_data.get('age')
                 if person_path:
                     person = Person.query.filter(Person.path == person_path).first()
-                    print('------------>',person)
+                    # print('------------>',person)
                     if person:
                         if person_name and gender:
                             person.name = person_name
@@ -259,30 +264,22 @@ class ImageController:
 
 
         if persons:
-            print('💜👌💜👌------------->',persons)
+            # print('💜👌💜👌------------->',persons)
             for person_data in persons:
-                print('💜--------------->personData',person_data)
-                dob_str = person_data.get('dob')
-                dob = None
-                if dob_str :
-                    try:
-                        dob = datetime.fromisoformat(dob_str).date()  # 👈 converts '2000-08-24T18:32:38' to datetime.date(2000, 8, 24)
-
-                    except ValueError:
-                        print("Invalid DOB format and age_str:", dob_str)
-
-                print(f"Received DOB: {dob_str}, Parsed DOB: {dob}")
+                # print('💜--------------->personData',person_data)
+                
 
                 # person_id = person_data.get('id')
                 person_name = person_data.get('name')
                 person_path = person_data.get('path')
-                print('------------>here',person_path)
-                print(person_path)
-                gender = person_data.get('gender')
-                age =person_data.get('age')
+
+                # gender = person_data.get('gender')
+                # dob_str = person_data.get('dob')
+                # age =person_data.get('age')
+                
                 if person_path:
                     person = Person.query.filter(Person.path == person_path).first()
-                    print('------------>',person)
+                    # print('------------>',person)
                     if person:
                         
                         PersonController.recognize_person(person.path.replace('face_images','./stored-faces'), person_name)
@@ -324,6 +321,13 @@ class ImageController:
                         return jsonify({"error": f"Person with path {person_path} not found"}), 404
                 else:
                     return jsonify({"error": "Person path is required"}), 400
+        
+        try:
+
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
 
@@ -331,14 +335,16 @@ class ImageController:
             image_path = image.path  # Full path to original image
             print(persons)
         # Reconstruct the tag JSON structure
+            print('------------->',persons)
             tag_data = {
                 "persons": {
                     str(p.get("id")): {
                         "name": p.get("name"),
                         "gender": p.get("gender"),
                         "path": p.get("path", ""),
-                        "dob": p.get("dob", ""),
-                        "age": p.age("age","")
+                        # "dob": p.get("dob", ""),
+                        "dob": p.get("dob", "").isoformat() if isinstance(p.get("dob"), date) else p.get("dob", ""),
+                        "age": p.get("age","")
                     }
                     for p in persons
                 } if persons else {},
@@ -364,6 +370,8 @@ class ImageController:
             print(f"Error tagging and saving image: {str(e)}")
             return jsonify({"error": "EXIF metadata embedding failed."}), 500
 
+
+# -----------------------------------------------
     @staticmethod
     def edit_image_data_for_sync_iqra(data):
         
@@ -404,9 +412,7 @@ class ImageController:
             return jsonify({"error": "Image not found"}), 404
 
         # Update event_date and event_name if provided
-        if event_date:
-            print('========🎃')
-            image.event_date = event_date
+        
             # image.last_modified=datetime.utcnow()
         
         print('done with image')
@@ -586,9 +592,12 @@ class ImageController:
 
         # Save changes to the database
         try:
-            image.is_sync = False
             image.last_modified=datetime.utcnow()
-
+            if event_date:
+               print('========🎃')
+               image.event_date = event_date
+            image.is_sync = False
+            
             db.session.commit()
             # return jsonify({"message": "Image, events, location, and persons updated successfully"}), 200
         except SQLAlchemyError as e:
@@ -919,12 +928,14 @@ class ImageController:
         try:
             # 1. Check if image already exists based on HASH
             existing_image = Image.query.filter_by(hash=data['hash']).first()
+            
             if existing_image:
-                existing_image.is_deleted = 0  # Mark as not deleted
-                existing_image.last_modified = datetime.utcnow()
-                db.session.commit()
-                print(f"⚠️ Image already exists with hash: {existing_image.hash}")
-                return jsonify({'message': 'Image already exists'}), 200
+                if existing_image.is_deleted == 1:
+                    existing_image.is_deleted = 0  # Mark as not deleted
+                    existing_image.last_modified = datetime.utcnow()
+                    db.session.commit()
+                    print(f"⚠️ Image already exists with hash: {existing_image.hash}")
+                    return jsonify({'message': 'Image already exists'}), 200
                 
             
             # 2. Insert new image record

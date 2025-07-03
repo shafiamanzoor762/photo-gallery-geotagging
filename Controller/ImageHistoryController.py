@@ -51,7 +51,7 @@ class ImageHistoryController:
             return jsonify({"error": "Image not found"}), 404
     
         # ⏳ Allow a 5-second window for timestamp matching
-        delta = timedelta(seconds=5)
+        delta = timedelta(seconds=1)
         lower_bound = image.created_at - delta
         upper_bound = image.created_at + delta
         deltaperson= timedelta(seconds=2)
@@ -59,7 +59,7 @@ class ImageHistoryController:
         upper_boundperson = image.created_at + deltaperson
     
         # 📍 Location handling (only if the relationship is defined in ImageHistory via backref)
-        location_data = None
+        location_data = {}
         if image.location:
             location_data = {
                 "id": image.location.id,
@@ -135,9 +135,9 @@ class ImageHistoryController:
         "event_names": [event["name"] for event in events],
         "event_date": image.event_date.strftime('%Y-%m-%dT%H:%M:%S') if image.event_date else None,
         "location": [
-            location_data.get("name"),
-            location_data.get("latitude"),
-            location_data.get("longitude")
+            location_data.get("name",""),
+            location_data.get("latitude",0.0),
+            location_data.get("longitude",0.0)
         ]
     }
 }
