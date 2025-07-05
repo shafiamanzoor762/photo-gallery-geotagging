@@ -310,6 +310,8 @@ class PersonController():
                     threshold = 0.45  # Stricter than default
 
                     if distance < threshold:
+                        print("✅ Distance:", distance),
+                        print("✅ Person name received:", person_name),
                         name = stored_name
                         if person_name:
                             new_lines.append(f'{person_name};{encoding_str};{cropped_image_path}\n')
