@@ -584,7 +584,7 @@ class PersonController():
             } for p in all_persons
         ]
 
-        return jsonify({"personList": person_list}), 200
+        return jsonify({person_list}), 200
 
     
 
