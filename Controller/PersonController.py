@@ -310,6 +310,8 @@ class PersonController():
                     threshold = 0.45  # Stricter than default
 
                     if distance < threshold:
+                        print("✅ Distance:", distance),
+                        print("✅ Person name received:", person_name),
                         name = stored_name
                         if person_name:
                             new_lines.append(f'{person_name};{encoding_str};{cropped_image_path}\n')
@@ -581,6 +583,8 @@ class PersonController():
                 "gender": p.gender,
                 "dob":p.dob,
                 "age":p.age
+                # "DOB": p.dob.strftime('%Y-%m-%d') if p.dob else None,
+                # "Age":p.age
             } for p in all_persons
         ]
 
