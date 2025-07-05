@@ -188,9 +188,12 @@ def get_person_groups_from_json():
 def get_all_person():
     return ImageController.get_all_person()
 
+# @app.route('/person/<int:person_id>', methods=['GET'])
+# def get_person_and_linked_as_list(person_id):
+#     return PersonController.get_person_and_linked_as_list(person_id)
 @app.route('/person/<int:person_id>', methods=['GET'])
 def get_person_and_linked_as_list(person_id):
-    return jsonify(PersonController.get_person_and_linked_as_list(person_id))
+    return PersonController.get_person_and_linked_as_list(person_id)
 
   
 #--------------------Link----------------
@@ -1029,11 +1032,202 @@ def get_images_by_person():
     return jsonify(event_images)
 
 
-
-
 @app.route('/health')
 def health_check():
      return jsonify({"status": "healthy"}), 200
+
+
+# MOVE IMAGES FOR MOBILE SIDE 
+
+@app.route('/move_images_for_frontend', methods=['POST'])
+def move_imagess():
+    try:
+        data = request.get_json()
+
+        source_path = os.path.basename(data.get("source_path", ""))
+        destination_path = os.path.basename(data.get("destination_path", ""))
+        persons = data.get("persons", [])
+
+        print("source_path:", source_path)
+        print("destination_path:", destination_path)
+        print("persons:", persons)
+
+        # Step 1: Load existing group data
+        with open("./stored-faces/person_group.json", "r") as f:
+            group_data = json.load(f)
+
+        # Step 2: Find source group
+        source_group_key = None
+        if source_path in group_data:
+            source_group_key = source_path
+        else:
+            for key, paths in group_data.items():
+                if source_path in paths:
+                    source_group_key = key
+                    break
+
+        if not source_group_key:
+            return jsonify({
+                "status": "error",
+                "message": "Source path not found in any group",
+                "data": None
+            }), 200
+
+        # Step 3: Extract person file names
+        person_paths = []
+        owner_conflict = None
+
+        for p in persons:
+            person_file = os.path.basename(p.get("path", ""))
+            if person_file == source_group_key:
+                owner_conflict = person_file
+                break
+            person_paths.append(person_file)
+
+        if owner_conflict:
+            return jsonify({
+                "status": "error",
+                "message": f"This image is the owner of the group and cannot be moved: {owner_conflict}",
+                "data": None
+            }), 200
+
+        # Step 4: Remove selected persons from source group
+        if source_group_key in group_data:
+            group_data[source_group_key] = [
+                path for path in group_data[source_group_key]
+                if path not in person_paths or path == source_group_key
+            ]
+
+        # Step 5: Prevent self-transfer
+        if source_group_key == destination_path:
+            return jsonify({
+                "status": "error",
+                "message": "Source and destination groups are the same",
+                "data": None
+            }), 200
+
+        # Step 6: Add to destination group
+        if destination_path not in group_data:
+            group_data[destination_path] = []
+
+        for path in person_paths:
+            if path not in group_data[destination_path]:
+                group_data[destination_path].append(path)
+
+        # Step 7: Save updated JSON
+        with open("./stored-faces/person_group.json", "w") as f:
+            json.dump(group_data, f, indent=4)
+
+        response_data = {
+            "moved_paths": person_paths,
+            "from_group": source_group_key,
+            "to_group": destination_path
+        }
+
+        return jsonify({
+            "status": "success",
+            "message": "Images moved successfully.",
+            "data": response_data
+        }), 200
+
+    except Exception as e:
+        import traceback
+        print("🔥 Exception occurred:")
+        print(traceback.format_exc())
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "data": None
+        }), 200
+
+
+
+
+# @app.route('/move_images_for_frontend', methods=['POST'])
+# def move_imagess():
+#     data = request.get_json()
+
+#     source_path = os.path.basename(data.get("source_path", ""))
+#     destination_path = os.path.basename(data.get("destination_path", ""))
+#     persons = data.get("persons", [])
+
+#     print("source_path:", source_path)
+#     print("destination_path:", destination_path)
+#     print("persons:", persons)
+
+#     try:
+#         # Step 1: Load existing group data
+#         with open("./stored-faces/person_group.json", "r") as f:
+#             group_data = json.load(f)
+
+#         # Step 2: Find source group
+#         source_group_key = None
+#         if source_path in group_data:
+#             source_group_key = source_path
+#         else:
+#             for key, paths in group_data.items():
+#                 if source_path in paths:
+#                     source_group_key = key
+#                     break
+
+#         if not source_group_key:
+#             return jsonify({"error": "Source path not found in any group"}), 400
+
+#         # Step 3: Extract person file names (as given)
+#         person_paths = []
+#         owner_conflict = None
+
+#         for p in persons:
+#             # p may be full dict (from Kotlin serialization)
+#             person_file = os.path.basename(p.get("path", ""))
+#             if person_file == source_group_key:
+#                 owner_conflict = person_file
+#                 break
+#             person_paths.append(person_file)
+
+#         if owner_conflict:
+#             return jsonify({
+#                 "error": f"This image is the owner of the group and cannot be moved: {owner_conflict}"
+#             }), 400
+
+#         # Step 4: Remove selected persons from source group
+#         if source_group_key in group_data:
+#             group_data[source_group_key] = [
+#                 path for path in group_data[source_group_key]
+#                 if path not in person_paths or path == source_group_key
+#             ]
+
+#         # Step 5: Prevent self-transfer
+#         if source_group_key == destination_path:
+#             return jsonify({"error": "Source and destination groups are the same"}), 400
+
+#         # Step 6: Add to destination group
+#         if destination_path not in group_data:
+#             group_data[destination_path] = []
+
+#         for path in person_paths:
+#             if path not in group_data[destination_path]:
+#                 group_data[destination_path].append(path)
+
+#         # Step 7: Save updated JSON
+#         with open("./stored-faces/person_group.json", "w") as f:
+#             json.dump(group_data, f, indent=4)
+
+#         response_data = {
+#             "message": "Images moved successfully.",
+#             "moved_paths": person_paths,
+#             "from_group": source_group_key,
+#             "to_group": destination_path
+#         }
+
+#         return jsonify(response_data), 200
+
+#     except Exception as e:
+#         import traceback
+#         print("🔥 Exception occurred:")
+#         print(traceback.format_exc())
+#         return jsonify({"error": str(e)}), 500
+
 
 # only accept localhost
 # if __name__ == '__main__':

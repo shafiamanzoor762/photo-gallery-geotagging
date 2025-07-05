@@ -580,11 +580,15 @@ class PersonController():
                 "id": p.id,
                 "name": p.name,
                 "path": p.path,
-                "gender": p.gender
+                "gender": p.gender,
+                "dob":p.dob,
+                "age":p.age
+                # "DOB": p.dob.strftime('%Y-%m-%d') if p.dob else None,
+                # "Age":p.age
             } for p in all_persons
         ]
 
-        return jsonify(person_list), 200
+        return jsonify({"personList": person_list}), 200
 
     
 

@@ -1,5 +1,44 @@
 -----imagehistory
+------new trigger ------
+ALTER TRIGGER trg_UpdateImageHistory_new
+ON Image
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
 
+    INSERT INTO ImageHistory (id, path, is_sync, capture_date, event_date, last_modified, location_id, version_no, is_deleted, hash, is_active, created_at)
+    SELECT
+        d.id,
+        d.path,
+        d.is_sync,
+        d.capture_date,
+        d.event_date,
+        d.last_modified,
+        d.location_id,
+        ISNULL(MAX(h.version_no), 0) + 1,
+        d.is_deleted,
+        d.hash,
+        0 as is_active,
+        SYSDATETIME() AS created_at
+    FROM
+        Deleted d
+    INNER JOIN
+        Inserted i ON d.id = i.id
+    LEFT JOIN
+        ImageHistory h ON d.id = h.id
+    WHERE
+        -- Only check for changes in these specific "core" columns
+        (d.path IS NULL AND i.path IS NOT NULL) OR (d.path IS NOT NULL AND i.path IS NULL) OR (d.path <> i.path) OR
+        (d.location_id IS NULL AND i.location_id IS NOT NULL) OR (d.location_id IS NOT NULL AND i.location_id IS NULL) OR (d.location_id <> i.location_id) OR
+        (d.is_deleted <> i.is_deleted) OR
+        (d.hash IS NULL AND i.hash IS NOT NULL) OR (d.hash IS NOT NULL AND i.hash IS NULL) OR (d.hash <> i.hash)
+        -- Removed: is_sync, capture_date, event_date from the change detection condition
+    GROUP BY
+        d.id, d.path, d.is_sync, d.capture_date, d.event_date, d.last_modified, d.location_id, d.is_deleted, d.hash;
+END;
+
+--------------------------------------
 drop trigger trg_UpdateImageHistory_new
 
 CREATE TRIGGER trg_UpdateImageHistory_new
