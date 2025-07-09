@@ -21,6 +21,7 @@ from Controller.DirectoryController import DirectoryController
 from Controller.TaggingController import TaggingController
 from Controller.MobileSideController import MobileSideController
 from Controller.ImageHistoryController import ImageHistoryController
+from Controller.TestController import TestController
 
 # ✅ Set this dynamically on startup using your helper
 # IMAGE_ROOT_DIR = DirectoryController.get_latest_directory()
@@ -1123,6 +1124,7 @@ def move_imagess():
             "from_group": source_group_key,
             "to_group": destination_path
         }
+        print(response_data)
 
         return jsonify({
             "status": "success",
@@ -1227,6 +1229,90 @@ def move_imagess():
 #         print("🔥 Exception occurred:")
 #         print(traceback.format_exc())
 #         return jsonify({"error": str(e)}), 500
+
+
+
+# ===============TEST CONTROLLER (EXTRA)===============
+@app.route('/get_persons_groups_from_image_desktop', methods=['POST'])
+def get_persons_groups_from_image_desktop():
+     try:
+        if 'file' not in request.files:
+            return jsonify({'error':'file not attatched'}), 404
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error':'filename is empty'}), 404
+        
+        # image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
+        # print(image_path)
+        image = Image.open(io.BytesIO(file.read()))
+        # image.save(image_path)
+        # image.save(image_path)
+        temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+        image.save(temp, format="JPEG")
+        temp_path = temp.name
+        temp.close()  # Close file so OpenCV can access it
+
+        # Call your processing logic
+        result =  TestController.process_image_and_get_person_groups_desktop(temp_path)
+
+        # Clean up manually
+        os.unlink(temp_path)
+
+        return jsonify(result),200
+        #
+     except Exception as exp:
+        return jsonify({'error':str(exp)}), 500
+     
+
+@app.route('/get_persons_groups_from_image_mobile', methods=['POST'])
+def get_persons_groups_from_image_mobile():
+     try:
+        if 'file' not in request.files:
+            return jsonify({'error':'file not attatched'}), 404
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error':'filename is empty'}), 404
+        
+        # image_path = os.path.join('.',ASSETS_FOLDER,  str(uuid.uuid4().hex) + '.jpg')
+        # print(image_path)
+        image = Image.open(io.BytesIO(file.read()))
+        # image.save(image_path)
+        # image.save(image_path)
+        temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+        image.save(temp, format="JPEG")
+        temp_path = temp.name
+        temp.close()  # Close file so OpenCV can access it
+
+                # Ensure we have JSON data
+        if not request.is_json:
+            return jsonify({'error': 'Missing JSON in request'}), 400
+            
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Empty JSON data'}), 400
+            
+        # Get data with defaults
+        persons = data.get("persons", [])
+        links = data.get("links", [])
+        image_persons = data.get("image_persons", [])
+        image_ids = set(data.get("image_ids", []))
+        
+        # Debug logging
+        print(f"Received data: persons={len(persons)}, links={len(links)}, "
+              f"image_persons={len(image_persons)}, image_ids={len(image_ids)}")
+
+        # Call your processing logic
+        result =  TestController.process_image_and_get_person_groups_mobile(temp_path, persons, links, image_persons, image_ids)
+
+        # Clean up manually
+        os.unlink(temp_path)
+
+        return jsonify(result),200
+        #
+     except Exception as exp:
+        return jsonify({'error':str(exp)}), 500
 
 
 # only accept localhost

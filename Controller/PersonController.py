@@ -6,7 +6,6 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
 # from flask import jsonify
 # from models import Person, Image, ImagePerson, Link  # adjust based on your structure
-from config import db
 
 # from collections import defaultdict
 from flask import jsonify,make_response
@@ -581,14 +580,15 @@ class PersonController():
                 "name": p.name,
                 "path": p.path,
                 "gender": p.gender,
-                "dob":p.dob,
-                "age":p.age
+                # "dob":p.dob,
+                "age":p.age,
+                "dob": p.dob.strftime('%Y-%m-%d') if p.dob else None
                 # "DOB": p.dob.strftime('%Y-%m-%d') if p.dob else None,
                 # "Age":p.age
             } for p in all_persons
         ]
 
-        return jsonify({person_list}), 200
+        return jsonify(person_list), 200
 
     
 

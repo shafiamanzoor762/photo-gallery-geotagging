@@ -77,7 +77,10 @@ class MobileSideController:
     @staticmethod
     def get_person_groups_from_data(persons, links, image_persons, image_ids):
      try:
-        # print(persons,links,image_persons,image_ids)
+        print("persons---persons",persons)
+        print("lllllliiiiiiiiiinnnnnnnnkkkk",links)
+        print("image_persons---image_persons",image_persons)
+        print("image_ids---image_ids",image_ids)
 
         # Load JSON file
         with open('./stored-faces/person_group.json', 'r') as f:
@@ -351,3 +354,4 @@ class MobileSideController:
                 links_dict[current_path].append(lp)
 
      return dict(links_dict)
+
