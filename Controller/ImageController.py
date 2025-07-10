@@ -1411,19 +1411,65 @@ class ImageController:
         images = json_data["images"]  # This is a list, not a query
         image_person_map = json_data["image_person_map"]
         links = json_data.get("links", [])
-    
+        persons_list = json_data.get("persons", [])
+        # Initialize
+        group_key = None
+        selected_group_embeddings = []
         person_id = data.get("person_id")
-        print("Given Person ID:", person_id, type(person_id))
+        target_person_id = int(data.get("person_id"))
+        for link in links:
+            if link.get("person1_id") == target_person_id:
+                
+                linked_id = link.get("person2_id")
+            elif link.get("person2_id") == target_person_id:
+
+                linked_id = link.get("person1_id")
+            else:
+                continue
+            # Get the linked person's face image path
+            for person in persons_list:
+                if int(person["id"]) == int(linked_id):
+                    face_filename = person["path"].split("/")[-1]
+                    selected_group_embeddings.append(face_filename)
+                    print("Appended face filename:", face_filename)
+        target_person = next((p for p in persons_list if int(p["id"]) == int(person_id)), None)
+        target_person_path=target_person["path"].split("/")[-1]
+        
+
+        grouped_embeddings_path = "./stored-faces/person_group.json"
+        with open(grouped_embeddings_path, "r") as f:
+            grouped_embeddings = json.load(f)
+
+        
+        
+        # Search for target path as either key or value
+        for key, value_list in grouped_embeddings.items():
+            if target_person_path == key or target_person_path in value_list:
+                group_key = key
+                selected_group_embeddings.extend(value_list)
+                break
+        
+        # Optional: also include the key itself if it's not already in the values
+        if group_key and group_key not in selected_group_embeddings:
+            selected_group_embeddings.append(group_key)
+        
+        # Check result
+        if not group_key:
+            return jsonify({"error": "Target path not found in any group"}), 404
+        
+        # print("Group key:", group_key)
+        # print("Group members (filenames):", selected_group_embeddings)
+        # print("Given Person ID:", person_id, type(person_id))
         image_ids = set()
     
         if person_id:
             groups = PersonController.get_single_person_groups(json_data)
-            print("Returned groups:", groups)  # DEBUG
+            # print("Returned groups:", groups)  # DEBUG
     
             for group in groups:
                 person = group.get("Person", {})
                 group_person_id = person.get("id")
-                print("Group Person ID:", group_person_id)
+                # print("Group Person ID:", group_person_id)
     
                 if group_person_id is not None and int(group_person_id) == int(person_id):
                     for img in group.get("Images", []):
@@ -1435,24 +1481,32 @@ class ImageController:
             image_data = []
     
             for img in filtered_images:
-                # Simulate DB join by filtering image_person_map list
-                persons = [
-                    {"id": item["person_id"]}
+    # Find all matching person_ids for this image
+                matching_person_ids = [
+                    item["person_id"]
                     for item in image_person_map
                     if item["image_id"] == img["id"]
                 ]
-    
+                
+                # Use full person data instead of just id
+                # persons = [
+                #     person for person in persons_list if person["id"] in matching_person_ids
+                # ]
+                persons = [
+    person for person in persons_list
+    if person["id"] in matching_person_ids and person["path"].split("/")[-1] in selected_group_embeddings
+]
+
                 image_data.append({
                     "id": img["id"],
                     "path": img["path"],
-                    "persons": persons
+                    "persons": persons  # Now contains full person info
                 })
     
-            print("Final image data:", image_data)
+            # print("Final image data:", image_data)
             return jsonify({"images": image_data}), 200
     
         return jsonify({"error": "No matching images found"}), 404
-    
        
             
          
