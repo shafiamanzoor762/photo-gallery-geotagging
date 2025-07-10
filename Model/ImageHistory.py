@@ -20,10 +20,10 @@ class ImageHistory(db.Model):
     last_modified = db.Column(db.Date)
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
 
-    version_no = db.Column(db.Integer)
+    version_no = db.Column(db.Integer, nullable=False)
     is_deleted = db.Column(db.Boolean, default=False, nullable=False)
     hash = db.Column(db.String(64), nullable=False)
-    is_Active = db.Column(db.Boolean, default=True, nullable=False)
+    # is_Active = db.Column('is_active', db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # ✅ Relationship using existing 'imagePerson' table

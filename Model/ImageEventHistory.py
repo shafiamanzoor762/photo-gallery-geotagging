@@ -8,7 +8,7 @@ class ImageEventHistory(db.Model):
     image_id = db.Column(db.Integer, db.ForeignKey('image.id'))
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'))
     version_no = db.Column(db.Integer)
-    is_Active = db.Column(db.Boolean, default=False, nullable=False)
+    is_Active = db.Column('is_active', db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Optional: Relationships (if needed in your app)

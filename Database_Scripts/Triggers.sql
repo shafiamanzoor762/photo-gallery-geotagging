@@ -38,6 +38,9 @@ BEGIN
         d.id, d.path, d.is_sync, d.capture_date, d.event_date, d.last_modified, d.location_id, d.is_deleted, d.hash;
 END;
 
+
+
+
 --------------------------------------
 drop trigger trg_UpdateImageHistory_new
 
@@ -186,3 +189,216 @@ ADD is_active BIT;
 
 ALTER TABLE ImageHistory
 ADD is_active varchar(64) NOT NULL;
+
+
+
+
+
+
+
+
+
+-- ======================================
+
+CREATE TRIGGER trg_UpdateImageHistory_new
+ON Image
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO ImageHistory (
+        id, path, is_sync, capture_date, event_date, last_modified,
+        location_id, version_no, is_deleted, is_active, hash, created_at
+    )
+    SELECT
+        d.id,
+        d.path,
+        d.is_sync,
+        d.capture_date,
+        d.event_date,
+        d.last_modified,
+        d.location_id,
+        ISNULL(MAX(h.version_no), 0) + 1,
+        d.is_deleted,
+        0 AS is_active,  -- ✅ set inactive for undo purpose
+        d.hash,
+        SYSDATETIME()
+    FROM
+        Deleted d
+    INNER JOIN
+        Inserted i ON d.id = i.id
+    LEFT JOIN
+        ImageHistory h ON h.id = d.id
+    WHERE
+           (ISNULL(d.path, '') <> ISNULL(i.path, '')) 
+    -- (ISNULL(d.location_id, -1) <> ISNULL(i.location_id, -1)) OR
+    -- (ISNULL(d.is_deleted, 0) <> ISNULL(i.is_deleted, 0)) OR
+    -- (ISNULL(d.hash, '') <> ISNULL(i.hash, '')) OR
+    -- -- (ISNULL(d.last_modified, '1900-01-01') <> ISNULL(i.last_modified, '1900-01-01')) OR
+    -- (ISNULL(d.is_sync, 1) <> ISNULL(i.is_sync, 1))
+        
+    GROUP BY
+        d.id, d.path, d.is_sync, d.capture_date, d.event_date,
+        d.last_modified, d.location_id, d.is_deleted, d.hash;
+END;
+
+
+
+
+CREATE TRIGGER trg_Delete_ImageEventHistory
+ON ImageEvent
+AFTER DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO ImageEventHistory (
+        image_id,
+        event_id,
+        version_no,
+        is_active,
+        created_at
+    )
+    SELECT
+        d.image_id,
+        d.event_id,
+        ISNULL(MAX(h.version_no), 0) + 1,
+        '0',
+        SYSDATETIME()
+    FROM Deleted d
+    LEFT JOIN ImageEventHistory h
+        ON h.image_id = d.image_id AND h.event_id = d.event_id
+    GROUP BY d.image_id, d.event_id;
+END;
+
+
+
+CREATE TRIGGER trg_UpdatePersonHistory
+ON Person
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO PersonHistory (
+        id, name, path, gender, DOB, Age,
+        version_no, is_active, created_at
+    )
+    SELECT
+        d.id,
+        d.name,
+        d.path,
+        d.gender,
+        d.DOB,
+        d.Age,
+        ISNULL(MAX(ph.version_no), 0) + 1,
+        '0',
+        SYSDATETIME()
+    FROM Deleted d
+    INNER JOIN Inserted i ON d.id = i.id
+    LEFT JOIN PersonHistory ph ON ph.id = d.id
+    WHERE 
+        (ISNULL(d.name, '') <> ISNULL(i.name, '')) OR
+        (ISNULL(d.path, '') <> ISNULL(i.path, '')) OR
+        (ISNULL(d.gender, '') <> ISNULL(i.gender, '')) OR
+        (ISNULL(d.DOB, '1900-01-01') <> ISNULL(i.DOB, '1900-01-01')) OR
+        (ISNULL(d.Age, -1) <> ISNULL(i.Age, -1))
+    GROUP BY 
+        d.id, d.name, d.path, d.gender, d.DOB, d.Age;
+END;
+
+-- ====================   akhri 
+
+
+-- CREATE TRIGGER trg_UpdateImageEventHistory
+-- ON ImageEvent
+-- AFTER Delete
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+
+--     -- Insert the old data (before update) into the history table
+--     INSERT INTO ImageEventHistory (image_id, event_id, version_no,is_Active,created_at)
+--     SELECT 
+--         d.image_id,
+--         d.event_id,
+--         ISNULL(v.MaxVersion, 0) + 1 , -- Increment the version number
+-- 		0 AS is_active,
+--         SYSDATETIME() AS created_at
+--     FROM 
+--         Deleted d  -- The 'Deleted' table holds the old data
+--     OUTER APPLY (
+--         SELECT MAX(version_no) AS MaxVersion
+--         FROM ImageEventHistory
+--         WHERE image_id = d.image_id AND event_id = d.event_id
+--     ) v;
+-- END;
+
+-- CREATE TRIGGER trg_UpdatePersonHistory
+-- ON Person
+-- AFTER UPDATE
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+
+--     INSERT INTO PersonHistory (
+--         id, name, path, gender, DOB, Age,
+--         version_no, is_active, created_at
+--     )
+--     SELECT
+--         d.id,
+--         d.name,
+--         d.path,
+--         d.gender,
+--         d.DOB,
+--         d.Age,
+--         ISNULL(MAX(ph.version_no), 0) + 1,
+--         '0',
+--         SYSDATETIME()
+--     FROM Deleted d
+--     INNER JOIN Inserted i ON d.id = i.id
+--     LEFT JOIN PersonHistory ph ON ph.id = d.id
+--     WHERE 
+--         (ISNULL(d.name, '') <> ISNULL(i.name, '')) OR
+--         (ISNULL(d.path, '') <> ISNULL(i.path, '')) OR
+--         (ISNULL(d.gender, '') <> ISNULL(i.gender, '')) OR
+--         (ISNULL(d.DOB, '1900-01-01') <> ISNULL(i.DOB, '1900-01-01')) OR
+--         (ISNULL(d.Age, -1) <> ISNULL(i.Age, -1))
+--     GROUP BY 
+--         d.id, d.name, d.path, d.gender, d.DOB, d.Age;
+-- END;
+
+
+
+-- create TRIGGER trg_UpdateImageHistory
+-- ON Image
+-- AFTER UPDATE
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+
+--     INSERT INTO ImageHistory (id, path, is_sync, capture_date, event_date, last_modified, location_id, version_no, is_deleted, hash, is_active, created_at)
+--     SELECT
+--         d.id,
+--         d.path,
+--         d.is_sync,
+--         d.capture_date,
+--         d.event_date,
+--         d.last_modified,
+--         d.location_id,
+--         ISNULL(MAX(h.version_no), 0) + 1,
+--         d.is_deleted,
+--         d.hash,
+--         0 as is_active,
+--         SYSDATETIME() AS created_at
+--     FROM
+--         Deleted d
+--     INNER JOIN
+--         Inserted i ON d.id = i.id
+--     LEFT JOIN
+--         ImageHistory h ON d.id = h.id
+    
+--     GROUP BY
+--         d.id, d.path, d.is_sync, d.capture_date, d.event_date, d.last_modified, d.location_id, d.is_deleted, d.hash;
+-- END;

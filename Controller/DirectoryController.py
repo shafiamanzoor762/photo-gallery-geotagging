@@ -26,6 +26,8 @@ class DirectoryController():
                         latest_index = index
                         latest_path = path
         return latest_path
+       
+        
     
     @staticmethod
     def add_directory_path(new_path):
