@@ -6,7 +6,6 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
 # from flask import jsonify
 # from models import Person, Image, ImagePerson, Link  # adjust based on your structure
-from config import db
 
 # from collections import defaultdict
 from flask import jsonify,make_response
@@ -312,6 +311,8 @@ class PersonController():
                     threshold = 0.45  # Stricter than default
 
                     if distance < threshold:
+                        print("✅ Distance:", distance),
+                        print("✅ Person name received:", person_name),
                         name = stored_name
                         if person_name:
                             new_lines.append(f'{person_name};{encoding_str};{cropped_image_path}\n')
@@ -581,14 +582,15 @@ class PersonController():
                 "name": p.name,
                 "path": p.path,
                 "gender": p.gender,
-                "dob":p.dob,
-                "age":p.age
+                # "dob":p.dob,
+                "age":p.age,
+                "dob": p.dob.strftime('%Y-%m-%d') if p.dob else None
                 # "DOB": p.dob.strftime('%Y-%m-%d') if p.dob else None,
                 # "Age":p.age
             } for p in all_persons
         ]
 
-        return jsonify({"personList": person_list}), 200
+        return jsonify(person_list), 200
 
     
 
