@@ -841,6 +841,50 @@ def get_linked_person():
     # print("Person Records:", person_records, "Link Records:", link_records)
     return ImageController.build_person_links(person_records, link_records)
 
+
+
+@app.route('/remove_embedding_name', methods=['POST'])
+def remove_embedding_name():
+    data = request.get_json()
+    emb1 = data.get("emb1")
+    emb2 = data.get("emb2")
+
+    if not emb1 or not emb2:
+        return jsonify({"status": "error", "message": "Both emb1 and emb2 are required"}), 400
+
+    json_path = './stored-faces/person_group.json'
+
+    if not os.path.exists(json_path):
+        return jsonify({"status": "error", "message": "person_group.json not found"}), 404
+
+    with open(json_path, 'r') as f:
+        group_data = json.load(f)
+
+    group_found = False
+
+    for group_key, members in group_data.items():
+        if emb1 in members and emb2 in members:
+            group_found = True
+            members.remove(emb2)
+
+            # If emb2 was the key and is now removed, fix that too
+            if emb2 in group_data:
+                del group_data[emb2]
+
+            # Create a new group for emb2 if it was unlinked
+            group_data[emb2] = [emb2]
+            break
+
+    if not group_found:
+        return jsonify({"status": "error", "message": "Group with both embeddings not found"}), 404
+
+    # Save updated JSON
+    with open(json_path, 'w') as f:
+        json.dump(group_data, f, indent=4)
+
+    return jsonify({"status": "success", "message": f"{emb2} unlinked from group with {emb1}"}), 200
+
+
 # =======================Shafia's Mobile side Requests========================================
 @app.route('/add_mobile_image', methods=['POST'])
 def add_mobile_image():

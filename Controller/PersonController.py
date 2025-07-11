@@ -305,6 +305,8 @@ class PersonController():
 
 
                 for input_encoding in input_encodings:
+                    # face_distance(known_encodings: List[ndarray], face_to_check: ndarray) -> List[float]
+
                     distance = face_recognition.face_distance([stored_encodings], input_encoding)[0]
                     threshold = 0.45  # Stricter than default
 
@@ -638,6 +640,7 @@ class PersonController():
             links = json_data.get("links", [])
 
             path_to_person = {os.path.basename(p["path"]): p["id"] for p in persons if p.get("path")}
+            print(path_to_person)
 
             # Step 1: Build initial mapping of JSON group key to person IDs
             json_group_id_to_person_ids = {}

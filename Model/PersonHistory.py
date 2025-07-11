@@ -12,7 +12,7 @@ class PersonHistory(db.Model):
     dob = db.Column(db.Date, nullable=True)  # 👈 New column for Date of Birth (nullable)
     age = db.Column(db.Integer,nullable=True)
     version_no = db.Column(db.Integer)
-    is_Active = db.Column(db.Boolean, default=False, nullable=False)
+    is_Active = db.Column('is_active', db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
